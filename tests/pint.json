@@ -1,0 +1,16 @@
+{
+  "preset": "laravel",
+  "rules": {
+    "method_argument_space": {
+      "on_multiline": "ensure_fully_multiline",
+      "keep_multiple_spaces_after_comma": false
+    },
+    "single_line_empty_body": true,
+    "braces": {
+      "allow_single_line_closure": true,
+      "position_after_anonymous_constructs": "same",
+      "position_after_control_structures": "same",
+      "position_after_functions_and_oop_constructs": "same"
+    }
+  }
+}
