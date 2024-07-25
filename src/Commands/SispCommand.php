@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Akira\Sisp\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class SispCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-sisp';
 
     public $description = 'My command';
 
