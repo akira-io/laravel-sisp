@@ -1,5 +1,5 @@
 {
-  "name": "akira-io/laravel-sisp",
+  "name": "akira/laravel-sisp",
   "description": "this is a laravel package to handle SISP payment",
   "keywords": [
     "Akira",
