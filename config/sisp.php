@@ -74,7 +74,7 @@ return [
     | the response from SISP.
     |
     */
-    'urlMerchantResponse' => env('SISP_URL_MERCHANT_RESPONSE'),
+    'urlMerchantResponse' => config('app.url').'/sisp-payment-response',
 
     /*
     |--------------------------------------------------------------------------
