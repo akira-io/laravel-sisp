@@ -2,6 +2,9 @@
 
 namespace Akira\Sisp\Http\Requests;
 
+use Akira\Sisp\Actions\Fields\PaymentFields;
+use Akira\Sisp\Actions\PaymentRequestUrl;
+use Akira\Sisp\DTOs\PaymentRequestParams;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PaymentRequest extends FormRequest
@@ -10,15 +13,10 @@ class PaymentRequest extends FormRequest
     {
 
         return [
-            'amount' => 'required|numeric',
+            'amount' => ['required','numeric']
         ];
     }
-
-    public function htmlForm(): array
-    {
-        return $this->only('amount');
-    }
-
+    
     public function authorize(): bool
     {
 
@@ -29,4 +27,17 @@ class PaymentRequest extends FormRequest
     {
         return (float) $this->get('amount');
     }
+    
+    
+    public function payment(): array
+    {
+        
+        $fields =  PaymentFields::make()->withAmount($this->getAmount());
+    
+        $url = PaymentRequestUrl::make(PaymentRequestParams::make($fields))->url();
+        
+        return [$fields->toArray(), $url];
+    }
+    
+    
 }

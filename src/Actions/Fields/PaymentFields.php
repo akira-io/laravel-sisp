@@ -32,15 +32,22 @@ class PaymentFields
 
     public function __construct()
     {
+        
+        $this->validatePosID();
+        
+        $this->validatePosAutCode();
+        
+        $this->validateMerchantId();
+        
         $this->transactionCode = config('sisp.transactionCode');
-        $this->posID = config('sisp.posID');
+
         $this->currency = config('sisp.currency');
         $this->is3DSec = config('sisp.is3DSec');
         $this->urlMerchantResponse = config('sisp.urlMerchantResponse');
         $this->languageMessages = config('sisp.languageMessages');
         $this->fingerprintVersion = config('sisp.fingerPrintVersion');
-        $this->posAutCode = config('sisp.posAutCode');
-        $this->merchantId = config('sisp.merchantId');
+ 
+    
         $this->entityCode = '';
         $this->referenceNumber = '';
     }
@@ -175,4 +182,35 @@ class PaymentFields
             'referenceNumber' => $this->getReferenceNumber(),
         ];
     }
+    
+    
+    private function validatePosID(): void
+    {
+        
+        if (!config('sisp.posID')) {
+            throw new \RuntimeException('Config file not found');
+        }
+        $this->posID = config('sisp.posID');
+    }
+    
+    
+    private function validatePosAutCode(): void
+    {
+        
+        if (!config('sisp.posAutCode')) {
+            throw new \RuntimeException('Pos Aut Code config not found');
+        }
+        $this->posAutCode = config('sisp.posAutCode');
+    }
+    
+    
+    private function validateMerchantId(): void
+    {
+        
+        if (!config('sisp.merchantId')) {
+            throw new \RuntimeException('Merchant ID config not found');
+        }
+        $this->merchantId = config('sisp.merchantId');
+    }
+    
 }

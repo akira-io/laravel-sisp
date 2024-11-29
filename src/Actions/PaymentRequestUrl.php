@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\DTOs\PaymentRequestParams;
+use Exception;
 
 class PaymentRequestUrl
 {
     private string $url;
-
+    
+    
+    /**
+     * @throws Exception
+     */
     public function __construct(protected PaymentRequestParams $params)
     {
-        $this->url = config('sisp.url');
+        $this->validateUrl();
     }
 
     public static function make(PaymentRequestParams $params): self
@@ -26,4 +31,16 @@ class PaymentRequestUrl
             '&TimeStamp='.urlencode($this->params->timeStamp).
             '&FingerPrintVersion='.urlencode($this->params->fingerPrintVersion);
     }
+    
+    
+    private function validateUrl(): void
+    {
+        
+        if (empty(config('sisp.url'))) {
+            throw new \Exception('SISP URL is not set');
+        }
+        
+        $this->url = config('sisp.url');
+    }
+    
 }
