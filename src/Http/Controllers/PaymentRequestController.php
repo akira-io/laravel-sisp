@@ -5,25 +5,15 @@ namespace Akira\Sisp\Http\Controllers;
 use Akira\Sisp\Actions\Fields\PaymentFields;
 use Akira\Sisp\Actions\PaymentRequestUrl;
 use Akira\Sisp\DTOs\PaymentRequestParams;
+use Akira\Sisp\Http\Requests\PaymentRequest;
 
 class PaymentRequestController
 {
-    public function __invoke()
+    public function __invoke(PaymentRequest $request)
     {
-
-        $fields = PaymentFields::make()->withAmount(100);
-
-        $paymentRequestParams = PaymentRequestParams::make($fields);
-
-        //        dd($fields, $paymentRequestParams);
-
-        $url = PaymentRequestUrl::make($paymentRequestParams)->url();
-
-        $fields = $fields->toArray();
-
-        //        dd($fields, $url);
-
-        //        dd($fields, $url);
+       
+       [ $fields, $url ] = $request->payment();
+       
 
         return view('sisp::payment-request-form', compact('url', 'fields'));
     }

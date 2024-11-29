@@ -2,7 +2,8 @@
 
 namespace Akira\Sisp;
 
-use Akira\Sisp\Commands\SispCommand;
+use Akira\Sisp\Actions\Fields\PaymentFields;
+use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -17,15 +18,7 @@ class SispServiceProvider extends PackageServiceProvider
             ->hasViews()
             ->hasMigration('create_laravel_sisp_table')
             ->hasRoutes('web')
-            ->hasCommand(SispCommand::class);
+            ->hasCommand(LaravelSispInstallCommand::class);
     }
-
-    //    public function register(): void
-    //    {
-    //        parent::register();
-    //
-    //        $this->app->bind(PaymentFields::class, function ($app, $parameters) {
-    //            return new PaymentFields($parameters['amount']);
-    //        });
-    //    }
+    
 }
