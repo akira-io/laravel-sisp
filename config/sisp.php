@@ -116,4 +116,7 @@ return [
    |
    */
     'table_name' => 'sisp_transactions',
+    
+    
+    'redirect_url' => env('SISP_REDIRECT_URL', '/'),
 ];
