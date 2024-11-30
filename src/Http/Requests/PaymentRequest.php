@@ -13,10 +13,10 @@ class PaymentRequest extends FormRequest
     {
 
         return [
-            'amount' => ['required','numeric']
+            'amount' => ['required', 'numeric'],
         ];
     }
-    
+
     public function authorize(): bool
     {
 
@@ -27,17 +27,14 @@ class PaymentRequest extends FormRequest
     {
         return (float) $this->get('amount');
     }
-    
-    
+
     public function payment(): array
     {
-        
-        $fields =  PaymentFields::make()->withAmount($this->getAmount());
-    
+
+        $fields = PaymentFields::make()->withAmount($this->getAmount());
+
         $url = PaymentRequestUrl::make(PaymentRequestParams::make($fields))->url();
-        
+
         return [$fields->toArray(), $url];
     }
-    
-    
 }

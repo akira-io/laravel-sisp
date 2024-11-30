@@ -10,8 +10,7 @@ use Exception;
 class PaymentRequestUrl
 {
     private string $url;
-    
-    
+
     /**
      * @throws Exception
      */
@@ -31,16 +30,14 @@ class PaymentRequestUrl
             '&TimeStamp='.urlencode($this->params->timeStamp).
             '&FingerPrintVersion='.urlencode($this->params->fingerPrintVersion);
     }
-    
-    
+
     private function validateUrl(): void
     {
-        
+
         if (empty(config('sisp.url'))) {
             throw new \Exception('SISP URL is not set');
         }
-        
+
         $this->url = config('sisp.url');
     }
-    
 }

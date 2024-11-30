@@ -14,7 +14,7 @@ class PaymentResponseController
                 'message' => $request->all(),
             ]);
         }
-        
+
         if ($request->has('UserCancelled') && $request->UserCancelled === 'true') {
             return view('sisp::purchase-cancelled', [
                 'message' => $request->all(),
