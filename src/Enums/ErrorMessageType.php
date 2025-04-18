@@ -8,6 +8,9 @@ enum ErrorMessageType: string
 {
     case transactionError = '6';
 
+    /**
+     * Get the label for the enum value.
+     */
     public function label(): string
     {
         return match ($this) {

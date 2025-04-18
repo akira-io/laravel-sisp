@@ -1,24 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Akira\Sisp\Http\Controllers;
 
-use Akira\Sisp\Enums\SuccessMessageType;
+use Akira\Sisp\Actions\Transactions\UpdateTransactionAction;
+use Akira\Sisp\Exceptions\InvalidPaymentResponseException;
+use Akira\Sisp\Facades\Sisp;
+use Exception;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
-class PaymentResponseController
+final class PaymentResponseController
 {
-    public function __invoke(Request $request)
+    /**
+     * Handle the incoming request.
+     *l
+     *
+     * @throws Exception
+     */
+    public function __invoke(Request $request, UpdateTransactionAction $action): View|Exception
     {
-        if ($request->has('messageType') && $request->messageType == SuccessMessageType::purchase->value) {
-            return view('sisp::purchase-success', [
-                'message' => $request->all(),
-            ]);
-        }
-        
-        if ($request->has('UserCancelled') && $request->UserCancelled === 'true') {
-            return view('sisp::purchase-cancelled', [
-                'message' => $request->all(),
-            ]);
-        }
+        return match (true) {
+            Sisp::paymentRequestIsSuccess($request) => Sisp::processSuccessfulPayment($request, $action),
+            Sisp::isCancelledByUser($request) => Sisp::handleUserCancellation($request),
+            default => throw new InvalidPaymentResponseException(),
+        };
     }
 }

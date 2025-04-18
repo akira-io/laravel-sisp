@@ -12,6 +12,9 @@ enum ChangeAccountAge: string
     case accountCreatedBetween30And60Days = '04';
     case accountWithMoreThan60Days = '05';
 
+    /**
+     * Get the label for the enum value.
+     */
     public function label(): string
     {
         return match ($this) {

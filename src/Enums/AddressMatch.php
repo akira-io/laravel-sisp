@@ -9,6 +9,9 @@ enum AddressMatch: string
     case yes = 'Y';
     case no = 'N';
 
+    /**
+     * Get the label for the enum value.
+     */
     public function label(): string
     {
         return match ($this) {

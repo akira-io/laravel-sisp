@@ -11,5 +11,5 @@
 		</form>
 	</div>
 
-	</>
+	</body>
 </x-sisp::layouts.app>

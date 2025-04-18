@@ -1,22 +1,13 @@
-# this is a laravel package to handle SISP payment
+# This is a laravel package to handle SISP payment
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/akira-io/laravel-sisp.svg?style=flat-square)](https://packagist.org/packages/akira-io/laravel-sisp)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/akira-io/laravel-sisp/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/akira-io/laravel-sisp/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/akira-io/laravel-sisp/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/akira-io/laravel-sisp/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/akira-io/laravel-sisp.svg?style=flat-square)](https://packagist.org/packages/akira-io/laravel-sisp)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/akira/laravel-sisp.svg)](https://packagist.org/packages/akira/laravel-sisp)
+[![Total Downloads](https://img.shields.io/packagist/dt/akira/laravel-sisp.svg)](https://packagist.org/packages/akira/laravel-sisp)
+[![PHPStan Level](https://img.shields.io/badge/phpstan-level%209-brightgreen.svg)](https://phpstan.org)
+[![License](https://img.shields.io/packagist/l/akira/laravel-sisp.svg)](https://github.com/akira-io/laravel-sisp/blob/main/LICENSE)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
-
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/laravel-sisp.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/laravel-sisp)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can
-support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using.
-You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards
-on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+This package allows you to easily handle payments through the SISP Payment Gateway, enabling seamless payment processing
+within your application. Whether you’re building an e-commerce platform or handling subscription services, Laravel SISP
+is designed to simplify your payment workflows.
 
 ## Installation
 
@@ -164,6 +155,7 @@ return [
 [//]: # (Optionally, you can publish the views using)
 
 [//]: # ()
+
 [//]: # (```bash)
 
 [//]: # (php artisan vendor:publish --tag="laravel-sisp-views")
@@ -173,8 +165,7 @@ return [
 ## Usage
 
 ```php
-$sisp = new Akira\Sisp();
-echo $sisp->echoPhrase('Hello, Akira!');
+Sisp::requestPayment(amount: $amount, transactionId: $transactionId, ...$optionalParams);
 ```
 
 ## Testing
