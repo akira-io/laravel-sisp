@@ -1,0 +1,14 @@
+{
+  "preset": "laravel",
+  "ignore": {
+    "words": [
+      "php",
+      "postcss",
+      "sisp",
+      "pos",
+      "decrypt",
+      "Dsec"
+    ],
+    "paths": []
+  }
+}
