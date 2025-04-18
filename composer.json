@@ -38,11 +38,6 @@
     "rector/rector": "^1.2.10",
     "spatie/laravel-ray": "^1.40.2"
   },
-  //  "conflict": {
-  //    "laravel/framework": "<11.0",
-  //    "orchestra/testbench": "<9.0",
-  //    "pestphp/pest-plugin-laravel": "<3.1"
-  //  },
   "autoload": {
     "psr-4": {
       "Akira\\Sisp\\": "src/",
