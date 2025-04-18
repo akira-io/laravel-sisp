@@ -1,66 +1,62 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Akira\Sisp\Commands;
 
 use Illuminate\Console\Command;
-use function Laravel\Prompts\confirm;
 
-class LaravelSispInstallCommand extends Command
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\note;
+use function Laravel\Prompts\spin;
+
+final class LaravelSispInstallCommand extends Command
 {
-    public $signature = 'laravel-sisp:install';
-    public $description = 'Install and configure Laravel SISP package.';
-    
+    protected $signature = 'sisp:install';
+
+    protected $description = 'Install and configure the Laravel SISP package.';
+
+    /**
+     * Execute the console command.
+     */
     public function handle(): int
     {
-        \Laravel\Prompts\info('Starting Laravel SISP installation...');
-        
-        if (confirm('Do you want to publish the configuration file?')) {
-            $this->call('vendor:publish', [
+        info('🌟 Starting Laravel SISP installation...');
+
+        // Step 1: Publish config
+        if (confirm('📄 Do you want to publish the configuration file?')) {
+            spin(fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'sisp-config',
-            ]);
-            \Laravel\Prompts\info('Configuration file published.');
+            ]), 'Publishing configuration file...');
+
+            info('✅ Configuration file published.');
         }
-        
-        if (confirm('Do you want to publish the migration files?')) {
-            $this->call('vendor:publish', [
+
+        // Step 2: Publish migrations
+        if (confirm('🗄️ Do you want to publish the migration files?')) {
+            spin(fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'sisp-migrations',
-            ]);
-            \Laravel\Prompts\info('Migration files published.');
+            ]), 'Publishing migration files...');
+
+            info('✅ Migration files published.');
         }
-        
-        if (confirm('Do you want to migrate the database now?')) {
-            $this->call('migrate');
-            \Laravel\Prompts\info('Database migration completed.');
+
+        // Step 3: Run migration
+        if (confirm('⚙️ Do you want to run database migrations now?')) {
+            spin(fn () => $this->call('migrate'), 'Running database migrations...');
+            info('✅ Database migration completed.');
         }
-        
-        $this->line('');
-        \Laravel\Prompts\info('Laravel SISP installation completed successfully!');
-      
-       
-        if (confirm('Would you like to give a ⭐️ on GitHub to support the project?')) {
-            $this->openGitHubRepo();
+
+        // Finish
+        note('🎉 Laravel SISP installation completed successfully!');
+
+        if (confirm('Would you like to support the project by giving a ⭐️ on GitHub?')) {
+            note('👉 Visit: https://github.com/akira-io/laravel-sisp');
         }
-        
-        \Laravel\Prompts\info('Thank you for choosing Laravel SISP!');
-        
-        return Command::SUCCESS;
-    }
-    
-    /**
-     * Abre o repositório no navegador.
-     */
-    protected function openGitHubRepo(): void
-    {
-        $repoUrl = 'https://github.com/akira-io/laravel-sisp';
-        
-        if (PHP_OS_FAMILY === 'Windows') {
-            exec("start $repoUrl");
-        } elseif (PHP_OS_FAMILY === 'Darwin') {
-            exec("open $repoUrl"); // macOS
-        } else {
-            exec("xdg-open $repoUrl"); // Linux
-        }
-        
-        info('GitHub repository has been opened in your browser. Thank you for your support!');
+
+        info('🙏 Thank you for choosing Laravel SISP!');
+
+        return self::SUCCESS;
     }
 }

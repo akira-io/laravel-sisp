@@ -9,6 +9,9 @@ enum SuspiciousAccountActivity: string
     case noneSuspect = '01';
     case suspect = '02';
 
+    /**
+     * Get the label for the enum value.
+     */
     public function label(): string
     {
         return match ($this) {

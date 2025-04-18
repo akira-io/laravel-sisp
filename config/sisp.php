@@ -1,7 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 return [
-    
+
     /*
     |--------------------------------------------------------------------------
     | SISP URL
@@ -12,7 +14,19 @@ return [
     |
     */
     'url' => env('SISP_URL'),
-    
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generators
+    |--------------------------------------------------------------------------
+    */
+
+    'generators' => [
+        'merchantSession' => Akira\Sisp\Actions\Generators\MerchantSessionGeneratorAction::class,
+        'merchantReference' => Akira\Sisp\Actions\Generators\MerchantReferenceGeneratorAction::class,
+        'timeStamp' => Akira\Sisp\Actions\Generators\TimeStampGeneratorAction::class,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Merchant Virtual POS Terminal Identification
@@ -23,7 +37,7 @@ return [
     |
     */
     'posID' => env('SISP_POS_ID'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Merchant Virtual POS Terminal Password
@@ -34,7 +48,7 @@ return [
     |
     */
     'posAutCode' => env('SISP_POS_AUT_CODE'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Currency Code for the Transaction
@@ -46,7 +60,7 @@ return [
     |
     */
     'currency' => env('SISP_CURRENCY', '132'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Language for Transaction Response Messages
@@ -57,7 +71,7 @@ return [
     |
     */
     'languageMessages' => env('SISP_LANGUAGE_MESSAGES', 'en'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Fingerprint Algorithm Version
@@ -68,7 +82,7 @@ return [
     |
     */
     'fingerPrintVersion' => env('SISP_FINGERPRINT_VERSION', '1'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | URL for Merchant's Server Response
@@ -79,7 +93,7 @@ return [
     |
     */
     'urlMerchantResponse' => config('app.url').'/sisp-payment-response',
-    
+
     /*
     |--------------------------------------------------------------------------
     | 3D Secure Transaction Indicator
@@ -90,7 +104,7 @@ return [
     |
     */
     'is3DSec' => env('SISP_IS_3D_SEC', '1'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Transaction Code
@@ -101,7 +115,7 @@ return [
     |
     */
     'transactionCode' => env('SISP_DEFAULT_TRANSACTION_CODE', '1'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Merchant Identification
@@ -112,7 +126,7 @@ return [
     |
     */
     'merchantId' => env('SISP_MERCHANT_ID'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Transaction Table Name
@@ -122,7 +136,7 @@ return [
     |
     */
     'table_name' => 'sisp_transactions',
-    
+
     /*
     |--------------------------------------------------------------------------
     | Redirect URL After Payment or Cancellation
@@ -133,7 +147,7 @@ return [
     |
     */
     'redirect_url' => env('SISP_REDIRECT_URL', '/'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Theme for the Payment Page
@@ -143,6 +157,6 @@ return [
     | Default is 'dark'.
     |
     */
-    'theme' => env('SISP_THEME', 'dark'),
+    'theme' => env('SISP_THEME', 'white'),
 
 ];

@@ -1,11 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Akira\Sisp;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Transaction extends Model
+final class Transaction extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'messageType',
         'merchantRespCP',
@@ -26,18 +33,29 @@ class Transaction extends Model
         'merchantRespClientReceipt',
         'merchantRespAdditionalErrorMessage',
         'merchantRespReloadCode',
-        'resultFingerPrint',
-        'resultFingerPrintVersion',
-        'user_id',
-        'session_id',
-        'email',
-        'with_tickets',
-        'is_pending',
+        'transactionId',
+        'options',
     ];
 
-    public function getTable()
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
     {
 
-        return config('sisp.table_name');
+        return type(config('sisp.table_name'))->asString();
+    }
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+
+        return [
+            'options' => 'array',
+        ];
     }
 }

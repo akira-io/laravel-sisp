@@ -13,6 +13,9 @@ enum SuccessMessageType: string
     case tokenPayment = 'B';
     case tokenCancel = 'C';
 
+    /**
+     * Get the label for the enum value.
+     */
     public function label(): string
     {
         return match ($this) {
