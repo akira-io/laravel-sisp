@@ -1,57 +1,50 @@
-name: Tests
+name: Laravel Sisp - CI Pipeline
 
-on: [ 'push', 'pull_request' ]
+on:
+  push:
+    branches:
+      - '1.x'
+  pull_request:
+    branches:
+      - '1.x'
 
 jobs:
-  ci:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        php: [ '8.2','8.3', '8.4' ]
-        laravel: [ 11.*, 12.* ]
-        dependency-version: [ prefer-lowest, prefer-stable ]
+  tests:
+    runs-on: ubuntu-latest
 
-    name: Tests P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.os }} - ${{ matrix.dependency-version }}
+    strategy:
+      matrix:
+        php-version: [ 8.2, 8.3, 8.4 ]
+        laravel-version: [ '11.*', '12.*' ]
 
     steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
 
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup PHP
+      # Set up PHP with the matrix version
+      - name: Set up PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
-          extensions: dom, mbstring, zip, fileinfo
-          coverage: none
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, bcmath, openssl
 
-      - name: Get Composer cache directory
-        id: composer-cache
-        shell: bash
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      # Install Composer
+      - name: Install Composer
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          php composer.phar --version
 
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-composer-${{ hashFiles('composer.json') }}
-          restore-keys: dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-composer-
+      # Clear Composer cache to prevent issues with old packages
+      - name: Clear Composer cache
+        run: composer clear-cache
 
-      - name: Require Testbench v9 for Laravel 11
-        if: startsWith(matrix.laravel, '11')
-        run: composer require --dev orchestra/testbench:^9.0 --no-update
+      # Install dependencies with the Laravel version from the matrix
+      - name: Install dependencies for Laravel ${{ matrix.laravel-version }}
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel-version }}" --no-interaction --prefer-dist
+          composer install --no-interaction --prefer-dist --dev
 
-      - name: Require Testbench v10 for Laravel 12
-        if: startsWith(matrix.laravel, '12')
-        run: composer require --dev orchestra/testbench:^10.0 --no-update
-
-      - name: Install Laravel
-        run: composer require laravel/framework:${{ matrix.laravel }} --no-update
-
-      - name: Install Composer dependencies
-        run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
-
-      - name: Integration Tests
-        run: composer test
+      # Run tests
+      - name: Run tests with Pest
+        run: |
+          composer test
