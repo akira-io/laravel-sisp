@@ -28,7 +28,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: mbstring, bcmath, openssl
+          extensions: mbstring, bcmath, openssl, xdebug
+          coverage: xdebug
 
       # Install Composer
       - name: Install Composer
