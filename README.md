@@ -11,7 +11,7 @@ is designed to simplify your payment workflows.
 
 ## Requirements
 
-- PHP 8.2 or higher
+- PHP 8.4 or higher
 - Laravel 11 or higher
 
 ## Installation

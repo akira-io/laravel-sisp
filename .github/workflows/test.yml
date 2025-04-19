@@ -55,7 +55,7 @@ jobs:
 
       - name: Install Laravel + Testbench
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction --dev
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Run Pest Tests
