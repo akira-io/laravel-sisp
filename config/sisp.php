@@ -17,10 +17,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Generators
+    | Generators Configuration
     |--------------------------------------------------------------------------
+    |
+    | This section configures the various generators used in the payment
+    | processing flow. These generators create specific values required for
+    | the payment request, ensuring that the session, reference, and timestamp
+    | values are dynamically generated as needed.
+    |
+    | Each generator is associated with an action class responsible for
+    | creating the respective value. You can customize or extend these
+    | actions as necessary to fit your business logic.
+    |
+    | The generators are as follows:
+    |
+    | - 'merchantSession': Generates a unique session identifier for each
+    |   payment request, helping to track and differentiate between sessions.
+    | - 'merchantReference': Generates a unique merchant reference for each
+    |   transaction, enabling easy identification of the payment in logs or
+    |   backend systems.
+    | - 'timeStamp': Generates a timestamp value representing the exact time
+    |   the payment request was created, which is essential for tracking and
+    |   ensuring the timing of transactions.
+    |
+    | You can add more generators or modify the existing ones to meet your
+    | specific requirements.
+    |
     */
-
     'generators' => [
         'merchantSession' => Akira\Sisp\Actions\Generators\MerchantSessionGeneratorAction::class,
         'merchantReference' => Akira\Sisp\Actions\Generators\MerchantReferenceGeneratorAction::class,

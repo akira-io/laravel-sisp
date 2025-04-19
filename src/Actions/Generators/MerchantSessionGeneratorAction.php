@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions\Generators;
 
-final class MerchantSessionGeneratorAction
+use Akira\Sisp\Contracts\Generator;
+
+final class MerchantSessionGeneratorAction implements Generator
 {
     /**
      * Generate a unique merchant session ID.

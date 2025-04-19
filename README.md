@@ -167,11 +167,9 @@ return [
 
 [//]: # (```)
 
-## Usage
+## Documentation
 
-```php
-Sisp::requestPayment(amount: $amount, transactionId: $transactionId, ...$optionalParams);
-```
+You'll find installation instructions and full documentation on [Akira Sisp website](https://sisp.akira-io.com).
 
 ## Testing
 
