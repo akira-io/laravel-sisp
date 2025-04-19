@@ -5,10 +5,10 @@ on:
     branches:
       - '1.x'
       - 'main'
-    pull_request:
-      branches:
-        - '1.x'
-        - 'main'
+  pull_request:
+    branches:
+      - '1.x'
+      - 'main'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,12 +16,11 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:
       fail-fast: true
       matrix:
-        os: ubuntu-latest
         php: [ 8.4 ]
         laravel: [ 12.*, 11.* ]
         stability: prefer-stable
@@ -30,9 +29,6 @@ jobs:
             testbench: 10.*
           - laravel: 11.*
             testbench: 9.*
-          - laravel: 10.*
-            testbench: 8.*
-
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
