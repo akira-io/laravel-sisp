@@ -62,7 +62,10 @@ final class Sisp
 
         SispPaymentRequestSuccess::dispatch($transaction);
 
-        return view('sisp::purchase-success', [
+        /** @var view-string $viewName */
+        $viewName = 'sisp::purchase-success';
+
+        return view($viewName, [
             'message' => $request->all(),
         ]);
     }
@@ -74,7 +77,10 @@ final class Sisp
     {
         SispPaymentCancelledByUser::dispatch($request->all());
 
-        return view('sisp::purchase-cancelled', [
+        /** @var view-string $viewName */
+        $viewName = 'sisp::purchase-cancelled';
+
+        return view($viewName, [
             'message' => $request->all(),
         ]);
     }
