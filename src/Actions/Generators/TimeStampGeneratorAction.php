@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions\Generators;
 
-final class TimeStampGeneratorAction
+use Akira\Sisp\Contracts\Generator;
+
+final class TimeStampGeneratorAction implements Generator
 {
     /**
      * Generate a unique timestamp.
