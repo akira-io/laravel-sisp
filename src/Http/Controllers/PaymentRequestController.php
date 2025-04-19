@@ -26,6 +26,9 @@ final class PaymentRequestController
 
         $storeTransaction->handle(request: $request, fields: $fields->toArray());
 
-        return view('sisp::payment-request-form', ['url' => $paymentRequestUrl->handle($fields), 'fields' => $fields->toArray()]);
+        /** @var view-string $viewName */
+        $viewName = 'sisp::payment-request-form';
+
+        return view($viewName, ['url' => $paymentRequestUrl->handle($fields), 'fields' => $fields->toArray()]);
     }
 }
