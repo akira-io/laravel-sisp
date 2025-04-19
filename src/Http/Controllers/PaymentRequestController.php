@@ -24,7 +24,7 @@ final class PaymentRequestController
         $fields = PaymentFields::make()
             ->withAmount($request->float('amount'));
 
-        $storeTransaction->handle(request: $request, fields: $fields->toArray());
+        $storeTransaction->handle(transactionId: $request->validated('transactionId'), fields: $fields->toArray(), options: $request->validated('options'));
 
         /** @var view-string $viewName */
         $viewName = 'sisp::payment-request-form';

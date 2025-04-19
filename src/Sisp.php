@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Akira\Sisp;
 
-use Akira\LaravelCrypto\Facades\Crypto;
 use Akira\Sisp\Actions\Transactions\UpdateTransactionAction;
 use Akira\Sisp\Concerns\Support;
 use Akira\Sisp\Events\SispPaymentCancelledByUser;
 use Akira\Sisp\Events\SispPaymentRequestSuccess;
 use Akira\Sisp\Exceptions\TransactionNotFoundException;
+use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -34,14 +34,15 @@ final class Sisp
      * Request a payment to the SISP Gateway.
      *
      * @param  array<string,mixed>  $options
+     *
+     * @throws Exception
      */
     public function requestPayment(float $amount, string $transactionId, array $options = []): RedirectResponse|Redirector
     {
-
         return to_route('sisp.payment.request',
             [
-                'amount' => Crypto::encrypt((string) json_encode($amount)),
-                'transactionId' => Crypto::encrypt($transactionId),
+                'amount' => $amount,
+                'transactionId' => $transactionId,
                 'options' => $options,
             ]
         );
