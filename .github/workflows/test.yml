@@ -39,19 +39,19 @@ jobs:
           key: dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-composer-${{ hashFiles('composer.json') }}
           restore-keys: dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-composer-
 
-      - name: Install Composer dependencies
-        run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
-
       - name: Require Testbench v9 for Laravel 11
         if: startsWith(matrix.laravel, '11')
-        run: composer require --dev orchestra/testbench:^9.0 --no-interaction --with-all-dependencies
+        run: composer require --dev orchestra/testbench:^9.0 --no-update
 
       - name: Require Testbench v10 for Laravel 12
         if: startsWith(matrix.laravel, '12')
-        run: composer require --dev orchestra/testbench:^10.0 --no-interaction --with-all-dependencies
+        run: composer require --dev orchestra/testbench:^10.0 --no-update
 
       - name: Install Laravel
-        run: composer require laravel/framework:${{ matrix.laravel }} --with-all-dependencies --no-interaction --prefer-dist
+        run: composer require laravel/framework:${{ matrix.laravel }} --no-update
+
+      - name: Install Composer dependencies
+        run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
 
       - name: Integration Tests
         run: composer test
