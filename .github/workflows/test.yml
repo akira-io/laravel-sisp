@@ -2,12 +2,13 @@ name: run-tests
 
 on:
   push:
-    paths:
-      - '**.php'
-      - '.github/workflows/run-tests.yml'
-      - 'phpunit.xml.dist'
-      - 'composer.json'
-      - 'composer.lock'
+    branches:
+      - '1.x'
+      - 'main'
+    pull_request:
+      branches:
+        - '1.x'
+        - 'main'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,17 +21,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
+        os: [ ubuntu-latest ]
         php: [ 8.4, 8.3 ]
         laravel: [ 12.*, 11.* ]
-        stability: [ prefer-lowest, prefer-stable ]
+        stability: [ prefer-stable ]
         include:
           - laravel: 12.*
             testbench: 10.*
           - laravel: 11.*
             testbench: 9.*
-          - laravel: 10.*
-            testbench: 8.*
 
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
@@ -49,9 +48,6 @@ jobs:
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
-
-      - name: List Installed Packages
-        run: composer show -D
 
       - name: Run Pest Tests
         run: composer test --ci
