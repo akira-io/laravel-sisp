@@ -1,30 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Binary operation "\." between mixed and ''/sisp\-payment…'' results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: config/sisp.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 11
-			path: config/sisp.php
-
-		-
-			message: '#^Binary operation "\." between non\-empty\-string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 2
-			path: src/FingerPrints/PaymentRequestFingerPrint.php
-
-		-
-			message: '#^Binary operation "\." between string and mixed results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: src/FingerPrints/PaymentRequestFingerPrint.php
-
-		-
 			message: '#^Method Akira\\Sisp\\Sisp\:\:requestPayment\(\) never returns Illuminate\\Routing\\Redirector so it can be removed from the return type\.$#'
 			identifier: return.unusedType
 			count: 1
