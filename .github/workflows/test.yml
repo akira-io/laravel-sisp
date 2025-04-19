@@ -37,11 +37,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Aspell
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update && sudo apt-get install -y aspell aspell-en
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install aspell
+          fi
+
       - name: Setup PHP with extensions
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, dom, curl, libxml, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, xdebug
+          extensions: mbstring, dom, curl, libxml, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, xdebug, as
           coverage: xdebug
 
       - name: Install Laravel + Testbench
