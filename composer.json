@@ -16,7 +16,7 @@
     }
   ],
   "require": {
-    "php": "^8.2",
+    "php": "^8.3",
     "akira/laravel-crypto": "^0.1.0",
     "illuminate/contracts": "^10.0||^11.0||^12.0",
     "pinkary-project/type-guard": "^0.1.0",
