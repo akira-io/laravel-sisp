@@ -23,7 +23,6 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      # Set up PHP with the matrix version
       - name: Set up PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
@@ -31,23 +30,12 @@ jobs:
           extensions: mbstring, bcmath, openssl, xdebug
           coverage: xdebug
 
-      # Install Composer
-      - name: Install Composer
-        run: |
-          curl -sS https://getcomposer.org/installer | php
-          php composer.phar --version
-
-      # Clear Composer cache to prevent issues with old packages
       - name: Clear Composer cache
         run: composer clear-cache
 
-      # Install dependencies with the Laravel version from the matrix
-      - name: Install dependencies for Laravel ${{ matrix.laravel-version }}
+      - name: Install dependencies with Laravel ${{ matrix.laravel-version }}
         run: |
-          composer require "laravel/framework:${{ matrix.laravel-version }}" --no-interaction --prefer-dist
-          composer install --no-interaction --prefer-dist --dev
+          composer update --prefer-dist --no-interaction --with="laravel/framework:${{ matrix.laravel-version }}"
 
-      # Run tests
       - name: Run tests with Pest
-        run: |
-          composer test
+        run: composer test
