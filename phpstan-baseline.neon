@@ -23,3 +23,9 @@ parameters:
 			identifier: binaryOp.invalid
 			count: 1
 			path: src/FingerPrints/PaymentRequestFingerPrint.php
+
+		-
+			message: '#^Method Akira\\Sisp\\Sisp\:\:requestPayment\(\) never returns Illuminate\\Routing\\Redirector so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Sisp.php
