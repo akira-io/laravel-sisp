@@ -1,41 +1,57 @@
-name: Run Tests
+name: Tests
 
-on:
-  push:
-    branches:
-      - main
-      - '1.x'
-  pull_request:
-    branches:
-      - main
-      - '1.x'
+on: [ 'push', 'pull_request' ]
 
 jobs:
-  pest:
-    name: Pest Tests - PHP ${{ matrix.php }}
-    runs-on: ubuntu-latest
-
+  ci:
+    runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
+        os: [ ubuntu-latest ]
         php: [ 8.4 ]
+        laravel: [ '11.0', '12.0' ]
+        dependency-version: [ prefer-stable ]
+
+    name: Tests P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.os }} - ${{ matrix.dependency-version }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, dom, curl, libxml, pdo, sqlite
-          tools: composer
+          extensions: dom, mbstring, zip, fileinfo
+          coverage: none
 
-      - name: Validate composer.json
-        run: composer validate --strict
+      - name: Get Composer cache directory
+        id: composer-cache
+        shell: bash
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-composer-${{ hashFiles('composer.json') }}
+          restore-keys: dependencies-php-${{ matrix.php }}-os-${{ matrix.os }}-version-${{ matrix.dependency-version }}-composer-
 
-      - name: Run Tests (lint, refactor, type-coverage, etc.)
+      - name: Install Composer dependencies
+        run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
+
+      - name: Require Testbench v9 for Laravel 11
+        if: startsWith(matrix.laravel, '11')
+        run: composer require --dev orchestra/testbench:^9.0 --no-interaction --with-all-dependencies
+
+      - name: Require Testbench v10 for Laravel 12
+        if: startsWith(matrix.laravel, '12')
+        run: composer require --dev orchestra/testbench:^10.0 --no-interaction --with-all-dependencies
+
+      - name: Install Laravel
+        run: composer require laravel/framework:${{ matrix.laravel }} --with-all-dependencies --no-interaction --prefer-dist
+
+      - name: Integration Tests
         run: php ./vendor/bin/pest
