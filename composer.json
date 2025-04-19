@@ -16,14 +16,14 @@
     }
   ],
   "require": {
-    "php": "^8.3",
+    "php": "^8.4",
     "akira/laravel-crypto": "^0.1.1",
     "illuminate/contracts": "^11.0||^12.0",
     "pinkary-project/type-guard": "^0.1.0",
     "spatie/laravel-package-tools": "^1.92.4"
   },
   "require-dev": {
-    "larastan/larastan": "^v2.10.0",
+    "larastan/larastan": "^3.3.1",
     "laravel/pint": "^1.22.0",
     "nunomaduro/collision": "^8.8",
     "orchestra/testbench": "^9.13.0||^10.2.1",
@@ -33,10 +33,10 @@
     "pestphp/pest-plugin-laravel": "^3.1",
     "pestphp/pest-plugin-type-coverage": "^3.5",
     "phpstan/extension-installer": "^1.4.3",
-    "phpstan/phpstan": "^1.12.24",
-    "phpstan/phpstan-deprecation-rules": "^1.2.1",
-    "phpstan/phpstan-phpunit": "^1.4.2",
-    "rector/rector": "^1.2.10",
+    "phpstan/phpstan": "^2.1.12",
+    "phpstan/phpstan-deprecation-rules": "^2.0.1",
+    "phpstan/phpstan-phpunit": "^2.0.6",
+    "rector/rector": "^2.0.11",
     "spatie/laravel-ray": "^1.40.2"
   },
   "autoload": {
@@ -69,7 +69,7 @@
     "test:lint": "pint --test",
     "test:refactor": "rector --dry-run",
     "test:arch": "pest --filter=arch",
-    "test:type-coverage": "pest --type-coverage --min=100 ",
+    "test:type-coverage": "pest --type-coverage --min=100 --compact",
     "test:coverage": "pest --parallel --coverage --compact --exactly=5.8",
     "test:typos": "peck",
     "test": [
