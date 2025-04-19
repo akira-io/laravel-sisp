@@ -14,6 +14,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 
 final class Sisp
 {
@@ -34,7 +35,7 @@ final class Sisp
      *
      * @param  array<string,mixed>  $options
      */
-    public function requestPayment(float $amount, string $transactionId, array $options = []): RedirectResponse
+    public function requestPayment(float $amount, string $transactionId, array $options = []): RedirectResponse|Redirector
     {
 
         return to_route('sisp.payment.request',
