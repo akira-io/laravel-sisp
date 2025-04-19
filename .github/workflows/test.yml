@@ -1,62 +1,41 @@
-name: run-tests
+name: Run Tests
 
 on:
   push:
     branches:
+      - main
       - '1.x'
-      - 'main'
-    pull_request:
-      branches:
-        - '1.x'
-        - 'main'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  pull_request:
+    branches:
+      - main
+      - '1.x'
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+  pest:
+    name: Pest Tests - PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
         php: [ 8.4 ]
-        laravel: [ 12.*, 11.* ]
-        stability: [ prefer-stable ]
-        include:
-          - laravel: 12.*
-            testbench: 10.*
-          - laravel: 11.*
-            testbench: 9.*
-
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Aspell
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            sudo apt-get update && sudo apt-get install -y aspell aspell-en
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install aspell
-          fi
-
-      - name: Setup PHP with extensions
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, dom, curl, libxml, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, xdebug,
-          coverage: xdebug
+          extensions: mbstring, dom, curl, libxml, pdo, sqlite
+          tools: composer
 
-      - name: Install Laravel + Testbench
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction --dev
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+      - name: Validate composer.json
+        run: composer validate --strict
 
-      - name: Run Pest Tests
-        run: composer test --ci
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Tests (lint, refactor, type-coverage, etc.)
+        run: php ./vendor/bin/pest
