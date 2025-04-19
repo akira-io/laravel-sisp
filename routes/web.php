@@ -11,5 +11,3 @@ Route::get('sisp-payment-request', PaymentRequestController::class)
 
 Route::post('sisp-payment-response', PaymentResponseController::class)
     ->name('sisp.payment.response');
-
-// Route::post('payment-response', PaymentResponseController::class)->name('payment.response');

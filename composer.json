@@ -17,7 +17,6 @@
   ],
   "require": {
     "php": "^8.4",
-    "akira/laravel-crypto": "^0.1.1",
     "pinkary-project/type-guard": "^0.1.0",
     "spatie/laravel-package-tools": "^1.16",
     "illuminate/contracts": "^11.0||^12.0"
@@ -70,7 +69,7 @@
     "test:arch": "pest --filter=arch",
     "test:types": "phpstan",
     "test:type-coverage": "pest --type-coverage --min=100 --compact",
-    "test:coverage": "pest --parallel --coverage --compact --exactly=5.7",
+    "test:coverage": "pest --parallel --coverage --compact --exactly=5.9",
     "test:typos": "peck",
     "test": [
       "@test:lint",
@@ -78,8 +77,8 @@
       "@test:typos",
       "@test:arch",
       "@test:types",
-      "@test:type-coverage",
-      "@test:coverage"
+      "@test:coverage",
+      "@test:type-coverage"
     ]
   },
   "config": {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Requests;
 
-use Akira\LaravelCrypto\Facades\Crypto;
 use Akira\Sisp\Exceptions\UnableToDecryptDataException;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -69,18 +68,18 @@ final class PaymentRequest extends FormRequest
      *
      * @throws UnableToDecryptDataException
      */
-    protected function prepareForValidation(): void
-    {
-        $decryptedAmount = Crypto::decrypt(type($this->get('amount'))->asString());
-        $decryptedTransactionId = Crypto::decrypt(type($this->get('transactionId'))->asString());
-
-        if (! $decryptedAmount || ! $decryptedTransactionId) {
-            throw new UnableToDecryptDataException();
-        }
-
-        $this->merge([
-            'amount' => $decryptedAmount,
-            'transactionId' => $decryptedTransactionId,
-        ]);
-    }
+    //    protected function prepareForValidation(): void
+    //    {
+    //        $decryptedAmount = Crypto::decrypt(type($this->get('amount'))->asString());
+    //        $decryptedTransactionId = Crypto::decrypt(type($this->get('transactionId'))->asString());
+    //
+    //        if (! $decryptedAmount || ! $decryptedTransactionId) {
+    //            throw new UnableToDecryptDataException();
+    //        }
+    //
+    //        $this->merge([
+    //            'amount' => $decryptedAmount,
+    //            'transactionId' => $decryptedTransactionId,
+    //        ]);
+    //    }
 }
