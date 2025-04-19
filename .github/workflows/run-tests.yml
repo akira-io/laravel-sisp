@@ -41,8 +41,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
-          coverage: none
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, pcov
+          coverage: pcov
 
       - name: Setup problem matchers
         run: |
@@ -57,5 +57,18 @@ jobs:
       - name: List Installed Dependencies
         run: composer show -D
 
-      - name: Execute tests
-        run: vendor/bin/pest --ci
+      - name: Check typos
+        run: composer test:typos
+
+      - name: Run Pint
+        run: composer test:lint
+
+      - name: Run Rector
+        run: composer test:refactor
+
+      - name: Run PHPStan
+        run: composer test:types
+
+      - name: Run Pest
+        run: composer test:coverage
+
