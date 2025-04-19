@@ -6,5 +6,8 @@ namespace Akira\Sisp\Contracts;
 
 interface Generator
 {
+    /**
+     * Generate a unique identifier.
+     */
     public function __invoke(): string;
 }
