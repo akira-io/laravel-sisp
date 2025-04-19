@@ -9,6 +9,11 @@ This package allows you to easily handle payments through the SISP Payment Gatew
 within your application. Whether you’re building an e-commerce platform or handling subscription services, Laravel SISP
 is designed to simplify your payment workflows.
 
+## Requirements
+
+- PHP 8.2 or higher
+- Laravel 11 or higher
+
 ## Installation
 
 You can install the package via composer:
