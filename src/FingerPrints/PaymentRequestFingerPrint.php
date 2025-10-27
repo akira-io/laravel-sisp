@@ -5,28 +5,23 @@ declare(strict_types=1);
 namespace Akira\Sisp\FingerPrints;
 
 use Akira\Sisp\Actions\PostAutCode;
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\Fields;
 use Akira\Sisp\Contracts\FingerPrint;
-use Akira\Sisp\Facades\Sisp;
-use Akira\Sisp\Fields\PaymentFields;
 
 final readonly class PaymentRequestFingerPrint implements FingerPrint
 {
-    /**
-     * Create a new PaymentRequestFingerPrint instance.
-     *
-     * @param  PaymentFields  $field
-     */
-    public function __construct(private Fields $field) {}
+    public function __construct(
+        private Fields $field,
+        private PostAutCode $postAutCode,
+        private LoadConfig $config,
+    ) {}
 
     /**
      * Create a new PaymentRequestFingerPrint instance.
-     *
-     * @param  PaymentFields  $field
      */
     public static function make(Fields $field): self
     {
-
         return app(self::class, ['field' => $field]);
     }
 
@@ -43,14 +38,13 @@ final readonly class PaymentRequestFingerPrint implements FingerPrint
      */
     private function getFingerPrintContent(): string
     {
-        
-        return PostAutCode::encode()
-            .Sisp::getTimeStamp()
-            .$this->field->parsedAmount()
-            .Sisp::getMerchantReference()
-            .Sisp::getMerchantSession()
-            .Sisp::getPosID()
-            .Sisp::getCurrency()
-            .Sisp::getDefaultTransactionCode();
+        return $this->postAutCode->handle()
+            . $this->config->getTimeStamp()
+            . $this->field->parsedAmount()
+            . $this->config->getMerchantReference()
+            . $this->config->getMerchantSession()
+            . $this->config->getPosId()
+            . $this->config->getCurrency()
+            . $this->config->getDefaultTransactionCode();
     }
 }

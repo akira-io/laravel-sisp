@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Fields;
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\Fields;
-use Akira\Sisp\Facades\Sisp;
 
 final class PaymentFields implements Fields
 {
@@ -15,12 +15,13 @@ final class PaymentFields implements Fields
 
     private float|int $amount = 0;
 
+    public function __construct(private readonly LoadConfig $config) {}
+
     /**
      * Create a new PaymentFields instance.
      */
     public static function make(): self
     {
-
         return app(self::class);
     }
 
@@ -29,7 +30,6 @@ final class PaymentFields implements Fields
      */
     public function withAmount(float|int $amount): self
     {
-
         $this->amount = $amount;
 
         return $this;
@@ -40,7 +40,6 @@ final class PaymentFields implements Fields
      */
     public function getAmount(): float|int
     {
-
         return $this->amount;
     }
 
@@ -49,9 +48,7 @@ final class PaymentFields implements Fields
      */
     public function parsedAmount(): int
     {
-      
-        return  intval(round($this->amount))*1000;
-
+        return intval(round($this->amount)) * 1000;
     }
 
     /**
@@ -59,7 +56,6 @@ final class PaymentFields implements Fields
      */
     public function getEntityCode(): string
     {
-
         return $this->entityCode;
     }
 
@@ -68,7 +64,6 @@ final class PaymentFields implements Fields
      */
     public function getReferenceNumber(): string
     {
-
         return $this->referenceNumber;
     }
 
@@ -79,19 +74,18 @@ final class PaymentFields implements Fields
      */
     public function toArray(): array
     {
-        
         return [
-            'transactionCode' => Sisp::getDefaultTransactionCode(),
-            'posID' => Sisp::getPosID(),
-            'merchantRef' => Sisp::getMerchantReference(),
-            'merchantSession' => Sisp::getMerchantSession(),
+            'transactionCode' => $this->config->getDefaultTransactionCode(),
+            'posID' => $this->config->getPosId(),
+            'merchantRef' => $this->config->getMerchantReference(),
+            'merchantSession' => $this->config->getMerchantSession(),
             'amount' => intval(round($this->amount)),
-            'currency' => Sisp::getCurrency(),
-            'is3DSec' => Sisp::getIs3DSec(),
-            'urlMerchantResponse' => Sisp::getUrlMerchantResponse(),
-            'languageMessages' => Sisp::getLanguageMessages(),
-            'timeStamp' => Sisp::getTimeStamp(),
-            'fingerprintversion' => Sisp::getFingerprintVersion(),
+            'currency' => $this->config->getCurrency(),
+            'is3DSec' => $this->config->getIs3Dsec(),
+            'urlMerchantResponse' => $this->config->getUrlMerchantResponse(),
+            'languageMessages' => $this->config->getLanguageMessages(),
+            'timeStamp' => $this->config->getTimeStamp(),
+            'fingerprintversion' => $this->config->getFingerprintVersion(),
         ];
     }
 }
