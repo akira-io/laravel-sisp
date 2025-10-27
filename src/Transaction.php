@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Akira\Sisp;
 
+use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Models\Invoice;
+use Akira\Sisp\Models\TransactionItem;
 use Akira\Sisp\Traits\EncryptsAttributes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class Transaction extends Model
 {
@@ -41,28 +46,31 @@ final class Transaction extends Model
         ];
     }
 
-    /**
-     * Get the table associated with the model.
-     */
     public function getTable(): string
     {
         return type(config('sisp.table_name'))->asString();
     }
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'payload' => 'array',
             'amount' => 'float',
+            'status' => TransactionStatus::class,
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'refunded_at' => 'datetime',
         ];
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(TransactionItem::class, 'transaction_id');
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'transaction_id');
     }
 }

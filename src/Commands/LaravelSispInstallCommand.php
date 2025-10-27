@@ -24,29 +24,55 @@ final class LaravelSispInstallCommand extends Command
     {
         info('Starting Laravel SISP installation...');
 
+        $forcePublish = false;
+
         // Step 1: Publish config
         if (confirm('Do you want to publish the configuration file?')) {
-            spin(fn () => $this->callSilent('vendor:publish', [
+            $forcePublish = confirm('Force overwrite if file already exists?', false);
+
+            $options = [
                 '--tag' => 'sisp-config',
-            ]), 'Publishing configuration file...');
+            ];
+
+            if ($forcePublish) {
+                $options['--force'] = true;
+            }
+
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing configuration file...');
 
             info('Configuration file published.');
         }
 
         // Step 2: Publish migrations
         if (confirm('Do you want to publish the migration files?')) {
-            spin(fn () => $this->callSilent('vendor:publish', [
+            $forceMigrations = confirm('Force overwrite if files already exist?', false);
+
+            $options = [
                 '--tag' => 'sisp-migrations',
-            ]), 'Publishing migration files...');
+            ];
+
+            if ($forceMigrations) {
+                $options['--force'] = true;
+            }
+
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing migration files...');
 
             info('Migration files published.');
         }
 
         // Step 3: Publish Inertia components
         if (confirm('Do you want to publish the Inertia components?')) {
-            spin(fn () => $this->callSilent('vendor:publish', [
+            $forceInertia = confirm('Force overwrite if files already exist?', false);
+
+            $options = [
                 '--tag' => 'sisp-inertia-components',
-            ]), 'Publishing Inertia components...');
+            ];
+
+            if ($forceInertia) {
+                $options['--force'] = true;
+            }
+
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
 
             info('Inertia components published.');
         }

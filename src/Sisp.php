@@ -16,7 +16,7 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\TransactionData;
 use Illuminate\Database\Eloquent\Collection;
 
-final class Sisp
+final readonly class Sisp
 {
     public function __construct(
         private BuildRequestPayloadAction $buildRequestPayload,
@@ -55,7 +55,7 @@ final class Sisp
         return $this->buildSandboxPayload->handle($data, $status);
     }
 
-    public function createTransaction(TransactionData $data): Transaction
+    public function storeTransaction(TransactionData $data): Transaction
     {
         return $this->createTransaction->handle($data);
     }

@@ -8,7 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('sisp.table_name');
+        $this->createTransactionsTable();
+        $this->createTransactionItemsTable();
+        $this->createInvoicesTable();
+    }
+
+    public function down(): void
+    {
+        $invoicesTable = config('sisp.tables.invoices', 'sisp_invoices');
+        $itemsTable = config('sisp.tables.transaction_items', 'sisp_transaction_items');
+        $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
+
+        Schema::dropIfExists($invoicesTable);
+        Schema::dropIfExists($itemsTable);
+        Schema::dropIfExists($transactionsTable);
+    }
+
+    private function createTransactionsTable(): void
+    {
+        $tableName = config('sisp.tables.transactions', 'sisp_transactions');
 
         if (empty($tableName)) {
             throw new \Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
@@ -36,12 +54,48 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
+    private function createTransactionItemsTable(): void
     {
-        $tableName = config('sisp.table_name');
+        $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
+        $itemsTable = config('sisp.tables.transaction_items', 'sisp_transaction_items');
 
-        if (Schema::hasTable($tableName)) {
-            Schema::dropIfExists($tableName);
-        }
+        Schema::create($itemsTable, function (Blueprint $table) use ($transactionsTable) {
+            $table->id();
+            $table->foreignId('transaction_id')
+                ->constrained($transactionsTable)
+                ->onDelete('cascade');
+            $table->string('product_id')->nullable();
+            $table->string('product_name');
+            $table->integer('quantity')->default(1);
+            $table->bigInteger('unit_price_cents');
+            $table->bigInteger('total_price_cents');
+            $table->text('description')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+            $table->index(['transaction_id', 'product_id']);
+        });
+    }
+
+    private function createInvoicesTable(): void
+    {
+        $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
+        $invoicesTable = config('sisp.tables.invoices', 'sisp_invoices');
+
+        Schema::create($invoicesTable, function (Blueprint $table) use ($transactionsTable) {
+            $table->id();
+            $table->foreignId('transaction_id')
+                ->unique()
+                ->constrained($transactionsTable)
+                ->onDelete('cascade');
+            $table->string('invoice_number')->unique();
+            $table->date('invoice_date');
+            $table->date('due_date')->nullable();
+            $table->string('status')->default('pending');
+            $table->text('notes')->nullable();
+            $table->string('pdf_path')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+            $table->index(['invoice_number', 'status']);
+        });
     }
 };
