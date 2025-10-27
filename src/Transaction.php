@@ -14,27 +14,11 @@ final class Transaction extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'messageType',
-        'merchantRespCP',
-        'merchantRespTid',
+        'transactionId',
         'merchantRespMerchantRef',
         'merchantRespMerchantSession',
         'merchantRespPurchaseAmount',
-        'merchantRespMessageID',
-        'merchantRespPan',
-        'merchantResp',
-        'merchantRespErrorCode',
-        'merchantRespErrorDescription',
-        'merchantRespErrorDetail',
-        'languageMessages',
-        'merchantRespTimeStamp',
-        'merchantRespReferenceNumber',
-        'merchantRespEntityCode',
-        'merchantRespClientReceipt',
-        'merchantRespAdditionalErrorMessage',
-        'merchantRespReloadCode',
-        'transactionId',
-        'options',
+        'details',
     ];
 
     /**
@@ -55,7 +39,7 @@ final class Transaction extends Model
     {
 
         return [
-            'options' => 'array',
+            'details' => 'array',
         ];
     }
 }

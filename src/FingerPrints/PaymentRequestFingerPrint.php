@@ -43,6 +43,7 @@ final readonly class PaymentRequestFingerPrint implements FingerPrint
      */
     private function getFingerPrintContent(): string
     {
+        
         return PostAutCode::encode()
             .Sisp::getTimeStamp()
             .$this->field->parsedAmount()

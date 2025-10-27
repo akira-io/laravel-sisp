@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions\Transactions;
 
+use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Transaction;
 
 final class StoreTransactionAction
@@ -11,17 +12,17 @@ final class StoreTransactionAction
     /**
      * Store the transaction in the database.
      *
-     * @param  array<string, mixed>  $fields
-     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>  $details
      */
-    public function handle(string $transactionId, array $fields, array $options = []): void
+    public function handle(string|int $transactionId, float $amount, array $details): void
     {
+       
         Transaction::create([
             'transactionId' => $transactionId,
-            'merchantRespMerchantRef' => data_get($fields, 'merchantRef'),
-            'merchantRespMerchantSession' => data_get($fields, 'merchantSession'),
-            'merchantRespPurchaseAmount' => data_get($fields, 'amount'),
-            'optionalParams' => $options,
+            'merchantRespMerchantRef' => Sisp::getMerchantSession(),
+            'merchantRespMerchantSession' => Sisp::getMerchantReference(),
+            'merchantRespPurchaseAmount' => $amount,
+            'details' => $details,
         ]);
     }
 }

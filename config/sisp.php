@@ -182,4 +182,10 @@ return [
     */
     'theme' => env('SISP_THEME', 'white'),
 
+    'views' => [
+        'payment_request_form' => 'sisp::payment-request-form',
+        'purchase_success' => 'sisp::purchase-success',
+        'purchase_cancelled' => 'sisp::purchase-cancelled',
+    ],
+
 ];

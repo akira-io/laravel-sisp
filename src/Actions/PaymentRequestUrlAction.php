@@ -19,6 +19,7 @@ final class PaymentRequestUrlAction
      */
     public function handle(PaymentFields $field): string
     {
+        
         return (string) Uri::of(Sisp::getUri())
             ->withQuery(['FingerPrint' => PaymentRequestFingerPrint::make($field)->get()])
             ->withQuery(['TimeStamp' => Sisp::getTimeStamp()])
