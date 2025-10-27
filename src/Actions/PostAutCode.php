@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\Configuration\LoadConfig;
 
-final class PostAutCode
+final readonly class PostAutCode
 {
+    public function __construct(private LoadConfig $config) {}
+
     /**
-     * Encode the post authorization code, and return it
+     * Encode the post authorization code and return it.
      */
-    public static function encode(): string
+    public function encode(): string
     {
-        $posAutCode = Sisp::getPosAutCode();
+        $posAutCode = $this->config->getPosAutCode();
 
         return base64_encode(hash('sha512', $posAutCode, true));
     }

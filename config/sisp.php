@@ -90,10 +90,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is a two-letter code as defined in ISO 639-1.
-    | Default is 'en' for English. You can change it to 'pt' for Portuguese.
+    | Default is 'EN' for English. You can change it to 'PT' for Portuguese.
     |
     */
-    'languageMessages' => env('SISP_LANGUAGE_MESSAGES', 'en'),
+    'language_messages' => env('SISP_LANGUAGE_MESSAGES', 'EN'),
 
     /*
     |--------------------------------------------------------------------------
@@ -104,7 +104,7 @@ return [
     | The default is '1'.
     |
     */
-    'fingerPrintVersion' => env('SISP_FINGERPRINT_VERSION', '1'),
+    'fingerprint_version' => env('SISP_FINGERPRINT_VERSION', '1'),
 
     /*
     |--------------------------------------------------------------------------
@@ -115,7 +115,7 @@ return [
     | the response from SISP after the transaction is processed.
     |
     */
-    'urlMerchantResponse' => config('app.url').'/sisp-payment-response',
+    'url_merchant_response' => env('SISP_URL_MERCHANT_RESPONSE'),
 
     /*
     |--------------------------------------------------------------------------
@@ -123,10 +123,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option indicates whether the transaction is 3D Secure or not.
-    | Default is '1' for 3D Secure transactions.
+    | Default is '0' for non-3D Secure transactions.
     |
     */
-    'is3DSec' => env('SISP_IS_3D_SEC', '1'),
+    'is_3dsec' => env('SISP_IS_3D_SEC', '0'),
 
     /*
     |--------------------------------------------------------------------------
@@ -137,7 +137,7 @@ return [
     | This could define the type of payment, such as purchase or refund.
     |
     */
-    'transactionCode' => env('SISP_DEFAULT_TRANSACTION_CODE', '1'),
+    'transaction_code' => env('SISP_DEFAULT_TRANSACTION_CODE', '1'),
 
     /*
     |--------------------------------------------------------------------------
@@ -182,10 +182,19 @@ return [
     */
     'theme' => env('SISP_THEME', 'white'),
 
-    'views' => [
-        'payment_request_form' => 'sisp::payment-request-form',
-        'purchase_success' => 'sisp::purchase-success',
-        'purchase_cancelled' => 'sisp::purchase-cancelled',
+    'sandbox' => env('SISP_SANDBOX', false),
+
+    'use_blade' => [
+        'enabled' => env('SISP_USE_BLADE', true),
+        'payment_form' => 'sisp::payment-form',
+        'payment_response' => 'sisp::payment-response',
+
+    ],
+
+    'use_inertia' => [
+        'enabled' => env('SISP_USE_INERTIA', false),
+        'payment_form_component' => env('SISP_INERTIA_PAYMENT_COMPONENT', 'Sisp/PaymentForm'),
+        'payment_response_component' => env('SISP_INERTIA_CALLBACK_COMPONENT', 'Sisp/PaymentResponse'),
     ],
 
 ];

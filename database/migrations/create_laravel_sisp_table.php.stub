@@ -10,20 +10,29 @@ return new class extends Migration
     {
         $tableName = config('sisp.table_name');
 
-         if (empty($tableName)) {
-             throw new \Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
-         }
+        if (empty($tableName)) {
+            throw new \Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
+        }
 
-        Schema::create($tableName, function (Blueprint $table){
+        Schema::create($tableName, function (Blueprint $table) {
             $table->id();
-            $table->string('transactionId');
-            $table->string('messageType')->nullable();
-            $table->string('merchantRespMerchantRef')->nullable();
-            $table->string('merchantRespMerchantSession')->nullable();
-            $table->float('merchantRespPurchaseAmount')->nullable();
-            $table->string('details')->nullable();
+            $table->string('merchant_ref');
+            $table->string('merchant_session');
+            $table->float('amount');
+            $table->string('currency')->default('132');
+            $table->string('status')->default('pending');
+            $table->string('transaction_code')->nullable();
+            $table->string('transaction_id')->nullable();
+            $table->string('message_type')->nullable();
+            $table->string('response_code')->nullable();
+            $table->text('merchant_response')->nullable();
+            $table->text('fingerprint')->nullable();
+            $table->longText('payload')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
+            $table->timestamp('refunded_at')->nullable();
             $table->timestamps();
-            $table->index(['transactionId','merchantRespMerchantRef', 'merchantRespMerchantSession', 'messageType']);
+            $table->index(['merchant_ref', 'merchant_session', 'status', 'message_type']);
+            $table->index(['transaction_id']);
         });
     }
 

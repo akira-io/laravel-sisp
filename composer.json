@@ -22,6 +22,7 @@
     "illuminate/contracts": "^11.0||^12.0"
   },
   "require-dev": {
+    "inertiajs/inertia-laravel": "^2.0",
     "larastan/larastan": "^2.9||^3.0",
     "laravel/pint": "^1.14",
     "nunomaduro/collision": "^8.1.1||^7.10.0",

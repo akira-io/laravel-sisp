@@ -22,40 +22,49 @@ final class LaravelSispInstallCommand extends Command
      */
     public function handle(): int
     {
-        info('🌟 Starting Laravel SISP installation...');
+        info('Starting Laravel SISP installation...');
 
         // Step 1: Publish config
-        if (confirm('📄 Do you want to publish the configuration file?')) {
+        if (confirm('Do you want to publish the configuration file?')) {
             spin(fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'sisp-config',
             ]), 'Publishing configuration file...');
 
-            info('✅ Configuration file published.');
+            info('Configuration file published.');
         }
 
         // Step 2: Publish migrations
-        if (confirm('🗄️ Do you want to publish the migration files?')) {
+        if (confirm('Do you want to publish the migration files?')) {
             spin(fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'sisp-migrations',
             ]), 'Publishing migration files...');
 
-            info('✅ Migration files published.');
+            info('Migration files published.');
         }
 
-        // Step 3: Run migration
-        if (confirm('⚙️ Do you want to run database migrations now?')) {
+        // Step 3: Publish Inertia components
+        if (confirm('Do you want to publish the Inertia components?')) {
+            spin(fn () => $this->callSilent('vendor:publish', [
+                '--tag' => 'sisp-inertia-components',
+            ]), 'Publishing Inertia components...');
+
+            info('Inertia components published.');
+        }
+
+        // Step 4: Run migration
+        if (confirm('Do you want to run database migrations now?')) {
             spin(fn () => $this->call('migrate'), 'Running database migrations...');
-            info('✅ Database migration completed.');
+            info('Database migration completed.');
         }
 
         // Finish
-        note('🎉 Laravel SISP installation completed successfully!');
+        note('Laravel SISP installation completed successfully!');
 
-        if (confirm('Would you like to support the project by giving a ⭐️ on GitHub?')) {
-            note('👉 Visit: https://github.com/akira-io/laravel-sisp');
+        if (confirm('Would you like to support the project by giving a star on GitHub?')) {
+            note('Visit: https://github.com/akira-io/laravel-sisp');
         }
 
-        info('🙏 Thank you for choosing Laravel SISP!');
+        info('Thank you for choosing Laravel SISP!');
 
         return self::SUCCESS;
     }
