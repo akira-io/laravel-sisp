@@ -48,7 +48,7 @@ final class Transaction extends Model
 
     public function getTable(): string
     {
-        return type(config('sisp.table_name'))->asString();
+        return config('sisp.tables.transactions', 'sisp_transactions');
     }
 
     protected function casts(): array
