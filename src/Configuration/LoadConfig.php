@@ -122,4 +122,54 @@ final readonly class LoadConfig
     {
         return $this->app['config']->get('sisp.invoice.prefix', 'INV');
     }
+
+    public function isRateLimitingEnabled(): bool
+    {
+        return $this->app['config']->get('sisp.rate_limiting.enabled', true);
+    }
+
+    public function isMetadataCollectionEnabled(): bool
+    {
+        return $this->app['config']->get('sisp.security.collect_metadata', true);
+    }
+
+    public function shouldBlockVpnProxy(): bool
+    {
+        return $this->app['config']->get('sisp.security.block_vpn_proxy', true);
+    }
+
+    public function shouldBlockNewCountryPayments(): bool
+    {
+        return $this->app['config']->get('sisp.security.block_new_country_payments', false);
+    }
+
+    public function isVpnDetectionEnabled(): bool
+    {
+        return $this->app['config']->get('sisp.security.detect_vpn', true);
+    }
+
+    public function isProxyDetectionEnabled(): bool
+    {
+        return $this->app['config']->get('sisp.security.detect_proxy', true);
+    }
+
+    public function isRiskScoringEnabled(): bool
+    {
+        return $this->app['config']->get('sisp.security.calculate_risk_score', true);
+    }
+
+    public function getRateLimitPerIp(): int
+    {
+        return (int)$this->app['config']->get('sisp.rate_limiting.per_ip.limit', 100);
+    }
+
+    public function getRateLimitWindowSeconds(): int
+    {
+        return (int)$this->app['config']->get('sisp.rate_limiting.per_ip.window_seconds', 3600);
+    }
+
+    public function getGeolocationProvider(): string
+    {
+        return $this->app['config']->get('sisp.geolocation.provider', 'maxmind');
+    }
 }

@@ -163,6 +163,9 @@ return [
         'transactions' => env('SISP_TABLE_TRANSACTIONS', 'sisp_transactions'),
         'transaction_items' => env('SISP_TABLE_TRANSACTION_ITEMS', 'sisp_transaction_items'),
         'invoices' => env('SISP_TABLE_INVOICES', 'sisp_invoices'),
+        'request_metadata' => env('SISP_TABLE_REQUEST_METADATA', 'sisp_request_metadata'),
+        'rate_limits' => env('SISP_TABLE_RATE_LIMITS', 'sisp_rate_limits'),
+        'blacklist' => env('SISP_TABLE_BLACKLIST', 'sisp_blacklist'),
     ],
 
     /*
@@ -210,6 +213,44 @@ return [
     'invoice' => [
         'number_format' => env('SISP_INVOICE_NUMBER_FORMAT', 'date-based'),
         'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
+    ],
+
+    'rate_limiting' => [
+        'enabled' => env('SISP_RATE_LIMITING_ENABLED', true),
+        'per_ip' => [
+            'enabled' => env('SISP_RATE_LIMIT_PER_IP', true),
+            'limit' => env('SISP_RATE_LIMIT_PER_IP_LIMIT', 100),
+            'window_seconds' => env('SISP_RATE_LIMIT_PER_IP_WINDOW', 3600),
+        ],
+        'per_merchant' => [
+            'enabled' => env('SISP_RATE_LIMIT_PER_MERCHANT', true),
+            'limit' => env('SISP_RATE_LIMIT_PER_MERCHANT_LIMIT', 500),
+            'window_seconds' => env('SISP_RATE_LIMIT_PER_MERCHANT_WINDOW', 3600),
+        ],
+        'per_user' => [
+            'enabled' => env('SISP_RATE_LIMIT_PER_USER', true),
+            'limit' => env('SISP_RATE_LIMIT_PER_USER_LIMIT', 50),
+            'window_seconds' => env('SISP_RATE_LIMIT_PER_USER_WINDOW', 3600),
+        ],
+    ],
+
+    'security' => [
+        'collect_metadata' => env('SISP_COLLECT_METADATA', true),
+        'detect_vpn' => env('SISP_DETECT_VPN', true),
+        'detect_proxy' => env('SISP_DETECT_PROXY', true),
+        'calculate_risk_score' => env('SISP_CALCULATE_RISK_SCORE', true),
+        'max_amount_per_day' => env('SISP_MAX_AMOUNT_PER_DAY', null),
+        'max_amount_per_month' => env('SISP_MAX_AMOUNT_PER_MONTH', null),
+        'block_new_country_payments' => env('SISP_BLOCK_NEW_COUNTRY_PAYMENTS', false),
+        'block_vpn_proxy' => env('SISP_BLOCK_VPN_PROXY', true),
+        'require_whitelist' => env('SISP_REQUIRE_WHITELIST', false),
+    ],
+
+    'geolocation' => [
+        'provider' => env('SISP_GEOLOCATION_PROVIDER', 'maxmind'),
+        'maxmind_key' => env('MAXMIND_KEY'),
+        'ip_api_key' => env('IP_API_KEY'),
+        'cache_ttl_minutes' => env('SISP_GEOLOCATION_CACHE_TTL', 1440),
     ],
 
 ];
