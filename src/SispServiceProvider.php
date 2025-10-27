@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp;
 
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
+use Akira\Sisp\Configuration\LoadConfig;
 use Illuminate\View\Compilers\BladeCompiler;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -16,7 +17,6 @@ final class SispServiceProvider extends PackageServiceProvider
      */
     public function configurePackage(Package $package): void
     {
-
         $package
             ->name('laravel-sisp')
             ->hasConfigFile()
@@ -24,8 +24,22 @@ final class SispServiceProvider extends PackageServiceProvider
             ->hasMigration('create_laravel_sisp_table')
             ->hasTranslations()
             ->hasRoutes('web')
-//            ->hasAssets()
             ->hasCommand(LaravelSispInstallCommand::class);
+    }
+
+    /**
+     * Register the package's services in the container.
+     */
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->singleton(LoadConfig::class);
+        $this->app->singleton(Sisp::class, function ($app) {
+            return new Sisp(
+                config: $app->make(LoadConfig::class),
+            );
+        });
     }
 
     /**

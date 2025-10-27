@@ -9,13 +9,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class InvalidPaymentResponseException extends Exception
 {
-    /**
-     * Create a new exception instance.
-     */
-    public function __construct()
+    public function __construct(string $message = null)
     {
         parent::__construct(
-            message: __('Invalid payment response'),
+            message: $message ?? __('Invalid payment response'),
             code: Response::HTTP_UNPROCESSABLE_ENTITY,
         );
     }
