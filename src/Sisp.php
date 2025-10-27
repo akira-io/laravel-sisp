@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace Akira\Sisp;
 
-use Akira\Sisp\Actions\Transactions\UpdateTransactionAction;
-use Akira\Sisp\Concerns\Support;
-use Akira\Sisp\Events\SispPaymentCancelledByUser;
-use Akira\Sisp\Events\SispPaymentRequestSuccess;
-use Akira\Sisp\Exceptions\TransactionNotFoundException;
-use Exception;
-use Illuminate\Contracts\View\View;
+use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Services\PaymentValidator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 
-final class Sisp
+final readonly class Sisp
 {
-    use Support;
+    public function __construct(
+        private LoadConfig $config,
+        private PaymentValidator $validator,
+    ) {}
 
     /**
      * Get all transactions from the database.
      *
-     * @return Collection<int,Transaction>
+     * @return Collection<int, Transaction>
      */
     public function getTransactions(): Collection
     {
@@ -32,57 +30,37 @@ final class Sisp
 
     /**
      * Request a payment to the SISP Gateway.
-     *
-     * @param  array<string,mixed>  $options
-     *
-     * @throws Exception
      */
     public function requestPayment(float $amount, string $transactionId, array $details = []): RedirectResponse|Redirector
     {
-        return to_route('sisp.payment.request',
-            [
-                'amount' => $amount,
-                'transactionId' => $transactionId,
-                'details' => $details,
-            ]
-        );
-    }
-
-    /**
-     * Handle the success payment response from SISP.
-     *
-     * @throws TransactionNotFoundException
-     */
-    public function processSuccessfulPayment(Request $request, UpdateTransactionAction $action): View
-    {
-        $transaction = $action->handle(request: $request);
-
-        if (! $transaction instanceof Transaction) {
-            throw new TransactionNotFoundException();
-        }
-
-        SispPaymentRequestSuccess::dispatch($transaction);
-
-        /** @var view-string $viewName */
-        $viewName = 'sisp::purchase-success';
-
-        return view($viewName, [
-            'message' => $request->all(),
+        return to_route('sisp.payment.request', [
+            'amount' => $amount,
+            'transactionId' => $transactionId,
+            'details' => $details,
         ]);
     }
 
     /**
-     * Handle the cancellation of the payment by the user.
+     * Check if payment request is successful.
      */
-    public function handleUserCancellation(Request $request): View
+    public function paymentIsSuccessful(Request $request): bool
     {
-        SispPaymentCancelledByUser::dispatch($request->all());
+        return $this->validator->isSuccessful($request);
+    }
 
-        /** @var view-string $viewName */
-        $viewName = 'sisp::purchase-cancelled';
+    /**
+     * Check if payment was cancelled by user.
+     */
+    public function paymentIsCancelled(Request $request): bool
+    {
+        return $this->validator->isCancelled($request);
+    }
 
-        return view($viewName, [
-            'message' => $request->all(),
-        ]);
+    /**
+     * Get configuration manager.
+     */
+    public function config(): LoadConfig
+    {
+        return $this->config;
     }
 }
