@@ -136,6 +136,33 @@ trait Configurations
         return $this->resolveGenerator('sisp.generators.timeStamp', 'Timestamp');
     }
 
+    /*
+     * Get and validate the purchase success view from config.
+     */
+    public function getSuccessView(): string
+    {
+        return $this->requireConfig('sisp.views.purchase_success', 'Purchase Success View');
+
+    }
+
+    /*
+     * Get and validate the purchase cancelled view from config.
+     */
+    public function getCancelledView(): string
+    {
+        return $this->requireConfig('sisp.views.purchase_cancelled', 'Purchase Cancelled View');
+
+    }
+
+    /*
+     * Get and validate the payment form view from config.
+     */
+    public function getPaymentRequestForm(): string
+    {
+        return $this->requireConfig('sisp.views.payment_request_form', 'Payment Form View');
+
+    }
+
     /**
      * Ensure a config value is set and cast it to string.
      *

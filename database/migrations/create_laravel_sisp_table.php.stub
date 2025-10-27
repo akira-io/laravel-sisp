@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         $tableName = config('sisp.table_name');
 
@@ -14,30 +14,25 @@ return new class extends Migration
              throw new \Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
          }
 
-        Schema::create($tableName, function (Blueprint $table) {
+        Schema::create($tableName, function (Blueprint $table){
             $table->id();
-            $table->string('transactionId')->index();
+            $table->string('transactionId');
             $table->string('messageType')->nullable();
-            $table->string('merchantRespCP')->nullable();
-            $table->string('merchantRespTid')->nullable();
             $table->string('merchantRespMerchantRef')->nullable();
             $table->string('merchantRespMerchantSession')->nullable();
-            $table->integer('merchantRespPurchaseAmount')->nullable();
-            $table->string('merchantRespMessageID')->nullable();
-            $table->string('merchantRespPan')->nullable();
-            $table->string('merchantResp')->nullable();
-            $table->string('merchantRespErrorCode')->nullable();
-            $table->string('merchantRespErrorDescription')->nullable();
-            $table->text('merchantRespErrorDetail')->nullable();
-            $table->string('languageMessages')->nullable();
-            $table->timestamp('merchantRespTimeStamp')->nullable();
-            $table->string('merchantRespReferenceNumber')->nullable();
-            $table->string('merchantRespEntityCode')->nullable();
-            $table->text('merchantRespClientReceipt')->nullable();
-            $table->text('merchantRespAdditionalErrorMessage')->nullable();
-            $table->string('merchantRespReloadCode')->nullable();
-            $table->string('options')->nullable();
+            $table->float('merchantRespPurchaseAmount')->nullable();
+            $table->string('details')->nullable();
             $table->timestamps();
+            $table->index(['transactionId','merchantRespMerchantRef', 'merchantRespMerchantSession', 'messageType']);
         });
+    }
+
+    public function down(): void
+    {
+        $tableName = config('sisp.table_name');
+
+        if (Schema::hasTable($tableName)) {
+            Schema::dropIfExists($tableName);
+        }
     }
 };

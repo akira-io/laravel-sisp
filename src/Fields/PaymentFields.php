@@ -49,7 +49,8 @@ final class PaymentFields implements Fields
      */
     public function parsedAmount(): int
     {
-        return (int) ((float) $this->amount * 1000);
+      
+        return  intval(round($this->amount))*1000;
 
     }
 
@@ -78,17 +79,19 @@ final class PaymentFields implements Fields
      */
     public function toArray(): array
     {
-
+        
         return [
             'transactionCode' => Sisp::getDefaultTransactionCode(),
             'posID' => Sisp::getPosID(),
             'merchantRef' => Sisp::getMerchantReference(),
             'merchantSession' => Sisp::getMerchantSession(),
-            'amount' => $this->amount,
+            'amount' => intval(round($this->amount)),
             'currency' => Sisp::getCurrency(),
             'is3DSec' => Sisp::getIs3DSec(),
             'urlMerchantResponse' => Sisp::getUrlMerchantResponse(),
             'languageMessages' => Sisp::getLanguageMessages(),
+            'timeStamp' => Sisp::getTimeStamp(),
+            'fingerprintversion' => Sisp::getFingerprintVersion(),
         ];
     }
 }

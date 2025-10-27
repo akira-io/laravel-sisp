@@ -18,39 +18,8 @@ final class PaymentRequest extends FormRequest
     {
         return [
             'amount' => ['required', 'numeric'],
-            'transactionId' => ['required', 'string'],
-            'options' => ['nullable', 'array'],
-            //            'purchaseRequest' => ['required', 'array'],
-            //            'purchaseRequest.*.billAddrCountry' => ['required', 'numeric', 'min:3', 'max:3'],
-            //            'purchaseRequest.*.billAddrCity' => ['required', 'string', 'min:3', 'max:50'],
-            //            'purchaseRequest.*.billAddrLine1' => ['required', 'string', 'min:3', 'max:50'],
-            //            'purchaseRequest.*.email' => ['required', 'email'],
-            //            'purchaseRequest.*.billAddrPostCode' => ['required', 'string', 'min:3', 'max:16'],
-            //
-            //            'purchaseRequest.*.actID' => ['nullable','max:64'],
-            //            'purchaseRequest.*.acctInfo' => ['nullable','array'],
-            //            'purchaseRequest.*.acctInfo.*.chAccAgeInd' => ['nullable', Rule::enum(ChangeAccountAge::class)],
-            //            'purchaseRequest.*.acctInfo.*.chAccChange' => ['nullable', 'date_format:Ymd'],
-            //            'purchaseRequest.*.acctInfo.*.chAccDate' => ['nullable', 'date_format:Ymd'],
-            //            'purchaseRequest.*.acctInfo.*.chAccPwChange' => ['nullable', 'date_format:Ymd'],
-            //            'purchaseRequest.*.acctInfo.*.chAccPwChangeInd' => ['nullable', Rule::enum(ChangeAccountAge::class)],
-            //            'purchaseRequest.*.acctInfo.*.suspiciousAccActivity' => ['nullable', Rule::enum(SuspiciousAccountActivity::class)],
-            //            'purchaseRequest.*.addrMatch' => ['nullable', Rule::enum(AddressMatch::class)],
-            //            'purchaseRequest.*.billAddrLine2' => ['nullable', 'string', 'min:3', 'max:50'],
-            //            'purchaseRequest.*.billAddrLine3' => ['nullable', 'string', 'min:3', 'max:50'],
-            //            'purchaseRequest.*.billAddrState' => ['nullable', 'string', 'min:3', 'max:3'],
-            //            'purchaseRequest.*.shipAddrCity' => ['nullable', 'string', 'min:3', 'max:50'],
-            //            'purchaseRequest.*.shipAddrState' => ['nullable', 'numeric', 'min:3', 'max:3'],
-            //            'purchaseRequest.*.shipAddrCountry' => ['nullable', 'numeric', 'min:3', 'max:3'],
-            //            'purchaseRequest.*.shipAddrLine1' => ['nullable', 'string', 'min:3', 'max:50'],
-            //            'purchaseRequest.*.shipAddrPostCode' => ['nullable', 'string', 'min:3', 'max:16'],
-            //            'purchaseRequest.*.workPhone' => ['nullable', 'array'],
-            //            'purchaseRequest.*.workPhone.*.cc' => ['nullable', 'numeric', 'min:1', 'max:3'],
-            //            'purchaseRequest.*.workPhone.*.subscriber' => ['nullable', 'numeric', 'min:1', 'max:15'],
-            //            'purchaseRequest.*.mobilePhone' => ['nullable', 'array'],
-            //            'purchaseRequest.*.mobilePhone.*.cc' => ['nullable', 'numeric', 'min:1', 'max:3'],
-            //            'purchaseRequest.*.mobilePhone.*.subscriber' => ['nullable', 'numeric', 'min:1', 'max:15'],
-
+            'transactionId' => ['required', 'string', 'integer'],
+            'details' => ['nullable', 'array'],
         ];
     }
 

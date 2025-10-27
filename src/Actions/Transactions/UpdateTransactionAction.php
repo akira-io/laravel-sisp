@@ -6,7 +6,7 @@ namespace Akira\Sisp\Actions\Transactions;
 
 use Akira\Sisp\Exceptions\TransactionNotFoundException;
 use Akira\Sisp\Transaction;
-use Illuminate\Http\Request;
+use Akira\Sisp\ValueObjects\TransactionValueObject;
 
 final class UpdateTransactionAction
 {
@@ -15,15 +15,17 @@ final class UpdateTransactionAction
      *
      * @throws TransactionNotFoundException
      */
-    public function handle(Request $request): ?Transaction
+    public function handle(TransactionValueObject $object): ?Transaction
     {
-        $transaction = Transaction::where($this->merchantFields($request))->first();
+        $transaction = Transaction::where($this->merchantFields($object))->first();
 
         if (! $transaction) {
             throw new TransactionNotFoundException();
         }
 
-        $transaction->update($request->all());
+        $transaction->update([
+            'details' => $object->getDetails(),
+        ]);
 
         return $transaction->fresh();
     }
@@ -33,12 +35,12 @@ final class UpdateTransactionAction
      *
      * @return array<string, mixed>
      */
-    private function merchantFields(Request $request): array
+    private function merchantFields(TransactionValueObject $object): array
     {
 
         return [
-            'merchantRespMerchantRef' => $request->get('merchantRespMerchantRef'),
-            'merchantRespMerchantSession' => $request->get('merchantRespMerchantSession'),
+            'merchantRespMerchantRef' => $object->getMerchantRespMerchantRef(),
+            'merchantRespMerchantSession' => $object->getMerchantRespMerchantSession(),
         ];
     }
 }

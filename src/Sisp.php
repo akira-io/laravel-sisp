@@ -37,13 +37,13 @@ final class Sisp
      *
      * @throws Exception
      */
-    public function requestPayment(float $amount, string $transactionId, array $options = []): RedirectResponse|Redirector
+    public function requestPayment(float $amount, string $transactionId, array $details = []): RedirectResponse|Redirector
     {
         return to_route('sisp.payment.request',
             [
                 'amount' => $amount,
                 'transactionId' => $transactionId,
-                'options' => $options,
+                'details' => $details,
             ]
         );
     }

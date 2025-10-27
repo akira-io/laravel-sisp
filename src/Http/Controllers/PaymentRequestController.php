@@ -6,6 +6,7 @@ namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\PaymentRequestUrlAction;
 use Akira\Sisp\Actions\Transactions\StoreTransactionAction;
+use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Fields\PaymentFields;
 use Akira\Sisp\Http\Requests\PaymentRequest;
 use Exception;
@@ -20,15 +21,20 @@ final class PaymentRequestController
      */
     public function __invoke(PaymentRequest $request, StoreTransactionAction $storeTransaction, PaymentRequestUrlAction $paymentRequestUrl): View
     {
+        
+        $fields = PaymentFields::make()->withAmount($request->float('amount'));
 
-        $fields = PaymentFields::make()
-            ->withAmount($request->float('amount'));
+        $storeTransaction->handle(
+            transactionId: $request->validated('transactionId'),
+            amount : $request->float('amount'),
+            details : $request->array('details'),
+        );
 
-        $storeTransaction->handle(transactionId: $request->validated('transactionId'), fields: $fields->toArray(), options: $request->validated('options'));
-
-        /** @var view-string $viewName */
-        $viewName = 'sisp::payment-request-form';
-
-        return view($viewName, ['url' => $paymentRequestUrl->handle($fields), 'fields' => $fields->toArray()]);
+        return view(
+            view: Sisp::getPaymentRequestForm(),
+            data: [
+                'url' => $paymentRequestUrl->handle($fields),
+                'fields' => $fields->toArray(),
+            ]);
     }
 }
