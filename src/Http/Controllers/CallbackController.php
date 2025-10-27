@@ -8,6 +8,7 @@ use Akira\Sisp\Actions\RenderPaymentResponseAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Facades\Sisp;
 use Illuminate\Http\Request;
+use Log;
 
 final readonly class CallbackController
 {
@@ -19,6 +20,8 @@ final readonly class CallbackController
     public function __invoke(Request $request)
     {
         $payload = $request->all();
+
+        Log::info('SISP Callback received', ['payload' => $payload]);
 
         // TODO: Implement correct fingerprint validation for response
         // For now, skip validation to complete the payment flow

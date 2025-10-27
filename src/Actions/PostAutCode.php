@@ -10,10 +10,7 @@ final readonly class PostAutCode
 {
     public function __construct(private LoadConfig $config) {}
 
-    /**
-     * Encode the post authorization code and return it.
-     */
-    public function encode(): string
+    public function handle(): string
     {
         $posAutCode = $this->config->getPosAutCode();
 

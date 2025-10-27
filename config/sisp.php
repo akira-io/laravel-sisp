@@ -152,13 +152,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Transaction Table Name
+    | Database Tables Configuration
     |--------------------------------------------------------------------------
     |
-    | The name of the table where transaction records will be stored in the database.
+    | Configure the names of all SISP-related tables to avoid conflicts with
+    | other packages or custom tables in your application.
     |
     */
-    'table_name' => 'sisp_transactions',
+    'tables' => [
+        'transactions' => env('SISP_TABLE_TRANSACTIONS', 'sisp_transactions'),
+        'transaction_items' => env('SISP_TABLE_TRANSACTION_ITEMS', 'sisp_transaction_items'),
+        'invoices' => env('SISP_TABLE_INVOICES', 'sisp_invoices'),
+    ],
+
+    /*
+    | Deprecated: Use tables.transactions instead
+    */
+    'table_name' => env('SISP_TABLE_TRANSACTIONS', 'sisp_transactions'),
 
     /*
     |--------------------------------------------------------------------------
@@ -195,6 +205,11 @@ return [
         'enabled' => env('SISP_USE_INERTIA', false),
         'payment_form_component' => env('SISP_INERTIA_PAYMENT_COMPONENT', 'Sisp/PaymentForm'),
         'payment_response_component' => env('SISP_INERTIA_CALLBACK_COMPONENT', 'Sisp/PaymentResponse'),
+    ],
+
+    'invoice' => [
+        'number_format' => env('SISP_INVOICE_NUMBER_FORMAT', 'date-based'),
+        'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
     ],
 
 ];

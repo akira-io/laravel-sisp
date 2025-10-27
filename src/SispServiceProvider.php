@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Akira\Sisp;
 
+use Akira\Sisp\Actions\BuildRequestPayloadAction;
+use Akira\Sisp\Actions\BuildSandboxPayloadAction;
+use Akira\Sisp\Actions\CreateTransactionAction;
+use Akira\Sisp\Actions\HandleCallbackAction;
+use Akira\Sisp\Actions\ValidateFingerprintAction;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Configuration\LoadConfig;
 use Illuminate\View\Compilers\BladeCompiler;
@@ -37,7 +42,12 @@ final class SispServiceProvider extends PackageServiceProvider
         $this->app->singleton(LoadConfig::class);
         $this->app->singleton(Sisp::class, function ($app) {
             return new Sisp(
-                config: $app->make(LoadConfig::class),
+                buildRequestPayload: $app->make(BuildRequestPayloadAction::class),
+                buildSandboxPayload: $app->make(BuildSandboxPayloadAction::class),
+                validateFingerprint: $app->make(ValidateFingerprintAction::class),
+                createTransaction: $app->make(CreateTransactionAction::class),
+                handleCallback: $app->make(HandleCallbackAction::class),
+                loadConfig: $app->make(LoadConfig::class),
             );
         });
     }

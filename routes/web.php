@@ -9,12 +9,18 @@ use Akira\Sisp\Http\Controllers\RefundTransactionController;
 use Akira\Sisp\Http\Controllers\SandboxController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('sisp')->name('sisp.')->group(function () {
-    Route::post('/payment', [PaymentController::class])->name('payment');
-    Route::post('/callback', [CallbackController::class])->name('callback')->withoutMiddleware('verify_csrf_token');
-    Route::get('/fake-gateway', [SandboxController::class])->name('sandbox');
-    Route::delete('/transaction/{transaction}/cancel', [CancelTransactionController::class])
-        ->name('cancel');
-    Route::post('/transaction/{transaction}/refund', [RefundTransactionController::class])
-        ->name('refund');
-});
+Route::post('sisp/payment', PaymentController::class)
+    ->name('sisp.payment');
+
+Route::post('sisp/callback', CallbackController::class)
+    ->withoutMiddleware('web')
+    ->name('sisp.callback');
+
+Route::post('sisp/cancel', CancelTransactionController::class)
+    ->name('sisp.cancel');
+
+Route::post('sisp/refund', RefundTransactionController::class)
+    ->name('sisp.refund');
+
+Route::post('sisp/sandbox', SandboxController::class)
+    ->name('sisp.sandbox');
