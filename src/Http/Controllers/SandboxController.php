@@ -13,15 +13,15 @@ final readonly class SandboxController
 {
     public function __invoke(Request $request): Response
     {
-        $status = $request->query('status', 'success');
+        $status = $request->input('status', $request->query('status', 'success'));
 
         $paymentData = PaymentRequestData::from([
-            'amount' => (float) $request->query('amount', 0),
-            'merchantRef' => $request->query('merchantRef'),
-            'merchantSession' => $request->query('merchantSession'),
-            'timeStamp' => $request->query('timeStamp'),
-            'currency' => $request->query('currency'),
-            'transactionCode' => $request->query('transactionCode'),
+            'amount' => (float) ($request->input('amount') ?? $request->query('amount', 0)),
+            'merchantRef' => $request->input('merchantRef') ?? $request->query('merchantRef'),
+            'merchantSession' => $request->input('merchantSession') ?? $request->query('merchantSession'),
+            'timeStamp' => $request->input('timeStamp') ?? $request->query('timeStamp'),
+            'currency' => $request->input('currency') ?? $request->query('currency'),
+            'transactionCode' => $request->input('transactionCode') ?? $request->query('transactionCode'),
         ]);
 
         $sandboxPayload = Sisp::generateSandboxPayload($paymentData, $status);
