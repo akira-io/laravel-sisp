@@ -34,7 +34,7 @@ final readonly class HandleCallbackAction
             'response_code' => $payload['merchantRespCP'] ?? null,
             'fingerprint' => $payload['resultFingerPrint'] ?? null,
             'payload' => $mergedPayload,
-            'status' => $this->mapStatus($payload['messageType'] ?? null),
+            'status' => $this->mapStatus($payload['messageType'] ?? null)->value,
         ]);
 
         $this->dispatchEvent($transaction, $payload);

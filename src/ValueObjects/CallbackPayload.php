@@ -13,7 +13,7 @@ final readonly class CallbackPayload
         public float $amount,
         public string $currency,
         public string $transactionCode,
-        public string $transactionID,
+        public string|int $transactionID,
         public string $messageType,
         public string $merchantResponse,
         public string $responseCode,
@@ -27,7 +27,7 @@ final readonly class CallbackPayload
             merchantRef: $data['merchantRespMerchantRef'] ?? $data['merchantRef'] ?? '',
             merchantSession: $data['merchantRespMerchantSession'] ?? $data['merchantSession'] ?? '',
             timeStamp: $data['merchantRespTimeStamp'] ?? $data['timeStamp'] ?? '',
-            amount: (float)($data['merchantRespPurchaseAmount'] ?? $data['amount'] ?? 0),
+            amount: (float) ($data['merchantRespPurchaseAmount'] ?? $data['amount'] ?? 0),
             currency: $data['currency'] ?? '',
             transactionCode: $data['transactionCode'] ?? '',
             transactionID: $data['merchantRespTid'] ?? $data['transactionID'] ?? '',
@@ -42,17 +42,17 @@ final readonly class CallbackPayload
     public function toArray(): array
     {
         return [
-            'merchantRef' => $this->merchantRef,
-            'merchantSession' => $this->merchantSession,
-            'timeStamp' => $this->timeStamp,
-            'amount' => $this->amount,
+            'merchantRespMerchantRef' => $this->merchantRef,
+            'merchantRespMerchantSession' => $this->merchantSession,
+            'merchantRespTimeStamp' => $this->timeStamp,
+            'merchantRespPurchaseAmount' => $this->amount,
             'currency' => $this->currency,
             'transactionCode' => $this->transactionCode,
-            'transactionID' => $this->transactionID,
+            'merchantRespTid' => $this->transactionID,
             'messageType' => $this->messageType,
-            'merchantResponse' => $this->merchantResponse,
-            'responseCode' => $this->responseCode,
-            'fingerprint' => $this->fingerprint,
+            'merchantResp' => $this->merchantResponse,
+            'merchantRespCP' => $this->responseCode,
+            'resultFingerPrint' => $this->fingerprint,
             'posID' => $this->posID,
         ];
     }
