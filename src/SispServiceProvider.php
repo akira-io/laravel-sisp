@@ -25,7 +25,6 @@ final class SispServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-sisp')
             ->hasConfigFile()
-            ->hasViews()
             ->hasMigration('create_laravel_sisp_table')
             ->hasTranslations()
             ->hasRoutes('web')
@@ -63,10 +62,17 @@ final class SispServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * Register the package's Blade components.
+     * Register the package's Blade components and views.
      */
     private function registerComponents(): void
     {
+
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'sisp');
+
+        $this->publishes([
+            __DIR__.'/../resources/views' => resource_path('views/vendor/sisp'),
+        ], 'sisp-views');
+
         $this->publishes([
             __DIR__.'/../resources/css' => public_path('vendor/sisp/css'),
         ], 'sisp-assets');

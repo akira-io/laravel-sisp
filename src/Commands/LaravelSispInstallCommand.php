@@ -24,7 +24,8 @@ final class LaravelSispInstallCommand extends Command
     {
         info('Starting Laravel SISP installation...');
 
-        $forcePublish = false;
+        $stackType = $this->detectStack();
+        info("Detected stack: $stackType");
 
         // Step 1: Publish config
         if (confirm('Do you want to publish the configuration file?')) {
@@ -60,21 +61,39 @@ final class LaravelSispInstallCommand extends Command
             info('Migration files published.');
         }
 
-        // Step 3: Publish Inertia components
-        if (confirm('Do you want to publish the Inertia components?')) {
-            $forceInertia = confirm('Force overwrite if files already exist?', false);
+        // Step 3: Publish stack-specific views
+        if ($stackType === 'inertia') {
+            if (confirm('Do you want to publish the Inertia React components?')) {
+                $forceInertia = confirm('Force overwrite if files already exist?', false);
 
-            $options = [
-                '--tag' => 'sisp-inertia-components',
-            ];
+                $options = [
+                    '--tag' => 'sisp-inertia-components',
+                ];
 
-            if ($forceInertia) {
-                $options['--force'] = true;
+                if ($forceInertia) {
+                    $options['--force'] = true;
+                }
+
+                spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
+
+                info('Inertia components published.');
             }
+        } else {
+            if (confirm('Do you want to publish the Blade views?')) {
+                $forceBlade = confirm('Force overwrite if files already exist?', false);
 
-            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
+                $options = [
+                    '--tag' => 'sisp-views',
+                ];
 
-            info('Inertia components published.');
+                if ($forceBlade) {
+                    $options['--force'] = true;
+                }
+
+                spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Blade views...');
+
+                info('Blade views published.');
+            }
         }
 
         // Step 4: Run migration
@@ -93,5 +112,37 @@ final class LaravelSispInstallCommand extends Command
         info('Thank you for choosing Laravel SISP!');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Detect if the application is using Inertia or Blade stack.
+     */
+    private function detectStack(): string
+    {
+        // Check for Inertia configuration
+        $inertiaConfigPath = base_path('config/inertia.php');
+        if (file_exists($inertiaConfigPath)) {
+            return 'inertia';
+        }
+
+        // Check for Inertia in composer.json
+        $composerPath = base_path('composer.json');
+        if (file_exists($composerPath)) {
+            $composer = json_decode(file_get_contents($composerPath), true);
+            if (isset($composer['require']['inertiajs/inertia-laravel'])) {
+                return 'inertia';
+            }
+        }
+
+        // Check for Vite with React (Inertia indicator)
+        if (file_exists(base_path('vite.config.ts')) || file_exists(base_path('vite.config.js'))) {
+            $viteConfig = file_get_contents(base_path('vite.config.ts') ?? base_path('vite.config.js'));
+            if (str_contains($viteConfig, 'react')) {
+                return 'inertia';
+            }
+        }
+
+        // Default to blade if no Inertia found
+        return 'blade';
     }
 }
