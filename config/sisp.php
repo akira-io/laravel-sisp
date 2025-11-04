@@ -206,8 +206,8 @@ return [
 
     'use_inertia' => [
         'enabled' => env('SISP_USE_INERTIA', false),
-        'payment_form_component' => env('SISP_INERTIA_PAYMENT_COMPONENT', 'Sisp/PaymentForm'),
-        'payment_response_component' => env('SISP_INERTIA_CALLBACK_COMPONENT', 'Sisp/PaymentResponse'),
+        'payment_form_component' => env('SISP_INERTIA_PAYMENT_COMPONENT', 'sisp/payment-form'),
+        'payment_response_component' => env('SISP_INERTIA_CALLBACK_COMPONENT', 'sisp/payment-response'),
     ],
 
     'invoice' => [

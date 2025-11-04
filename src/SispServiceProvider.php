@@ -66,17 +66,30 @@ final class SispServiceProvider extends PackageServiceProvider
      */
     private function registerComponents(): void
     {
-
+        // Load Blade views from package
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'sisp');
 
+        // Allow users to publish Blade views for customization
         $this->publishes([
             __DIR__.'/../resources/views' => resource_path('views/vendor/sisp'),
         ], 'sisp-views');
 
+        // Publish React components for customization
+        $this->publishes([
+            __DIR__.'/../resources/js/react/pages' => resource_path('js/pages/sisp'),
+        ], 'sisp-inertia-components');
+
+        // Publish Vue components for customization
+        $this->publishes([
+            __DIR__.'/../resources/js/vue/pages' => resource_path('js/pages/sisp'),
+        ], 'sisp-vue-components');
+
+        // Publish CSS assets
         $this->publishes([
             __DIR__.'/../resources/css' => public_path('vendor/sisp/css'),
         ], 'sisp-assets');
 
+        // Register Blade anonymous component namespace
         $this->callAfterResolving('blade.compiler', function (BladeCompiler $blade): void {
             $blade->anonymousComponentNamespace('akira-sisp', __DIR__.'/../resources/views/components');
         });

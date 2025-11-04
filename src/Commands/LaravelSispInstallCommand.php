@@ -63,7 +63,7 @@ final class LaravelSispInstallCommand extends Command
 
         // Step 3: Publish stack-specific views
         if ($stackType === 'inertia') {
-            if (confirm('Do you want to publish the Inertia React components?')) {
+            if (confirm('Do you want to publish the Inertia React components for customization?')) {
                 $forceInertia = confirm('Force overwrite if files already exist?', false);
 
                 $options = [
@@ -145,4 +145,5 @@ final class LaravelSispInstallCommand extends Command
         // Default to blade if no Inertia found
         return 'blade';
     }
+
 }

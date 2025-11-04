@@ -24,12 +24,12 @@ final readonly class LoadConfig
 
     public function getPaymentFormComponent(): string
     {
-        return $this->app['config']->get('sisp.use_inertia.payment_form_component', 'Sisp/PaymentForm');
+        return $this->app['config']->get('sisp.use_inertia.payment_form_component', 'sisp/payment-form');
     }
 
     public function getPaymentResponseComponent(): string
     {
-        return $this->app['config']->get('sisp.use_inertia.payment_response_component', 'Sisp/PaymentResponse');
+        return $this->app['config']->get('sisp.use_inertia.payment_response_component', 'sisp/payment-response');
     }
 
     public function getPaymentFormView(): string
@@ -160,12 +160,12 @@ final readonly class LoadConfig
 
     public function getRateLimitPerIp(): int
     {
-        return (int)$this->app['config']->get('sisp.rate_limiting.per_ip.limit', 100);
+        return (int) $this->app['config']->get('sisp.rate_limiting.per_ip.limit', 100);
     }
 
     public function getRateLimitWindowSeconds(): int
     {
-        return (int)$this->app['config']->get('sisp.rate_limiting.per_ip.window_seconds', 3600);
+        return (int) $this->app['config']->get('sisp.rate_limiting.per_ip.window_seconds', 3600);
     }
 
     public function getGeolocationProvider(): string
