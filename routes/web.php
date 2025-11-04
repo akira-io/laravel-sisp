@@ -22,5 +22,5 @@ Route::post('sisp/cancel', CancelTransactionController::class)
 Route::post('sisp/refund', RefundTransactionController::class)
     ->name('sisp.refund');
 
-Route::post('sisp/sandbox', SandboxController::class)
+Route::match(['get', 'post'], 'sisp/sandbox', SandboxController::class)
     ->name('sisp.sandbox');
