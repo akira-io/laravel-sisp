@@ -73,4 +73,10 @@ final class Transaction extends Model
     {
         return $this->hasOne(Invoice::class, 'transaction_id');
     }
+
+    public function getFormattedAmountAttribute(): string
+    {
+        $formatted = number_format($this->amount, 0, ',', '.');
+        return "{$formatted} ECV";
+    }
 }

@@ -184,17 +184,6 @@ return [
     */
     'redirect_url' => env('SISP_REDIRECT_URL', '/'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Theme for the Payment Page
-    |--------------------------------------------------------------------------
-    |
-    | This option defines the theme of the payment page. It can be either 'dark' or 'light'.
-    | Default is 'dark'.
-    |
-    */
-    'theme' => env('SISP_THEME', 'white'),
-
     'sandbox' => env('SISP_SANDBOX', false),
 
     'use_blade' => [

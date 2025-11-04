@@ -13,7 +13,7 @@ Route::post('sisp/payment', PaymentController::class)
     ->middleware(\Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class)
     ->name('sisp.payment');
 
-Route::post('sisp/callback', CallbackController::class)
+Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->withoutMiddleware('web')
     ->middleware(\Akira\Sisp\Http\Middleware\PreventDuplicateCallback::class)
     ->name('sisp.callback');

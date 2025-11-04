@@ -29,26 +29,24 @@ export default function PaymentForm({endpoint, fields}: PaymentFormProps) {
     }, [hasSubmitted]);
 
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gray-50'>
-          <div className='w-full max-w-md rounded-lg bg-white p-8 shadow-lg'>
+      <div className='flex min-h-screen items-center justify-center bg-background'>
+          <div className='w-full max-w-md rounded-lg bg-card p-8 shadow-lg border border-border'>
               <div className='space-y-6 text-center'>
                   <div className='space-y-2'>
                       <div className='flex justify-center'>
-                          <div className='rounded-full bg-blue-600 p-4'>
-                              <svg className='h-8 w-8 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                                  <path strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 12l2 2 4-4m7.548-4.548a.75.75 0 00-1.06 0L12 8.94m0 0a.75.75 0 00-1.06 0M9 12m7.548-4.548L21 7m0 0L12.452 2.452m0 0a.75.75 0 10-1.06 0M21 7v10.5a.75.75 0 01-.75.75H3.75A.75.75 0 013 17.5V7m18 0h-3.5'/>
+                          <div className='rounded-full bg-primary p-4'>
+                              <svg className='h-8 w-8 text-primary-foreground' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeLinecap='round' strokeLinejoin='round' strokeWidth='1.5'>
+                                  <path d='M22 11.429V18a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-1.5m17-5.071V10a2 2 0 0 0-2-2h-1m3 3.429h-3'/>
+                                  <path d='M19 8v6.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2zm0 0H5.5'/>
                               </svg>
                           </div>
                       </div>
-                      <h2 className='text-xl font-semibold text-gray-900'>Redirecionando para SISP</h2>
-                      <p className='text-sm text-gray-600'>Você será redirecionado para o portal seguro de pagamentos</p>
+                      <h2 className='text-xl font-semibold text-foreground'>Redirecionando para SISP</h2>
+                      <p className='text-sm text-muted-foreground'>Você será redirecionado para o portal seguro de pagamentos</p>
                   </div>
-                  <div className='rounded-lg bg-gray-50 p-4 text-left'>
+                  <div className='rounded-lg bg-muted p-4 text-left border border-border'>
                       <div className='flex items-start gap-3'>
-                          <svg className='mt-0.5 h-5 w-5 flex-shrink-0 text-green-600'
+                          <svg className='mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-500'
                                fill='currentColor'
                                viewBox='0 0 20 20'>
                               <path fillRule='evenodd'
@@ -56,8 +54,8 @@ export default function PaymentForm({endpoint, fields}: PaymentFormProps) {
                                     clipRule='evenodd'/>
                           </svg>
                           <div className='text-sm'>
-                              <p className='mb-1 font-medium text-gray-900'>Transação Segura</p>
-                              <ul className='space-y-1 text-xs text-gray-600'>
+                              <p className='mb-1 font-medium text-foreground'>Transação Segura</p>
+                              <ul className='space-y-1 text-xs text-muted-foreground'>
                                   <li>• Portal oficial do Sistema Bancário de Cabo Verde</li>
                                   <li>• Criptografia SSL de nível bancário</li>
                                   <li>• Seus dados estão protegidos</li>
@@ -67,16 +65,16 @@ export default function PaymentForm({endpoint, fields}: PaymentFormProps) {
                   </div>
                   {countdown > 0 ? (
                     <div className='space-y-4'>
-                        <div className='rounded-lg bg-blue-50 p-4'>
-                            <p className='text-sm font-medium text-blue-700'>
+                        <div className='rounded-lg bg-blue-50 dark:bg-blue-950 p-4 border border-blue-200 dark:border-blue-800'>
+                            <p className='text-sm font-medium text-blue-700 dark:text-blue-300'>
                                 Redirecionando em {countdown} segundo{countdown !== 1 ? 's' : ''}...
                             </p>
                         </div>
                     </div>
                   ) : (
                     <div className='space-y-4'>
-                        <div className='rounded-lg bg-green-50 p-4'>
-                            <p className='text-sm font-medium text-green-700'>Conectando ao SISP...</p>
+                        <div className='rounded-lg bg-green-50 dark:bg-green-950 p-4 border border-green-200 dark:border-green-800'>
+                            <p className='text-sm font-medium text-green-700 dark:text-green-300'>Conectando ao SISP...</p>
                         </div>
                     </div>
                   )}
