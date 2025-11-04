@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Transaction;
 use Illuminate\Contracts\View\View;
+use Inertia\Inertia;
 
 final readonly class RenderPaymentResponseAction
 {
@@ -23,11 +24,12 @@ final readonly class RenderPaymentResponseAction
             return $this->renderBlade($transaction, $payload);
         }
 
-        return \Inertia\Inertia::render($component, [
+        return Inertia::render($component, [
             'transaction' => [
                 'id' => $transaction->id,
                 'status' => $transaction->status,
                 'amount' => $transaction->amount,
+                'formatted_amount' => $transaction->formatted_amount,
                 'currency' => $transaction->currency,
                 'merchant_ref' => $transaction->merchant_ref,
                 'merchant_session' => $transaction->merchant_session,

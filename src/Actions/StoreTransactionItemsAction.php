@@ -26,7 +26,7 @@ final readonly class StoreTransactionItemsAction
                 'unit_price_cents' => (int)round($item->unit_price * 100),
                 'total_price_cents' => (int)round($item->total_price * 100),
                 'description' => $item->description,
-                'metadata' => $item->metadata,
+                'metadata' => $item->metadata ? json_encode($item->metadata) : null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

@@ -22,6 +22,38 @@ final readonly class CallbackController
      */
     public function __invoke(Request $request)
     {
+        if ($request->isMethod('get')) {
+            return $this->handleGetRequest();
+        }
+
+        return $this->handlePostRequest($request);
+    }
+
+    /**
+     * Handle GET requests - retrieve stored transaction data
+     */
+    private function handleGetRequest()
+    {
+        $merchantRef = request()->query('ref');
+
+        if (!$merchantRef) {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
+        $transaction = \Akira\Sisp\Transaction::where('merchant_ref', $merchantRef)->first();
+
+        if (!$transaction) {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
+        return $this->renderResponse->handle($transaction, []);
+    }
+
+    /**
+     * Handle POST requests - process callback from SISP
+     */
+    private function handlePostRequest(Request $request)
+    {
         $payload = $request->all();
 
         //        if (! Sisp::validateCallback($payload)) {
@@ -32,6 +64,6 @@ final readonly class CallbackController
 
         $this->storeMetadata->handle($request, $transaction);
 
-        return $this->renderResponse->handle($transaction, $payload);
+        return redirect()->route('sisp.callback', ['ref' => $transaction->merchant_ref]);
     }
 }
