@@ -202,6 +202,14 @@ return [
     'invoice' => [
         'number_format' => env('SISP_INVOICE_NUMBER_FORMAT', 'date-based'),
         'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
+        'disk' => env('SISP_INVOICE_DISK', 'public'),
+        'template' => env('SISP_INVOICE_TEMPLATE', 'minimal'),
+        'company_address' => env('SISP_COMPANY_ADDRESS', ''),
+        'company_code' => env('SISP_COMPANY_CODE', ''),
+        'company_country' => env('SISP_COMPANY_COUNTRY', ''),
+        'company_phone' => env('SISP_COMPANY_PHONE', ''),
+        'company_email' => env('SISP_COMPANY_EMAIL', ''),
+        'company_website' => env('SISP_COMPANY_WEBSITE', ''),
     ],
 
     'rate_limiting' => [

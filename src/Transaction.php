@@ -34,6 +34,12 @@ final class Transaction extends Model
         'merchant_response',
         'fingerprint',
         'payload',
+        'customer_name',
+        'customer_email',
+        'customer_phone',
+        'customer_country',
+        'customer_city',
+        'customer_address',
         'cancelled_at',
         'refunded_at',
     ];

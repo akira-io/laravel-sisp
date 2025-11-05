@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Transaction;
+use Akira\Sisp\ValueObjects\CustomerData;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\TransactionItemData;
 use Illuminate\Http\Request;
@@ -16,6 +17,9 @@ final readonly class CreateAndStorePaymentTransactionAction
     public function __construct(
         private StorePaymentTransactionAction $storeTransaction,
         private StoreTransactionItemsAction $storeItems,
+        private StoreCustomerDataAction $storeCustomerData,
+        private GenerateInvoiceAction $generateInvoice,
+        private GenerateInvoicePdfAction $generateInvoicePdf,
     ) {}
 
     /**
@@ -27,12 +31,30 @@ final readonly class CreateAndStorePaymentTransactionAction
 
             $transaction = $this->storeTransaction->handle($paymentRequest);
 
+            $customerData = CustomerData::from($request->all());
+
+            $this->storeCustomerData->handle($transaction, $customerData);
+
             $itemsData = $this->getItemsData($request);
 
             $this->storeItems->handle($transaction, ...$itemsData);
 
+            defer(
+                fn () => $this->createAndGenerateInvoice($transaction)
+            );
+
             return $transaction;
         });
+    }
+
+    private function createAndGenerateInvoice(Transaction $transaction): void
+    {
+        $invoice = $this->generateInvoice->handle($transaction);
+        $invoice->load(['transaction' => function ($query) {
+            $query->with('items');
+        }]);
+
+        $this->generateInvoicePdf->handle($invoice);
     }
 
     /**

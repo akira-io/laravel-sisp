@@ -36,7 +36,6 @@ final readonly class PaymentController
 
         $this->checkRateLimit->handle(
             identifier: $ip,
-            limitType: 'ip',
         );
 
         $requestData = PaymentRequestData::from($request->validated());
