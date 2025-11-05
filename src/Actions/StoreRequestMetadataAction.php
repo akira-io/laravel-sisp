@@ -6,35 +6,38 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Transaction;
+use Exception;
 use Illuminate\Http\Request;
+use Stevebauman\Location\Facades\Location;
 
 final readonly class StoreRequestMetadataAction
 {
-    public function handle(Request $request, Transaction $transaction = null): RequestMetadata
+    public function handle(Request $request, ?Transaction $transaction = null): RequestMetadata
     {
         $fingerprint = $this->generateDeviceFingerprint($request);
         $ipInfo = $this->parseIpAddress($request);
 
-        return RequestMetadata::create([
-            'transaction_id' => $transaction?->id,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'referer' => $request->header('referer'),
-            'country_code' => $ipInfo['country_code'] ?? null,
-            'country_name' => $ipInfo['country_name'] ?? null,
-            'region' => $ipInfo['region'] ?? null,
-            'city' => $ipInfo['city'] ?? null,
-            'latitude' => $ipInfo['latitude'] ?? null,
-            'longitude' => $ipInfo['longitude'] ?? null,
-            'isp' => $ipInfo['isp'] ?? null,
-            'device_type' => $this->detectDeviceType($request),
-            'browser' => $this->detectBrowser($request),
-            'os' => $this->detectOS($request),
-            'device_fingerprint' => $fingerprint,
-            'is_vpn' => $ipInfo['is_vpn'] ?? false,
-            'is_proxy' => $ipInfo['is_proxy'] ?? false,
-            'is_mobile' => $this->isMobileDevice($request),
-        ]);
+        return RequestMetadata::query()
+            ->create([
+                'transaction_id' => $transaction?->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'referer' => $request->header('referer'),
+                'country_code' => $ipInfo['country_code'] ?? null,
+                'country_name' => $ipInfo['country_name'] ?? null,
+                'region' => $ipInfo['region'] ?? null,
+                'city' => $ipInfo['city'] ?? null,
+                'latitude' => $ipInfo['latitude'] ?? null,
+                'longitude' => $ipInfo['longitude'] ?? null,
+                'isp' => $ipInfo['isp'] ?? null,
+                'device_type' => $this->detectDeviceType($request),
+                'browser' => $this->detectBrowser($request),
+                'os' => $this->detectOS($request),
+                'device_fingerprint' => $fingerprint,
+                'is_vpn' => $ipInfo['is_vpn'] ?? false,
+                'is_proxy' => $ipInfo['is_proxy'] ?? false,
+                'is_mobile' => $this->isMobileDevice($request),
+            ]);
     }
 
     private function generateDeviceFingerprint(Request $request): string
@@ -57,20 +60,32 @@ final readonly class StoreRequestMetadataAction
             return [];
         }
 
-        return [
-            'country_code' => geoip()->getCountryCode($ip),
-            'country_name' => geoip()->getCountryName($ip),
-            'region' => geoip()->getState($ip),
-            'city' => geoip()->getCity($ip),
-            'latitude' => geoip()->getLatitude($ip),
-            'longitude' => geoip()->getLongitude($ip),
-            'isp' => geoip()->getISP($ip),
-        ];
+        try {
+            $location = Location::get($ip);
+
+            if ($location === false) {
+                return [];
+            }
+
+            return [
+                'country_code' => $location->countryCode,
+                'country_name' => $location->countryName,
+                'region' => $location->regionName,
+                'city' => $location->cityName,
+                'latitude' => $location->latitude,
+                'longitude' => $location->longitude,
+                'isp' => null,
+                'is_vpn' => false,
+                'is_proxy' => false,
+            ];
+        } catch (Exception) {
+            return [];
+        }
     }
 
     private function detectDeviceType(Request $request): string
     {
-        $userAgent = strtolower($request->userAgent() ?? '');
+        $userAgent = mb_strtolower($request->userAgent() ?? '');
 
         if (str_contains($userAgent, 'mobile') || str_contains($userAgent, 'android')) {
             return 'mobile';
@@ -87,19 +102,19 @@ final readonly class StoreRequestMetadataAction
     {
         $userAgent = $request->userAgent() ?? '';
 
-        if (preg_match('/Chrome/', $userAgent)) {
+        if (str_contains($userAgent, 'Chrome')) {
             return 'Chrome';
         }
-        if (preg_match('/Firefox/', $userAgent)) {
+        if (str_contains($userAgent, 'Firefox')) {
             return 'Firefox';
         }
-        if (preg_match('/Safari/', $userAgent) && !preg_match('/Chrome/', $userAgent)) {
+        if (str_contains($userAgent, 'Safari') && ! str_contains($userAgent, 'Chrome')) {
             return 'Safari';
         }
-        if (preg_match('/MSIE|Trident/', $userAgent)) {
+        if (str_contains($userAgent, 'MSIE') || str_contains($userAgent, 'Trident')) {
             return 'IE';
         }
-        if (preg_match('/Edge/', $userAgent)) {
+        if (str_contains($userAgent, 'Edge')) {
             return 'Edge';
         }
 
@@ -131,7 +146,7 @@ final readonly class StoreRequestMetadataAction
 
     private function isMobileDevice(Request $request): bool
     {
-        $userAgent = strtolower($request->userAgent() ?? '');
+        $userAgent = mb_strtolower($request->userAgent() ?? '');
 
         return str_contains($userAgent, 'mobile') ||
             str_contains($userAgent, 'android') ||
