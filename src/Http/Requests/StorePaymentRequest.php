@@ -29,6 +29,12 @@ final class StorePaymentRequest extends FormRequest
             'items.*.total_price' => ['required', 'numeric', 'min:0'],
             'items.*.description' => ['sometimes', 'string'],
             'items.*.metadata' => ['sometimes', 'array'],
+            'customer_name' => ['sometimes', 'string', 'max:255'],
+            'customer_email' => ['sometimes', 'email', 'max:255'],
+            'customer_phone' => ['sometimes', 'string', 'max:20'],
+            'customer_country' => ['sometimes', 'string', 'max:2'],
+            'customer_city' => ['sometimes', 'string', 'max:255'],
+            'customer_address' => ['sometimes', 'string', 'max:255'],
         ];
     }
 }

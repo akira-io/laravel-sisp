@@ -6,6 +6,8 @@ namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
+use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Exceptions\InvalidPaymentResponseException;
 use Akira\Sisp\Facades\Sisp;
 use Illuminate\Http\Request;
@@ -15,6 +17,7 @@ final readonly class CallbackController
     public function __construct(
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
+        private UpdateInvoiceStatusAction $updateInvoiceStatus,
     ) {}
 
     /**
@@ -63,6 +66,8 @@ final readonly class CallbackController
         $transaction = Sisp::handlePaymentCallback($payload);
 
         $this->storeMetadata->handle($request, $transaction);
+
+        $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
         return redirect()->route('sisp.callback', ['ref' => $transaction->merchant_ref]);
     }

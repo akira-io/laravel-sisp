@@ -55,11 +55,21 @@ return new class extends Migration
             $table->text('merchant_response')->nullable();
             $table->text('fingerprint')->nullable();
             $table->longText('payload')->nullable();
+
+            // Client information
+            $table->string('customer_name')->nullable();
+            $table->string('customer_email')->nullable();
+            $table->string('customer_phone')->nullable();
+            $table->string('customer_country')->nullable();
+            $table->string('customer_city')->nullable();
+            $table->string('customer_address')->nullable();
+
             $table->timestamp('cancelled_at')->nullable();
             $table->timestamp('refunded_at')->nullable();
             $table->timestamps();
             $table->index(['merchant_ref', 'merchant_session', 'status', 'message_type']);
             $table->index(['transaction_id']);
+            $table->index(['customer_email']);
         });
     }
 
@@ -100,6 +110,14 @@ return new class extends Migration
             $table->date('invoice_date');
             $table->date('due_date')->nullable();
             $table->string('status')->default('pending');
+
+            // Customer information (denormalized from transaction)
+            $table->string('customer_name')->nullable();
+            $table->string('customer_email')->nullable();
+            $table->string('customer_city')->nullable();
+            $table->string('customer_address')->nullable();
+            $table->string('customer_country')->nullable();
+
             $table->text('notes')->nullable();
             $table->string('pdf_path')->nullable();
             $table->json('metadata')->nullable();

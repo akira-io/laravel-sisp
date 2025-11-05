@@ -43,6 +43,12 @@ A robust Laravel 12 package for integrating SISP Cabo Verde (Vinti4 / Pagamento2
 - Single Responsibility Principle
 - Type-safe with PHP 8.4 strict types
 
+📄 **PDF Invoice Generation**
+- Automatic invoice generation after successful payment
+- Built-in PDF support with professional templates
+- Customer data storage in transactions
+- Download link in payment response
+
 ## Installation
 
 ### 1. Install via Composer
@@ -82,6 +88,16 @@ SISP_CURRENCY=132
 SISP_LANGUAGE_MESSAGES=en
 SISP_IS_3D_SEC=1
 SISP_DEFAULT_TRANSACTION_CODE=1
+
+# Invoice Configuration
+SISP_INVOICE_DISK=public
+SISP_INVOICE_TEMPLATE=modern
+SISP_COMPANY_ADDRESS=Your company address
+SISP_COMPANY_CODE=Your VAT code
+SISP_COMPANY_COUNTRY=Country
+SISP_COMPANY_PHONE=+XXX XXXX XXXX
+SISP_COMPANY_EMAIL=contact@company.com
+SISP_COMPANY_WEBSITE=https://company.com
 
 # Rendering Configuration
 SISP_USE_BLADE=true
@@ -205,7 +221,18 @@ Dispatched when payment is pending.
 
 - PHP 8.4+
 - Laravel 11 or 12
-- composer
+- Composer
+- Node.js with `npm` (for Puppeteer, required for PDF invoice generation)
+
+## Peer Dependencies
+
+This package uses `laravel-pdf-invoices` which requires Puppeteer for PDF generation. Install it with:
+
+```bash
+npm install puppeteer
+```
+
+This is required if you want to generate PDF invoices.
 
 ## Testing
 

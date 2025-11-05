@@ -24,6 +24,8 @@ final readonly class RenderPaymentResponseAction
             return $this->renderBlade($transaction, $payload);
         }
 
+        $invoice = $transaction->invoice;
+
         return Inertia::render($component, [
             'transaction' => [
                 'id' => $transaction->id,
@@ -35,6 +37,10 @@ final readonly class RenderPaymentResponseAction
                 'merchant_session' => $transaction->merchant_session,
                 'message_type' => $transaction->message_type,
             ],
+            'invoice' => $invoice ? [
+                'invoice_number' => $invoice->invoice_number,
+                'pdf_path' => $invoice->pdf_path,
+            ] : null,
             'payload' => $payload,
         ]);
     }

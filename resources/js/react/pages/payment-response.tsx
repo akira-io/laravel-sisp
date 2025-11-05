@@ -11,12 +11,18 @@ interface TransactionData {
     message_type?: string;
 }
 
+interface InvoiceData {
+    invoice_number: string;
+    pdf_path: string;
+}
+
 interface PaymentResponseProps {
     transaction: TransactionData;
+    invoice?: InvoiceData | null;
     payload: Record<string, any>;
 }
 
-export default function PaymentResponse({transaction, payload}: PaymentResponseProps) {
+export default function PaymentResponse({transaction, invoice, payload}: PaymentResponseProps) {
     const isSuccess = transaction.status === 'completed';
     const isFailed = transaction.status === 'failed';
     const isPending = transaction.status === 'pending';
@@ -58,6 +64,13 @@ export default function PaymentResponse({transaction, payload}: PaymentResponseP
                         <p><strong>Valor:</strong> {transaction.formatted_amount}</p>
                         <p><strong>Status:</strong> <span className='text-green-600 dark:text-green-500 font-medium'>Completado</span></p>
                     </div>
+                    {invoice && invoice.pdf_path && (
+                        <a href={`/storage/${invoice.pdf_path}`}
+                           download={`${invoice.invoice_number}.pdf`}
+                           className='block w-full rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 px-4 py-2 text-center text-sm font-medium text-blue-600 dark:text-blue-500 transition border border-blue-200 dark:border-blue-800'>
+                            Download da Fatura
+                        </a>
+                    )}
                 </div>
               )}
               {isFailed && (
