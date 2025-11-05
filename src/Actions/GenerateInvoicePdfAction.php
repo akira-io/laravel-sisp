@@ -18,7 +18,7 @@ final readonly class GenerateInvoicePdfAction
         $transaction = $invoice->transaction;
 
         $seller = EntityBuilder::make()
-            ->name(config('app.name'))
+            ->name(config('sisp.invoice.company_name', config('app.name')))
             ->address(config('sisp.invoice.company_address', ''))
             ->vat(config('sisp.invoice.company_code', ''))
             ->email(config('sisp.invoice.company_email', ''))
@@ -29,11 +29,11 @@ final readonly class GenerateInvoicePdfAction
 
         $buyer = EntityBuilder::make()
             ->name($invoice->customer_name ?? $transaction->customer_name)
-            ->set('reference', $transaction->merchant_ref)
-            ->set('country', $invoice->customer_country ?? $transaction->customer_country)
-            ->set('phone', $transaction->customer_phone)
             ->email($invoice->customer_email ?? $transaction->customer_email)
             ->address($invoice->customer_address ?? $transaction->customer_address)
+            ->set('country', $invoice->customer_country ?? $transaction->customer_country)
+            ->set('phone', $transaction->customer_phone)
+
             ->set('city', $invoice->customer_city ?? $transaction->customer_city)
             ->build();
 

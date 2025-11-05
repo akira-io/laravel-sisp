@@ -204,6 +204,7 @@ return [
         'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
         'disk' => env('SISP_INVOICE_DISK', 'public'),
         'template' => env('SISP_INVOICE_TEMPLATE', 'minimal'),
+        'company_name' => env('SISP_COMPANY_NAME', ''),
         'company_address' => env('SISP_COMPANY_ADDRESS', ''),
         'company_code' => env('SISP_COMPANY_CODE', ''),
         'company_country' => env('SISP_COMPANY_COUNTRY', ''),
