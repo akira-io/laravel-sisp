@@ -72,19 +72,25 @@ SISP_USE_INERTIA=true
 SISP_USE_BLADE=false
 ```
 
-Then install Inertia components:
+Then install Inertia components. Choose ONE of the following:
 
+For React:
 ```bash
-npm install @inertiajs/react @inertiajs/vue3
+npm install @inertiajs/react
+```
+
+For Vue 3:
+```bash
+npm install @inertiajs/vue3
 ```
 
 ## What's Installed?
 
-- ✅ Service provider registered
-- ✅ Config published to `config/sisp.php`
-- ✅ Migration created for `sisp_transactions` table
-- ✅ Routes registered with prefix `/sisp`
-- ✅ Blade views published (optional)
+- Service provider registered
+- Config published to `config/sisp.php`
+- Migration created for `sisp_transactions` table
+- Routes registered with prefix `/sisp`
+- Blade views published (optional)
 
 ## Database Tables Created
 
