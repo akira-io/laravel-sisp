@@ -1,0 +1,508 @@
+# API Reference
+
+Complete reference for models, actions, and events.
+
+## Models
+
+### Transaction
+
+The main model representing a payment transaction.
+
+#### Attributes
+
+```php
+$transaction->id                  // UUID primary key
+$transaction->merchant_ref        // Unique merchant reference
+$transaction->merchant_session    // Merchant session ID
+$transaction->amount              // Amount in cents (integer)
+$transaction->currency            // Currency code (ECV)
+$transaction->status              // TransactionStatus enum
+$transaction->transaction_code    // SISP transaction type code
+$transaction->transaction_id      // SISP's transaction ID
+$transaction->message_type        // SISP message type
+$transaction->response_code       // SISP response code
+$transaction->merchant_response   // SISP response message (encrypted)
+$transaction->fingerprint         // Payment signature fingerprint
+$transaction->payload             // Full SISP response data (encrypted, array)
+$transaction->customer_name       // Customer name
+$transaction->customer_email      // Customer email (encrypted)
+$transaction->customer_phone      // Customer phone (encrypted)
+$transaction->customer_country    // Customer country code
+$transaction->customer_city       // Customer city
+$transaction->customer_address    // Customer address
+$transaction->cancelled_at        // When transaction was cancelled
+$transaction->refunded_at         // When transaction was refunded
+$transaction->created_at          // Created timestamp
+$transaction->updated_at          // Updated timestamp
+```
+
+#### Accessors
+
+```php
+$transaction->formatted_amount    // "1000,00 ECV"
+```
+
+#### Relations
+
+```php
+$transaction->items()             // HasMany TransactionItem
+$transaction->invoice()           // HasOne Invoice
+```
+
+#### Scopes
+
+```php
+Transaction::where('status', TransactionStatus::completed)
+Transaction::where('status', TransactionStatus::failed)
+Transaction::where('customer_email', 'test@example.com')
+Transaction::whereBetween('created_at', [$start, $end])
+Transaction::with('items', 'invoice')
+Transaction::paginate(15)
+```
+
+### TransactionItem
+
+Line item in a transaction.
+
+#### Attributes
+
+```php
+$item->id                         // UUID primary key
+$item->transaction_id             // FK to Transaction
+$item->product_id                 // Optional product ID
+$item->product_name               // Item name (required)
+$item->quantity                   // Quantity (integer)
+$item->unit_price_cents           // Unit price in cents (integer)
+$item->total_price_cents          // Total price in cents (integer)
+$item->description                // Item description (optional)
+$item->metadata                   // Custom metadata (array)
+$item->created_at                 // Created timestamp
+$item->updated_at                 // Updated timestamp
+```
+
+#### Accessors
+
+```php
+$item->unit_price                 // unit_price_cents / 100 (float)
+$item->total_price                // total_price_cents / 100 (float)
+```
+
+#### Relations
+
+```php
+$item->transaction()              // BelongsTo Transaction
+```
+
+### Invoice
+
+Generated invoice for a transaction.
+
+#### Attributes
+
+```php
+$invoice->id                      // UUID primary key
+$invoice->transaction_id          // FK to Transaction
+$invoice->invoice_number          // Generated invoice number
+$invoice->invoice_date            // Date invoice created
+$invoice->due_date                // Payment due date
+$invoice->status                  // InvoiceStatus enum
+$invoice->customer_name           // Customer name (from transaction)
+$invoice->customer_email          // Customer email (from transaction)
+$invoice->customer_city           // Customer city (from transaction)
+$invoice->customer_address        // Customer address (from transaction)
+$invoice->customer_country        // Customer country (from transaction)
+$invoice->notes                   // Optional invoice notes
+$invoice->pdf_path                // Path to generated PDF
+$invoice->metadata                // Custom metadata (array)
+$invoice->created_at              // Created timestamp
+$invoice->updated_at              // Updated timestamp
+```
+
+#### Relations
+
+```php
+$invoice->transaction()           // BelongsTo Transaction
+$invoice->items()                 // HasMany (via transaction)
+```
+
+### RequestMetadata
+
+Security and fraud detection data for a payment request.
+
+#### Attributes
+
+```php
+$metadata->id                     // UUID primary key
+$metadata->transaction_id         // FK to Transaction (nullable)
+$metadata->ip_address             // Client IP address
+$metadata->user_agent             // Browser user agent
+$metadata->referer                // HTTP referer header
+$metadata->country_code           // Geolocation country code
+$metadata->country_name           // Geolocation country name
+$metadata->region                 // Geolocation region
+$metadata->city                   // Geolocation city
+$metadata->latitude               // Geolocation latitude (float)
+$metadata->longitude              // Geolocation longitude (float)
+$metadata->isp                    // Internet service provider
+$metadata->device_type            // mobile/tablet/desktop
+$metadata->browser                // Chrome/Firefox/Safari/IE/Edge
+$metadata->os                     // Windows/macOS/Linux/iOS/Android
+$metadata->device_fingerprint     // SHA256 hash of device
+$metadata->response_time_ms       // API response time in milliseconds
+$metadata->api_version            // API version used
+$metadata->is_vpn                 // VPN detected (boolean)
+$metadata->is_proxy               // Proxy detected (boolean)
+$metadata->is_mobile              // Mobile device (boolean)
+$metadata->risk_score             // Fraud risk score 0-100
+$metadata->risk_reason            // Why risk was assigned
+$metadata->custom_metadata        // Custom metadata (array)
+$metadata->created_at             // Created timestamp
+$metadata->updated_at             // Updated timestamp
+```
+
+#### Relations
+
+```php
+$metadata->transaction()          // BelongsTo Transaction
+```
+
+#### Scopes
+
+```php
+RequestMetadata::where('risk_score', '>=', 70)
+RequestMetadata::where('is_vpn', true)
+RequestMetadata::where('country_code', 'PT')
+RequestMetadata::where('device_type', 'mobile')
+```
+
+### RateLimit
+
+Rate limiting tracking.
+
+#### Attributes
+
+```php
+$rateLimit->id                    // Primary key
+$rateLimit->identifier            // IP, email, or user ID
+$rateLimit->limit_type            // ip/merchant/user
+$rateLimit->context               // Context key (optional)
+$rateLimit->hits                  // Current hit count
+$rateLimit->limit                 // Maximum allowed hits
+$rateLimit->window_seconds        // Time window in seconds
+$rateLimit->is_blocked            // Currently blocked (boolean)
+$rateLimit->reset_at              // When window resets
+$rateLimit->blocked_until         // When block expires
+$rateLimit->created_at            // Created timestamp
+$rateLimit->updated_at            // Updated timestamp
+```
+
+#### Methods
+
+```php
+$rateLimit->isLimitExceeded()     // Boolean
+$rateLimit->recordHit()           // Increment hits
+$rateLimit->reset()               // Reset counter
+$rateLimit->block(?int $seconds)  // Block this identifier
+```
+
+#### Scopes
+
+```php
+RateLimit::active()               // Not expired
+RateLimit::blocked()              // Currently blocked
+RateLimit::where('limit_type', 'ip')
+```
+
+### Blacklist
+
+Blocked identifiers.
+
+#### Attributes
+
+```php
+$entry->id                        // Primary key
+$entry->type                      // ip/email/phone/etc
+$entry->value                     // The blocked value
+$entry->severity                  // low/medium/high/critical
+$entry->reason                    // Why it's blocked
+$entry->notes                     // Additional notes
+$entry->added_by                  // Who added it
+$entry->expires_at                // When block expires (nullable)
+$entry->created_at                // Created timestamp
+$entry->updated_at                // Updated timestamp
+```
+
+#### Methods
+
+```php
+$entry->isActive()                // Boolean
+$entry->isExpired()               // Boolean
+```
+
+#### Scopes
+
+```php
+Blacklist::active()               // Not expired
+Blacklist::expired()              // Expired entries
+Blacklist::byType('ip')
+Blacklist::bySeverity('high')
+```
+
+## Events
+
+### PaymentCompleted
+
+Fired when payment succeeds.
+
+```php
+PaymentCompleted::class {
+    public Transaction $transaction
+    public array $payload
+}
+```
+
+### PaymentFailed
+
+Fired when payment fails.
+
+```php
+PaymentFailed::class {
+    public Transaction $transaction
+    public array $payload
+}
+```
+
+### PaymentPending
+
+Fired when payment remains pending.
+
+```php
+PaymentPending::class {
+    public Transaction $transaction
+    public array $payload
+}
+```
+
+### TransactionCancelled
+
+Fired when transaction is cancelled.
+
+```php
+TransactionCancelled::class {
+    public Transaction $transaction
+    public string $reason
+}
+```
+
+### TransactionRefunded
+
+Fired when transaction is refunded.
+
+```php
+TransactionRefunded::class {
+    public Transaction $transaction
+    public float $refundAmount
+    public string $reason
+}
+```
+
+## Enums
+
+### TransactionStatus
+
+```php
+TransactionStatus::pending        // Awaiting SISP response
+TransactionStatus::completed      // Payment successful
+TransactionStatus::failed         // Payment rejected
+TransactionStatus::cancelled      // Transaction cancelled
+TransactionStatus::refunded       // Fully refunded
+TransactionStatus::partially_refunded // Partially refunded
+```
+
+### InvoiceStatus
+
+```php
+InvoiceStatus::pending            // Not yet issued
+InvoiceStatus::issued             // Sent to customer
+InvoiceStatus::paid               // Payment confirmed
+InvoiceStatus::overdue            // Past due date
+InvoiceStatus::cancelled          // Cancelled
+```
+
+## Actions
+
+Common actions for payment processing.
+
+### CheckRateLimitAction
+
+Check if rate limit is exceeded.
+
+```php
+app(CheckRateLimitAction::class)->handle(
+    string $limitType = 'ip',           // ip/merchant/user
+    ?string $identifier = null,         // IP/email/etc
+    ?string $context = null,            // Context key
+    ?int $limit = null,                 // Max requests
+    ?int $windowSeconds = null          // Time window
+): void
+
+// Throws RateLimitExceededException if limit exceeded
+```
+
+### CheckBlacklistAction
+
+Check and manage blacklist.
+
+```php
+$action = app(CheckBlacklistAction::class);
+
+// Check if blacklisted (throws exception)
+$action->handle(string $type, ?string $value): void
+
+// Check if value is blacklisted (returns boolean)
+$action->isBlacklisted(string $type, string $value): bool
+
+// Add to blacklist
+$action->add(
+    string $type,
+    string $value,
+    string $severity = 'medium',
+    ?string $reason = null,
+    ?string $notes = null,
+    ?string $addedBy = null,
+    ?int $expiresInMinutes = null
+): Blacklist
+
+// Remove from blacklist
+$action->remove(string $type, string $value): bool
+```
+
+### CancelTransactionAction
+
+Cancel a pending or failed transaction.
+
+```php
+app(CancelTransactionAction::class)->handle(
+    Transaction $transaction,
+    string $reason = 'user_cancelled'
+): Transaction
+
+// Throws LogicException if cannot cancel
+```
+
+### RefundTransactionAction
+
+Refund a completed transaction.
+
+```php
+app(RefundTransactionAction::class)->handle(
+    Transaction $transaction,
+    float $refundAmount,
+    string $reason = 'user_refund'
+): Transaction
+
+// Throws LogicException if cannot refund
+```
+
+### GenerateInvoiceAction
+
+Generate invoice for transaction.
+
+```php
+app(GenerateInvoiceAction::class)->handle(
+    Transaction $transaction
+): Invoice
+```
+
+### GenerateInvoicePdfAction
+
+Generate PDF for invoice.
+
+```php
+app(GenerateInvoicePdfAction::class)->handle(
+    Invoice $invoice
+): string // Returns pdf_path
+```
+
+## Exceptions
+
+### RateLimitExceededException
+
+Thrown when rate limit is exceeded.
+
+```php
+catch (RateLimitExceededException $e) {
+    // HTTP 429
+}
+```
+
+### BlacklistedIdentifierException
+
+Thrown when identifier is blacklisted.
+
+```php
+catch (BlacklistedIdentifierException $e) {
+    // HTTP 403
+}
+```
+
+## Routes
+
+All routes are registered automatically with `/sisp` prefix.
+
+```
+POST   /sisp/payment           -> PaymentController
+GET    /sisp/callback          -> CallbackController
+POST   /sisp/callback          -> CallbackController
+POST   /sisp/cancel            -> CancelTransactionController
+POST   /sisp/refund            -> RefundTransactionController
+GET    /sisp/sandbox           -> SandboxController
+POST   /sisp/sandbox           -> SandboxController
+```
+
+Route names:
+
+```php
+route('sisp.payment')
+route('sisp.callback')
+route('sisp.cancel')
+route('sisp.refund')
+route('sisp.sandbox')
+```
+
+## Configuration
+
+All configuration keys under `sisp.*`:
+
+```php
+config('sisp.url')
+config('sisp.pos_id')
+config('sisp.pos_aut_code')
+config('sisp.merchant_id')
+config('sisp.currency')
+config('sisp.language_messages')
+config('sisp.sandbox')
+config('sisp.rate_limiting.enabled')
+config('sisp.rate_limiting.per_ip.limit')
+config('sisp.rate_limiting.per_merchant.limit')
+config('sisp.rate_limiting.per_user.limit')
+config('sisp.invoice.company_name')
+config('sisp.invoice.company_address')
+config('sisp.invoice.company_code')
+config('sisp.invoice.company_email')
+config('sisp.invoice.company_country')
+config('sisp.invoice.company_phone')
+config('sisp.invoice.company_website')
+config('sisp.invoice.template')
+config('sisp.tables.transactions')
+config('sisp.tables.transaction_items')
+config('sisp.tables.invoices')
+config('sisp.tables.request_metadata')
+config('sisp.tables.rate_limits')
+config('sisp.tables.blacklist')
+```
+
+## Next Steps
+
+- Review [Examples](./08-examples.md) for code samples
+- Check [Troubleshooting](./09-troubleshooting.md) for solutions
