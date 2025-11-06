@@ -190,7 +190,6 @@ return [
         'enabled' => env('SISP_USE_BLADE', true),
         'payment_form' => 'sisp::payment-form',
         'payment_response' => 'sisp::payment-response',
-
     ],
 
     'use_inertia' => [
@@ -203,7 +202,7 @@ return [
         'number_format' => env('SISP_INVOICE_NUMBER_FORMAT', 'date-based'),
         'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
         'disk' => env('SISP_INVOICE_DISK', 'public'),
-        'template' => env('SISP_INVOICE_TEMPLATE', 'minimal'),
+        'template' => env('SISP_INVOICE_TEMPLATE', 'branded'),
         'company_name' => env('SISP_COMPANY_NAME', ''),
         'company_address' => env('SISP_COMPANY_ADDRESS', ''),
         'company_code' => env('SISP_COMPANY_CODE', ''),

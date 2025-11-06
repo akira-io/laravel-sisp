@@ -14,12 +14,13 @@ By default, the following attributes are encrypted in the `transactions` table:
 
 ## How It Works
 
-The `EncryptsAttributes` trait automatically encrypts data when you set an attribute and decrypts it when you retrieve it. This is transparent to your application code.
+The `EncryptsAttributes` trait automatically encrypts data when you set an attribute and decrypts it when you retrieve
+it. This is transparent to your application code.
 
 ### Example Usage
 
 ```php
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 
 // Automatically encrypted
 $transaction = Transaction::create([
@@ -64,7 +65,8 @@ protected function encryptable(): array
 
 ## Database Storage
 
-Encrypted values are stored as encrypted strings in the database. They automatically decrypt when accessed through the model:
+Encrypted values are stored as encrypted strings in the database. They automatically decrypt when accessed through the
+model:
 
 ```php
 $transaction = Transaction::find($id);
@@ -73,7 +75,8 @@ $transaction->merchant_ref; // Returns decrypted value
 
 ## Querying Encrypted Data
 
-Since encrypted values are stored as encrypted strings, you cannot directly query them. The encryption process is transparent to reads, but queries must account for encryption:
+Since encrypted values are stored as encrypted strings, you cannot directly query them. The encryption process is
+transparent to reads, but queries must account for encryption:
 
 ```php
 // This won't work (merchant_ref is encrypted in the database)
@@ -127,8 +130,10 @@ Encryption works alongside other security features:
 
 - **Fingerprint Validation** - Validates request/response integrity (see [Architecture](./architecture.md))
 - **Rate Limiting** - Prevents abuse through frequency limits (see [Rate Limiting](./rate-limiting.md))
-- **Request Metadata** - Captures geolocation and device data (see [Security & Fraud Detection](./security-and-fraud-detection.md))
-- **Blacklisting** - Blocks known malicious identifiers (see [Security & Fraud Detection](./security-and-fraud-detection.md))
+- **Request Metadata** - Captures geolocation and device data (
+  see [Security & Fraud Detection](./security-and-fraud-detection.md))
+- **Blacklisting** - Blocks known malicious identifiers (
+  see [Security & Fraud Detection](./security-and-fraud-detection.md))
 
 ## See Also
 

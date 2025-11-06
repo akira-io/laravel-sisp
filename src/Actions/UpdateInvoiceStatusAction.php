@@ -6,7 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 
 final readonly class UpdateInvoiceStatusAction
 {
@@ -14,7 +14,7 @@ final readonly class UpdateInvoiceStatusAction
     {
         $invoice = $transaction->invoice;
 
-        if (!$invoice) {
+        if (! $invoice) {
             return;
         }
 

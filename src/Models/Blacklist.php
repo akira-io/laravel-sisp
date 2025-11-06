@@ -8,11 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 
 final class Blacklist extends Model
 {
-    public function getTable(): string
-    {
-        return config('sisp.tables.blacklist', 'sisp_blacklist');
-    }
-
     protected $fillable = [
         'type',
         'value',
@@ -26,6 +21,11 @@ final class Blacklist extends Model
     protected $casts = [
         'expires_at' => 'datetime',
     ];
+
+    public function getTable(): string
+    {
+        return config('sisp.tables.blacklist', 'sisp_blacklist');
+    }
 
     public function scopeActive($query)
     {
@@ -62,6 +62,6 @@ final class Blacklist extends Model
 
     public function isExpired(): bool
     {
-        return !$this->isActive();
+        return ! $this->isActive();
     }
 }

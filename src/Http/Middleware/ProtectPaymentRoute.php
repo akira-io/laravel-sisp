@@ -31,11 +31,11 @@ final class ProtectPaymentRoute
         $merchantRef = $request->input('merchantRef');
         $merchantSession = $request->input('merchantSession');
 
-        if (!$merchantRef || !$merchantSession) {
+        if (! $merchantRef || ! $merchantSession) {
             return false;
         }
 
-        return \Akira\Sisp\Transaction::where('merchant_ref', $merchantRef)
+        return \Akira\Sisp\Models\Transaction::where('merchant_ref', $merchantRef)
             ->where('merchant_session', $merchantSession)
             ->whereIn('status', ['completed', 'failed', 'pending'])
             ->exists();

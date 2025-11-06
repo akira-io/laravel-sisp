@@ -222,9 +222,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Models\RateLimit;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\RequestMetadata;
+use Akira\Sisp\Models\Transaction;
 use Illuminate\Console\Command;
 
 final class SispSecurityDashboard extends Command

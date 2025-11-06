@@ -145,5 +145,4 @@ final class LaravelSispInstallCommand extends Command
         // Default to blade if no Inertia found
         return 'blade';
     }
-
 }

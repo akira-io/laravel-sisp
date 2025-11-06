@@ -4,7 +4,8 @@ Guide to the CreateAndStorePaymentTransactionAction pattern for atomic transacti
 
 ## Overview
 
-The `CreateAndStorePaymentTransactionAction` encapsulates the creation and storage of payment transactions with items in a single atomic database transaction.
+The `CreateAndStorePaymentTransactionAction` encapsulates the creation and storage of payment transactions with items in
+a single atomic database transaction.
 
 ## Problem It Solves
 
@@ -25,6 +26,7 @@ $transaction = DB::transaction(function () use ($paymentRequest, $request) {
 ```
 
 Issues:
+
 - Boilerplate database transaction code in controller
 - Manual collection of items from request
 - Callback closure is hard to test
@@ -39,6 +41,7 @@ $transaction = $this->createTransaction->handle($paymentRequest, $request);
 ```
 
 Benefits:
+
 - Clean, single method call
 - Transaction logic isolated
 - Easy to test independently
@@ -57,11 +60,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Transaction;
-use Akira\Sisp\ValueObjects\PaymentRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Throwable;
+use Akira\Sisp\Models\Transaction;use Akira\Sisp\ValueObjects\PaymentRequest;use Illuminate\Http\Request;use Illuminate\Support\Facades\DB;use Throwable;
 
 final readonly class CreateAndStorePaymentTransactionAction
 {
@@ -211,13 +210,7 @@ try {
 
 namespace Tests\Feature;
 
-use Akira\Sisp\Actions\CreateAndStorePaymentTransactionAction;
-use Akira\Sisp\Actions\StorePaymentTransactionAction;
-use Akira\Sisp\Actions\StoreTransactionItemsAction;
-use Akira\Sisp\Transaction;
-use Akira\Sisp\ValueObjects\PaymentRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Akira\Sisp\Actions\CreateAndStorePaymentTransactionAction;use Akira\Sisp\Actions\StorePaymentTransactionAction;use Akira\Sisp\Actions\StoreTransactionItemsAction;use Akira\Sisp\Models\Transaction;use Akira\Sisp\ValueObjects\PaymentRequest;use Illuminate\Foundation\Testing\RefreshDatabase;use Tests\TestCase;
 
 final class CreateAndStorePaymentTransactionActionTest extends TestCase
 {
@@ -334,6 +327,7 @@ try {
 ### Compared to Service Class
 
 **Service (Anti-pattern for this package):**
+
 ```php
 class PaymentService {
     public function createTransaction() { }
@@ -343,6 +337,7 @@ class PaymentService {
 ```
 
 **Action (Preferred):**
+
 ```php
 class CreateAndStorePaymentTransactionAction {
     public function handle() { }
@@ -356,12 +351,14 @@ class UpdateInventoryAction {
 ### Compared to Repository Pattern
 
 **Repository:**
+
 ```php
 $transaction = $this->transactionRepository->create($data);
 $this->transactionRepository->addItems($transaction, $items);
 ```
 
 **Action:**
+
 ```php
 $transaction = $this->createTransaction->handle($paymentRequest, $request);
 ```

@@ -10,7 +10,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 
 final readonly class HandleCallbackAction
 {

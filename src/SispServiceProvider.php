@@ -11,6 +11,7 @@ use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidateFingerprintAction;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Configuration\LoadConfig;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\View\Compilers\BladeCompiler;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -57,8 +58,23 @@ final class SispServiceProvider extends PackageServiceProvider
     public function boot(): self
     {
         $this->registerComponents();
+        $this->registerFactories();
 
         return parent::boot();
+    }
+
+    /**
+     * Register package factories.
+     */
+    private function registerFactories(): void
+    {
+        Factory::guessFactoryNamesUsing(function (string $modelName): string {
+            if (str_starts_with($modelName, 'Akira\\Sisp\\')) {
+                return 'Akira\\Sisp\\Database\\Factories\\'.class_basename($modelName).'Factory';
+            }
+
+            return 'Database\\Factories\\'.class_basename($modelName).'Factory';
+        });
     }
 
     /**

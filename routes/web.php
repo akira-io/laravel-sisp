@@ -10,12 +10,12 @@ use Akira\Sisp\Http\Controllers\SandboxController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('sisp/payment', PaymentController::class)
-    ->middleware(\Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class)
+    ->middleware(Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class)
     ->name('sisp.payment');
 
 Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->withoutMiddleware('web')
-    ->middleware(\Akira\Sisp\Http\Middleware\PreventDuplicateCallback::class)
+    ->middleware(Akira\Sisp\Http\Middleware\PreventDuplicateCallback::class)
     ->name('sisp.callback');
 
 Route::post('sisp/cancel', CancelTransactionController::class)

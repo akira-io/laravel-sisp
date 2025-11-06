@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class InvalidPaymentResponseException extends Exception
 {
-    public function __construct(string $message = null)
+    public function __construct(?string $message = null)
     {
         parent::__construct(
             message: $message ?? __('Invalid payment response'),

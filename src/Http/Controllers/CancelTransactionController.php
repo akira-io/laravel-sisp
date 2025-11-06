@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\CancelTransactionAction;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use LogicException;

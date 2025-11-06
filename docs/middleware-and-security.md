@@ -207,9 +207,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Akira\Sisp\Actions\StoreRequestMetadataAction;
-use Akira\Sisp\Transaction;
-use Illuminate\Http\Request;
+use Akira\Sisp\Actions\StoreRequestMetadataAction;use Akira\Sisp\Models\Transaction;use Illuminate\Http\Request;
 
 final readonly class PaymentController
 {
@@ -537,10 +535,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use Akira\Sisp\Actions\CheckBlacklistAction;
-use Akira\Sisp\Actions\StoreRequestMetadataAction;
-use Akira\Sisp\Transaction;
-use Illuminate\Http\Request;
+use Akira\Sisp\Actions\CheckBlacklistAction;use Akira\Sisp\Actions\StoreRequestMetadataAction;use Akira\Sisp\Models\Transaction;use Illuminate\Http\Request;
 
 final readonly class PaymentController
 {

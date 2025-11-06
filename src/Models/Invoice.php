@@ -5,18 +5,12 @@ declare(strict_types=1);
 namespace Akira\Sisp\Models;
 
 use Akira\Sisp\Enums\InvoiceStatus;
-use Akira\Sisp\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Invoice extends Model
 {
-    public function getTable(): string
-    {
-        return config('sisp.tables.invoices', 'sisp_invoices');
-    }
-
     protected $fillable = [
         'transaction_id',
         'invoice_number',
@@ -39,6 +33,11 @@ final class Invoice extends Model
         'status' => InvoiceStatus::class,
         'metadata' => 'array',
     ];
+
+    public function getTable(): string
+    {
+        return config('sisp.tables.invoices', 'sisp_invoices');
+    }
 
     public function transaction(): BelongsTo
     {

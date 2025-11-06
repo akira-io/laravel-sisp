@@ -7,6 +7,7 @@ namespace Akira\Sisp\Http\Middleware;
 use Akira\Sisp\Actions\CheckBlacklistAction;
 use Akira\Sisp\Actions\CheckRateLimitAction;
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -29,11 +30,11 @@ final readonly class EnforceSispRateLimits
                     $ip,
                     'ip',
                     context: null,
-                    limit: (int)config('sisp.rate_limiting.per_ip.limit'),
-                    windowSeconds: (int)config('sisp.rate_limiting.per_ip.window_seconds')
+                    limit: (int) config('sisp.rate_limiting.per_ip.limit'),
+                    windowSeconds: (int) config('sisp.rate_limiting.per_ip.window_seconds')
                 );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage(),
                 'status' => $e->getCode(),
