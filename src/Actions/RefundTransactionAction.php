@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Events\TransactionRefunded;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
+use LogicException;
 
 final readonly class RefundTransactionAction
 {
@@ -14,20 +15,20 @@ final readonly class RefundTransactionAction
         float $refundAmount,
         string $reason = 'user_refund',
     ): Transaction {
-        if (!$this->canBeRefunded($transaction)) {
-            throw new \LogicException(
+        if (! $this->canBeRefunded($transaction)) {
+            throw new LogicException(
                 "Transaction with status '{$transaction->status}' cannot be refunded."
             );
         }
 
         if ($refundAmount > $transaction->amount) {
-            throw new \LogicException(
+            throw new LogicException(
                 "Refund amount ({$refundAmount}) cannot exceed transaction amount ({$transaction->amount})."
             );
         }
 
         if ($refundAmount <= 0) {
-            throw new \LogicException('Refund amount must be greater than 0.');
+            throw new LogicException('Refund amount must be greater than 0.');
         }
 
         $newAmount = $transaction->amount - $refundAmount;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\View\View;
 use Inertia\Inertia;
 
@@ -20,7 +20,7 @@ final readonly class RenderPaymentResponseAction
 
     public function renderInertia(Transaction $transaction, array $payload, string $component = 'Sisp/PaymentResponse'): mixed
     {
-        if (!class_exists('Inertia\Inertia')) {
+        if (! class_exists('Inertia\Inertia')) {
             return $this->renderBlade($transaction, $payload);
         }
 

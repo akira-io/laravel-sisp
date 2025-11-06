@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Models\RequestMetadata;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 use Exception;
 use Illuminate\Http\Request;
 use Stevebauman\Location\Facades\Location;

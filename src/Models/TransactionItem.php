@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
-use Akira\Sisp\Transaction;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class TransactionItem extends Model
 {
-    public function getTable(): string
-    {
-        return config('sisp.tables.transaction_items', 'sisp_transaction_items');
-    }
+    use HasFactory;
 
     protected $fillable = [
         'transaction_id',
@@ -33,6 +30,11 @@ final class TransactionItem extends Model
         'metadata' => 'array',
     ];
 
+    public function getTable(): string
+    {
+        return config('sisp.tables.transaction_items', 'sisp_transaction_items');
+    }
+
     public function getUnitPriceAttribute(): float
     {
         return $this->unit_price_cents / 100;
@@ -40,7 +42,7 @@ final class TransactionItem extends Model
 
     public function setUnitPriceAttribute(float $value): void
     {
-        $this->attributes['unit_price_cents'] = (int)round($value * 100);
+        $this->attributes['unit_price_cents'] = (int) round($value * 100);
     }
 
     public function getTotalPriceAttribute(): float
@@ -50,7 +52,7 @@ final class TransactionItem extends Model
 
     public function setTotalPriceAttribute(float $value): void
     {
-        $this->attributes['total_price_cents'] = (int)round($value * 100);
+        $this->attributes['total_price_cents'] = (int) round($value * 100);
     }
 
     public function transaction(): BelongsTo

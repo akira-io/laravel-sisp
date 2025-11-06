@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
-use Akira\Sisp\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class RequestMetadata extends Model
 {
-    public function getTable(): string
-    {
-        return config('sisp.tables.request_metadata', 'sisp_request_metadata');
-    }
-
     protected $fillable = [
         'transaction_id',
         'ip_address',
@@ -51,6 +45,11 @@ final class RequestMetadata extends Model
         'risk_score' => 'integer',
         'custom_metadata' => 'array',
     ];
+
+    public function getTable(): string
+    {
+        return config('sisp.tables.request_metadata', 'sisp_request_metadata');
+    }
 
     public function transaction(): BelongsTo
     {

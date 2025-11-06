@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Events;
 
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 
 final class TransactionRefunded

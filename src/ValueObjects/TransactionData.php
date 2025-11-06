@@ -20,7 +20,7 @@ final readonly class TransactionData
         return new self(
             merchantRef: $data['merchantRef'],
             merchantSession: $data['merchantSession'],
-            amount: (float)$data['amount'],
+            amount: (float) $data['amount'],
             currency: $data['currency'] ?? '132',
             transactionCode: $data['transactionCode'] ?? '1',
             payload: $data['payload'] ?? [],

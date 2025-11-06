@@ -13,8 +13,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Akira\Sisp\Models\RequestMetadata;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\RequestMetadata;use Akira\Sisp\Models\Transaction;
 
 final readonly class MetadataService
 {
@@ -437,9 +436,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Akira\Sisp\Models\RequestMetadata;
-use Akira\Sisp\Transaction;
-use Illuminate\Support\Collection;
+use Akira\Sisp\Models\RequestMetadata;use Akira\Sisp\Models\Transaction;use Illuminate\Support\Collection;
 
 final readonly class VelocityAnalyzer
 {
@@ -500,8 +497,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Akira\Sisp\Transaction;
-use Illuminate\Support\Collection;
+use Akira\Sisp\Models\Transaction;use Illuminate\Support\Collection;
 
 final readonly class AmountAnomalyDetector
 {
@@ -601,8 +597,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Akira\Sisp\Models\RequestMetadata;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\RequestMetadata;use Akira\Sisp\Models\Transaction;
 
 final readonly class CustomFraudScoreCalculator
 {
@@ -675,10 +670,7 @@ declare(straight_types=1);
 
 namespace App\Services;
 
-use Akira\Sisp\Models\RequestMetadata;
-use Akira\Sisp\Models\RateLimit;
-use Akira\Sisp\Transaction;
-use Carbon\Carbon;
+use Akira\Sisp\Models\RateLimit;use Akira\Sisp\Models\RequestMetadata;use Akira\Sisp\Models\Transaction;use Carbon\Carbon;
 
 final readonly class DailyFraudReport
 {

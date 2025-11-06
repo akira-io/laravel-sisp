@@ -10,6 +10,7 @@ use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidateFingerprintAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
@@ -114,6 +115,7 @@ final readonly class Sisp
     {
         return $this->loadConfig->getDefaultTransactionCode();
     }
+
     public function getUri(): string
     {
         return $this->loadConfig->getUri();

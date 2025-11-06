@@ -7,7 +7,7 @@ namespace Akira\Sisp\Actions;
 use Akira\Sisp\Actions\Generators\InvoiceNumberGeneratorAction;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Models\Invoice;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\InvoiceData;
 
 final readonly class GenerateInvoiceAction

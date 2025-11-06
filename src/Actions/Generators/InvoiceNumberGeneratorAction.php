@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions\Generators;
 
 use Akira\Sisp\Configuration\LoadConfig;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 
 final readonly class InvoiceNumberGeneratorAction
 {
@@ -25,7 +25,7 @@ final readonly class InvoiceNumberGeneratorAction
     private function generateSequential(Transaction $transaction): string
     {
         $prefix = $this->config->getInvoiceNumberPrefix();
-        $sequence = str_pad((string)$transaction->id, 6, '0', STR_PAD_LEFT);
+        $sequence = mb_str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT);
 
         return "{$prefix}{$sequence}";
     }
@@ -35,7 +35,7 @@ final readonly class InvoiceNumberGeneratorAction
         $prefix = $this->config->getInvoiceNumberPrefix();
         $year = $transaction->created_at->format('Y');
         $month = $transaction->created_at->format('m');
-        $sequence = str_pad((string)$transaction->id, 6, '0', STR_PAD_LEFT);
+        $sequence = mb_str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT);
 
         return "{$prefix}-{$year}{$month}-{$sequence}";
     }

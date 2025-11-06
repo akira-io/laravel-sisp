@@ -32,11 +32,11 @@ final class PreventDuplicateCallback
         $merchantSession = $request->input('merchantRespMerchantSession');
         $transactionId = $request->input('merchantRespTid');
 
-        if (!$merchantRef || !$merchantSession) {
+        if (! $merchantRef || ! $merchantSession) {
             return false;
         }
 
-        $transaction = \Akira\Sisp\Transaction::where('merchant_ref', $merchantRef)
+        $transaction = \Akira\Sisp\Models\Transaction::where('merchant_ref', $merchantRef)
             ->where('merchant_session', $merchantSession)
             ->first();
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 

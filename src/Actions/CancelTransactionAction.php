@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Enums\ErrorMessageType;
-use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Events\TransactionCancelled;
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
+use LogicException;
 
 final readonly class CancelTransactionAction
 {
     public function handle(Transaction $transaction, string $reason = 'user_cancelled'): Transaction
     {
         if ($this->cannotBeCancelled($transaction)) {
-            throw new \LogicException(
+            throw new LogicException(
                 "Transaction with status '{$transaction->status}' cannot be cancelled."
             );
         }

@@ -21,7 +21,7 @@ final readonly class PaymentRequestData
     public static function from(array $data): self
     {
         return new self(
-            amount: (float)$data['amount'],
+            amount: (float) $data['amount'],
             merchantRef: $data['merchantRef'] ?? null,
             merchantSession: $data['merchantSession'] ?? null,
             timeStamp: $data['timeStamp'] ?? null,

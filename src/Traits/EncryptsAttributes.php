@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace Akira\Sisp\Traits;
 
 use Illuminate\Support\Facades\Crypt;
+use Throwable;
 
 trait EncryptsAttributes
 {
-    protected function encryptable(): array
-    {
-        return [];
-    }
-
     public function shouldEncrypt(string $key): bool
     {
         $encryptable = $this->encryptable();
@@ -31,7 +27,7 @@ trait EncryptsAttributes
         if ($this->shouldEncrypt($key) && $value !== null && is_string($value)) {
             try {
                 return Crypt::decryptString($value);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return $value;
             }
         }
@@ -41,23 +37,29 @@ trait EncryptsAttributes
 
     public function setAttribute($key, $value): static
     {
-        if ($this->shouldEncrypt($key) && $value !== null && is_string($value) && !$this->isEncrypted($value)) {
+        if ($this->shouldEncrypt($key) && $value !== null && is_string($value) && ! $this->isEncrypted($value)) {
             $value = Crypt::encryptString($value);
         }
 
         return parent::setAttribute($key, $value);
     }
 
+    protected function encryptable(): array
+    {
+        return [];
+    }
+
     private function isEncrypted(mixed $value): bool
     {
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             return false;
         }
 
         try {
             Crypt::decryptString($value);
+
             return true;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }

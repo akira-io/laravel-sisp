@@ -11,7 +11,7 @@ final class BlacklistedIdentifierException extends Exception
     public function __construct(
         string $message = 'This identifier is blacklisted',
         int $code = 403,
-        Exception $previous = null
+        ?Exception $previous = null
     ) {
         parent::__construct($message, $code, $previous);
     }

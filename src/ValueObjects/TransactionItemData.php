@@ -20,9 +20,9 @@ final readonly class TransactionItemData
     {
         return new self(
             product_name: $data['product_name'],
-            quantity: (int)($data['quantity'] ?? 1),
-            unit_price: (float)($data['unit_price'] ?? 0),
-            total_price: (float)($data['total_price'] ?? 0),
+            quantity: (int) ($data['quantity'] ?? 1),
+            unit_price: (float) ($data['unit_price'] ?? 0),
+            total_price: (float) ($data['total_price'] ?? 0),
             product_id: $data['product_id'] ?? null,
             description: $data['description'] ?? null,
             metadata: $data['metadata'] ?? null,
@@ -31,7 +31,7 @@ final readonly class TransactionItemData
 
     public static function collection(array $items): array
     {
-        return array_map(fn(array $item) => self::from($item), $items);
+        return array_map(fn (array $item) => self::from($item), $items);
     }
 
     public function toArray(): array

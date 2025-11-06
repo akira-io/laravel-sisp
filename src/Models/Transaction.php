@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Akira\Sisp;
+namespace Akira\Sisp\Models;
 
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Models\Invoice;
-use Akira\Sisp\Models\TransactionItem;
 use Akira\Sisp\Traits\EncryptsAttributes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -15,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 final class Transaction extends Model
 {
     use EncryptsAttributes;
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -44,30 +44,9 @@ final class Transaction extends Model
         'refunded_at',
     ];
 
-    protected function encryptable(): array
-    {
-        return [
-            'payload',
-            'merchant_response',
-        ];
-    }
-
     public function getTable(): string
     {
         return config('sisp.tables.transactions', 'sisp_transactions');
-    }
-
-    protected function casts(): array
-    {
-        return [
-            'payload' => 'array',
-            'amount' => 'float',
-            'status' => TransactionStatus::class,
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'cancelled_at' => 'datetime',
-            'refunded_at' => 'datetime',
-        ];
     }
 
     public function items(): HasMany
@@ -83,6 +62,28 @@ final class Transaction extends Model
     public function getFormattedAmountAttribute(): string
     {
         $formatted = number_format($this->amount, 0, ',', '.');
+
         return "{$formatted} ECV";
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'payload' => 'array',
+            'amount' => 'float',
+            'status' => TransactionStatus::class,
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+            'refunded_at' => 'datetime',
+        ];
+    }
+
+    protected function encryptable(): array
+    {
+        return [
+            'payload',
+            'merchant_response',
+        ];
     }
 }

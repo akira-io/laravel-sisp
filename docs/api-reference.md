@@ -26,6 +26,7 @@ $invoice = $action->handle($transaction, $invoiceData);
 ```
 
 **Signature:**
+
 ```php
 public function handle(Transaction $transaction, InvoiceData $invoiceData): Invoice
 ```
@@ -59,6 +60,7 @@ $action->handle($transaction, ...$items);
 ```
 
 **Signature:**
+
 ```php
 public function handle(Transaction $transaction, TransactionItemData ...$items): void
 ```
@@ -87,6 +89,7 @@ $paymentRequest = $action->handle($requestData);
 ```
 
 **Signature:**
+
 ```php
 public function handle(PaymentRequestData $data): PaymentRequest
 ```
@@ -108,6 +111,7 @@ $signature = $action->handle($callbackPayload);
 ```
 
 **Signature:**
+
 ```php
 public function handle(array $payload): string
 ```
@@ -134,6 +138,7 @@ $action->handle($transaction, $callbackPayload);
 ```
 
 **Signature:**
+
 ```php
 public function handle(Transaction $transaction, CallbackPayload $callbackPayload): void
 ```
@@ -159,6 +164,7 @@ $invoiceNumber = $action->handle($transaction);
 ```
 
 **Signature:**
+
 ```php
 public function handle(Transaction $transaction): string
 ```
@@ -166,6 +172,7 @@ public function handle(Transaction $transaction): string
 **Returns:** `string` (e.g., "INV-202510-000001")
 
 **Formats:**
+
 - `sequential`: INV000001, INV000002, etc.
 - `date-based`: INV-202510-000001, INV-202510-000002, etc.
 
@@ -193,6 +200,7 @@ echo $data->currency; // '132'
 ```
 
 **Properties:**
+
 - `amount: float` - Transaction amount (required)
 - `currency: string` - ISO 4217 code (default: '132')
 - `merchant_ref: string` - Merchant reference (auto-generated if null)
@@ -226,6 +234,7 @@ $items = TransactionItemData::collection([
 ```
 
 **Properties:**
+
 - `product_id: string` - Product SKU (optional)
 - `product_name: string` - Product name (required)
 - `quantity: int` - Quantity (required, min: 1)
@@ -235,6 +244,7 @@ $items = TransactionItemData::collection([
 - `metadata: array` - Additional data (optional)
 
 **Methods:**
+
 - `from(array $data): self` - Create from array
 - `collection(array $items): array` - Create collection
 
@@ -257,6 +267,7 @@ $invoiceData = InvoiceData::from([
 ```
 
 **Properties:**
+
 - `invoice_number: string` - Invoice number (required)
 - `invoice_date: Carbon` - Invoice date (required)
 - `due_date: Carbon` - Due date (optional)
@@ -264,6 +275,7 @@ $invoiceData = InvoiceData::from([
 - `metadata: array` - Additional data (optional)
 
 **Methods:**
+
 - `from(array $data): self` - Create from array
 - `toArray(): array` - Convert to array
 
@@ -290,6 +302,7 @@ echo $paymentRequest->url;
 ```
 
 **Properties:**
+
 - `url: string` - SISP gateway URL
 - `method: string` - HTTP method (POST)
 - `fields: array` - Form fields
@@ -315,6 +328,7 @@ echo $callbackPayload->merchant_response;
 ```
 
 **Properties:**
+
 - `merchant_ref: string` - Merchant reference
 - `merchant_session: string` - Session ID
 - `transaction_id: string` - SISP transaction ID
@@ -329,7 +343,7 @@ echo $callbackPayload->merchant_response;
 ### Transaction
 
 ```php
-use Akira\Sisp\Transaction;
+use Akira\Sisp\Models\Transaction;
 
 $transaction = Transaction::find(1);
 
@@ -345,6 +359,7 @@ $invoice = $transaction->invoice(); // HasOne
 ```
 
 **Properties:**
+
 - `id: int` - Primary key
 - `merchant_ref: string` - Merchant reference
 - `merchant_session: string` - Session ID
@@ -364,11 +379,13 @@ $invoice = $transaction->invoice(); // HasOne
 - `updated_at: datetime` - Update time
 
 **Methods:**
+
 - `items(): HasMany` - Get transaction items
 - `invoice(): HasOne` - Get associated invoice
 - `getTable(): string` - Get table name (configurable)
 
 **Scopes:**
+
 ```php
 Transaction::completed()->get(); // status = completed
 Transaction::failed()->get(); // status = failed
@@ -396,6 +413,7 @@ $transaction = $item->transaction(); // BelongsTo
 ```
 
 **Properties:**
+
 - `id: int` - Primary key
 - `transaction_id: int` - Foreign key
 - `product_id: string` - Product SKU
@@ -411,6 +429,7 @@ $transaction = $item->transaction(); // BelongsTo
 - `updated_at: datetime` - Update time
 
 **Methods:**
+
 - `transaction(): BelongsTo` - Get parent transaction
 - `getTable(): string` - Get table name (configurable)
 
@@ -433,6 +452,7 @@ $items = $invoice->items(); // HasMany (through transaction)
 ```
 
 **Properties:**
+
 - `id: int` - Primary key
 - `transaction_id: int` - Foreign key (unique)
 - `invoice_number: string` - Invoice number (unique)
@@ -446,11 +466,13 @@ $items = $invoice->items(); // HasMany (through transaction)
 - `updated_at: datetime` - Update time
 
 **Methods:**
+
 - `transaction(): BelongsTo` - Get transaction
 - `items(): HasMany` - Get transaction items
 - `getTable(): string` - Get table name (configurable)
 
 **Scopes:**
+
 ```php
 Invoice::pending()->get(); // status = pending
 Invoice::issued()->get(); // status = issued
@@ -513,6 +535,7 @@ Event::listen(PaymentCompleted::class, function (PaymentCompleted $event) {
 ```
 
 **Properties:**
+
 - `transaction: Transaction` - The completed transaction
 
 ---

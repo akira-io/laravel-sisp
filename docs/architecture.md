@@ -5,6 +5,7 @@ This document explains the architecture and design patterns used in Laravel SISP
 ## Overview
 
 Laravel SISP follows clean architecture principles with strong emphasis on:
+
 - Single Responsibility Principle (SRP)
 - Action Pattern for business logic
 - Value Objects for data encapsulation
@@ -18,6 +19,7 @@ Laravel SISP follows clean architecture principles with strong emphasis on:
 All business logic is encapsulated in **Action classes** that live in `src/Actions/`.
 
 Each action:
+
 - Has exactly ONE public method: `handle()`
 - Uses constructor dependency injection
 - Is marked as `final readonly` for immutability
@@ -28,10 +30,7 @@ Each action:
 ```php
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Models\TransactionItem;
-use Akira\Sisp\Transaction;
-use Akira\Sisp\ValueObjects\TransactionItemData;
-use Illuminate\Support\Facades\DB;
+use Akira\Sisp\Models\Transaction;use Akira\Sisp\Models\TransactionItem;use Akira\Sisp\ValueObjects\TransactionItemData;use Illuminate\Support\Facades\DB;
 
 final readonly class StoreTransactionItemsAction
 {
@@ -63,6 +62,7 @@ final readonly class StoreTransactionItemsAction
 ```
 
 Benefits:
+
 - Testable in isolation
 - Reusable across controllers and commands
 - Clear intent and responsibility
@@ -118,6 +118,7 @@ final readonly class InvoiceData
 ```
 
 Benefits:
+
 - Type safety at compile-time
 - IDE autocomplete and type hints
 - Immutability prevents side effects
@@ -160,6 +161,7 @@ if ($transaction->status === TransactionStatus::completed) {
 ```
 
 Benefits:
+
 - No string magic values
 - Compile-time safety
 - IDE autocomplete
@@ -190,6 +192,7 @@ final readonly class PaymentController
 ```
 
 Benefits:
+
 - Easy to test (mock dependencies)
 - Easy to swap implementations
 - Clear dependencies
@@ -351,6 +354,7 @@ Used throughout application
 ```
 
 Configuration supports:
+
 - Environment variables with fallbacks
 - Customizable table names
 - Customizable invoice numbering
@@ -476,6 +480,7 @@ DB::table('sisp_transaction_items')->insert($records);
 ```
 
 Performance gains:
+
 - 10 items: 2.5x faster
 - 100 items: 6x faster
 - 500 items: 16x faster
