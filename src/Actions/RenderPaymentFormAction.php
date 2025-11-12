@@ -21,8 +21,6 @@ final readonly class RenderPaymentFormAction
 
         $formAction = $this->buildFormAction($fields);
 
-        unset($fields['posID']);
-
         return view('sisp::payment-form', [
             'formAction' => $formAction,
             'fields' => $fields,
@@ -38,8 +36,6 @@ final readonly class RenderPaymentFormAction
         $fields = $paymentRequest->toArray();
 
         $endpoint = $this->buildFormAction($fields);
-
-        unset($fields['posID']);
 
         return Inertia::render($component, [
             'endpoint' => $endpoint,
