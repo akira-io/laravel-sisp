@@ -13,7 +13,7 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 final readonly class BuildSandboxPayloadAction
 {
     public function __construct(
-        private ValidateFingerprintAction $validateFingerprint,
+        private ValidatePaymentResponseFingerprintAction $validateFingerprint,
     ) {}
 
     public function handle(PaymentRequestData $data, string $status = 'success'): CallbackPayload
@@ -33,23 +33,28 @@ final readonly class BuildSandboxPayloadAction
         };
 
         $payload = [
-            'merchantRespCP' => '0',
-            'merchantRespTid' => (int) ('FAKE'.uniqid()),
-            'merchantRespMerchantRef' => $merchantRef,
-            'merchantRespMerchantSession' => $merchantSession,
-            'merchantRespMessageID' => 'MSG-'.uniqid(),
-            'merchantRespPan' => '****-****-****-1234',
-            'merchantResp' => '0',
-            'merchantRespTimeStamp' => $timestamp,
-            'merchantRespEntityCode' => Sisp::getPosId(),
-            'merchantRespReferenceNumber' => uniqid(),
-            'merchantRespClientReceipt' => 'RECEIPT-'.uniqid(),
-            'merchantRespAdditionalErrorMessage' => $status === 'failed' ? 'Sandbox transaction failed' : '',
-            'merchantRespReloadCode' => '',
             'messageType' => $messageType,
+            'clearingPeriod' => '01',
+            'transactionID' => 'FAKE'.uniqid(),
+            'merchantReference' => $merchantRef,
+            'merchantSession' => $merchantSession,
+            'amount' => $amount,
+            'messageID' => 'MSG-'.uniqid(),
+            'pan' => '****-****-****-1234',
+            'merchantResponse' => '00',
+            'timeStamp' => $timestamp,
+            'reference' => uniqid(),
+            'entity' => '10010',
+            'clientReceipt' => 'RECEIPT-'.uniqid(),
+            'additionalErrorMessage' => $status === 'failed' ? 'Sandbox transaction failed' : '',
+            'reloadCode' => '',
+            'fingerPrintVersion' => '1',
+            'posID' => Sisp::getPosId(),
+            'currency' => $currency,
+            'transactionCode' => $transactionCode,
         ];
 
-        $payload['resultFingerPrint'] = $this->validateFingerprint->computeFingerprint($payload);
+        $payload['fingerPrint'] = $this->validateFingerprint->computeFingerprint($payload);
 
         return CallbackPayload::from($payload);
     }

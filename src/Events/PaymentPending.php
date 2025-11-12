@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Events;
 
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Foundation\Events\Dispatchable;
 
 final class PaymentPending
@@ -13,6 +14,6 @@ final class PaymentPending
 
     public function __construct(
         public Transaction $transaction,
-        public array $payload = [],
+        public CallbackPayload $payload,
     ) {}
 }

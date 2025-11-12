@@ -8,7 +8,7 @@ use Akira\Sisp\Actions\BuildRequestPayloadAction;
 use Akira\Sisp\Actions\BuildSandboxPayloadAction;
 use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
-use Akira\Sisp\Actions\ValidateFingerprintAction;
+use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -22,7 +22,7 @@ final readonly class Sisp
     public function __construct(
         private BuildRequestPayloadAction $buildRequestPayload,
         private BuildSandboxPayloadAction $buildSandboxPayload,
-        private ValidateFingerprintAction $validateFingerprint,
+        private ValidatePaymentResponseFingerprintAction $validateFingerprint,
         private CreateTransactionAction $createTransaction,
         private HandleCallbackAction $handleCallback,
         private LoadConfig $loadConfig,
@@ -38,16 +38,12 @@ final readonly class Sisp
         return $this->buildRequestPayload->handle($data);
     }
 
-    public function validateCallback(array $payload): bool
+    public function validateCallback(CallbackPayload $payload): bool
     {
-        $callbackPayload = CallbackPayload::from($payload);
-
-        $fingerprint = $callbackPayload->fingerprint;
-
-        return $this->validateFingerprint->handle($callbackPayload->withoutFingerprint(), $fingerprint);
+        return $this->validateFingerprint->handle($payload);
     }
 
-    public function handlePaymentCallback(array $payload): Transaction
+    public function handlePaymentCallback(CallbackPayload $payload): Transaction
     {
         return $this->handleCallback->handle($payload);
     }

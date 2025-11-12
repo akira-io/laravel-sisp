@@ -10,6 +10,7 @@ use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Exceptions\InvalidPaymentResponseException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Http\Request;
 
 final readonly class CallbackController
@@ -40,7 +41,8 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
-        $transaction = Transaction::where('merchant_ref', $merchantRef)->first();
+        $transaction = Transaction::query()
+            ->where('merchant_ref', $merchantRef)->first();
 
         if (! $transaction) {
             return redirect(config('sisp.redirect_url', '/'));
@@ -54,7 +56,7 @@ final readonly class CallbackController
      */
     private function handlePostRequest(Request $request)
     {
-        $payload = $request->all();
+        $payload = CallbackPayload::from($request->all());
 
         if (! Sisp::validateCallback($payload)) {
             throw new InvalidPaymentResponseException('Invalid fingerprint signature');
