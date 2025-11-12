@@ -8,7 +8,7 @@ use Akira\Sisp\Actions\BuildRequestPayloadAction;
 use Akira\Sisp\Actions\BuildSandboxPayloadAction;
 use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
-use Akira\Sisp\Actions\ValidateFingerprintAction;
+use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Configuration\LoadConfig;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -44,7 +44,7 @@ final class SispServiceProvider extends PackageServiceProvider
             return new Sisp(
                 buildRequestPayload: $app->make(BuildRequestPayloadAction::class),
                 buildSandboxPayload: $app->make(BuildSandboxPayloadAction::class),
-                validateFingerprint: $app->make(ValidateFingerprintAction::class),
+                validateFingerprint: $app->make(ValidatePaymentResponseFingerprintAction::class),
                 createTransaction: $app->make(CreateTransactionAction::class),
                 handleCallback: $app->make(HandleCallbackAction::class),
                 loadConfig: $app->make(LoadConfig::class),

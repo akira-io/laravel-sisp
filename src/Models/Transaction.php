@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property-read  TransactionStatus $status
+ * @property-read  array $payload
+ */
 final class Transaction extends Model
 {
     use EncryptsAttributes;
@@ -83,7 +87,6 @@ final class Transaction extends Model
     {
         return [
             'payload',
-            'merchant_response',
         ];
     }
 }

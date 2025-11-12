@@ -10,7 +10,7 @@ final readonly class CallbackPayload
         public string $merchantRef,
         public string $merchantSession,
         public string $timeStamp,
-        public float $amount,
+        public string|float $amount,
         public string $currency,
         public string $transactionCode,
         public string|int $transactionID,
@@ -19,23 +19,41 @@ final readonly class CallbackPayload
         public string $responseCode,
         public string $fingerprint,
         public string $posID,
+        public string $messageID = '',
+        public string $pan = '',
+        public string $clearingPeriod = '',
+        public string $reference = '',
+        public string $entityCode = '',
+        public string $clientReceipt = '',
+        public string $additionalErrorMessage = '',
+        public string $merchantRespCp = '',
+        public string $reloadCode = '',
     ) {}
 
     public static function from(array $data): self
     {
         return new self(
-            merchantRef: $data['merchantRespMerchantRef'] ?? $data['merchantRef'] ?? '',
-            merchantSession: $data['merchantRespMerchantSession'] ?? $data['merchantSession'] ?? '',
-            timeStamp: $data['merchantRespTimeStamp'] ?? $data['timeStamp'] ?? '',
-            amount: (float) ($data['merchantRespPurchaseAmount'] ?? $data['amount'] ?? 0),
+            merchantRef: $data['merchantRespMerchantRef'] ?? '',
+            merchantSession: $data['merchantRespMerchantSession'] ?? '',
+            timeStamp: $data['merchantRespTimeStamp'] ?? '',
+            amount: ($data['merchantRespPurchaseAmount'] ?? 0),
             currency: $data['currency'] ?? '',
             transactionCode: $data['transactionCode'] ?? '',
-            transactionID: $data['merchantRespTid'] ?? $data['transactionID'] ?? '',
+            transactionID: $data['merchantRespTid'] ?? '',
             messageType: $data['messageType'] ?? '',
-            merchantResponse: $data['merchantResp'] ?? $data['merchantResponse'] ?? '',
-            responseCode: $data['merchantRespCP'] ?? $data['responseCode'] ?? '',
-            fingerprint: $data['resultFingerPrint'] ?? $data['fingerprint'] ?? '',
+            merchantResponse: $data['merchantResp'] ?? '',
+            responseCode: $data['merchantRespCP'] ?? '',
+            fingerprint: $data['resultFingerPrint'] ?? '',
             posID: $data['posID'] ?? '',
+            messageID: $data['merchantRespMessageID'] ?? '',
+            pan: $data['merchantRespPan'] ?? '',
+            clearingPeriod: $data['merchantRespCP'] ?? '',
+            reference: $data['merchantRespReferenceNumber'] ?? '',
+            entityCode: $data['merchantRespEntityCode'] ?? '',
+            clientReceipt: $data['merchantRespClientReceipt'] ?? '',
+            additionalErrorMessage: $data['merchantRespAdditionalErrorMessage'] ?? '',
+            merchantRespCp: $data['merchantRespCP'] ?? '',
+            reloadCode: $data['reloadCode'] ?? '',
         );
     }
 
@@ -51,9 +69,17 @@ final readonly class CallbackPayload
             'merchantRespTid' => $this->transactionID,
             'messageType' => $this->messageType,
             'merchantResp' => $this->merchantResponse,
-            'merchantRespCP' => $this->responseCode,
+            'merchantRespCP' => $this->merchantRespCp,
             'resultFingerPrint' => $this->fingerprint,
             'posID' => $this->posID,
+            'merchantRespMessageID' => $this->messageID,
+            'merchantRespPan' => $this->pan,
+            'merchantRespReferenceNumber' => $this->reference,
+            'merchantRespEntityCode' => $this->entityCode,
+            'merchantRespClientReceipt' => $this->clientReceipt,
+            'merchantRespAdditionalErrorMessage' => $this->additionalErrorMessage,
+            'reloadCode' => $this->reloadCode,
+
         ];
     }
 
