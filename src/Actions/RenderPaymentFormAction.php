@@ -18,7 +18,10 @@ final readonly class RenderPaymentFormAction
     public function renderBlade(PaymentRequest $paymentRequest): View
     {
         $fields = $paymentRequest->toArray();
+
         $formAction = $this->buildFormAction($fields);
+
+        unset($fields['posID']);
 
         return view('sisp::payment-form', [
             'formAction' => $formAction,
@@ -33,7 +36,10 @@ final readonly class RenderPaymentFormAction
         }
 
         $fields = $paymentRequest->toArray();
+
         $endpoint = $this->buildFormAction($fields);
+
+        unset($fields['posID']);
 
         return Inertia::render($component, [
             'endpoint' => $endpoint,
