@@ -33,81 +33,24 @@ final readonly class ValidateFingerprintAction
 
     private function buildFingerprintContent(array $payload): string
     {
-        $messageType = mb_trim($payload['messageType'] ?? '');
+        $posAutCode = $this->postAutCode->handle();
+        $messageType = $payload['messageType'] ?? '';
+        $clearingPeriod = $payload['clearingPeriod'] ?? '';
+        $amount = $payload['amount'] ?? '';
+        $dateTime = $payload['dateTime'] ?? '';
+        $merchantRef = $payload['merchantRef'] ?? '';
+        $pan = $payload['pan'] ?? '';
+        $posID = $payload['posID'] ?? '';
+        $responseCode = $payload['responseCode'] ?? '';
 
-        if (in_array($messageType, ['8', '10', 'M', 'P'])) {
-            return $this->buildSuccessFingerprint($payload);
-        }
-        if ($messageType === '6') {
-            return $this->buildErrorFingerprint($payload);
-        }
-
-        return '';
-    }
-
-    private function buildSuccessFingerprint(array $payload): string
-    {
-        $merchantRespCP = ! empty($payload['merchantRespCP']) ? (int) mb_trim($payload['merchantRespCP']) : '';
-        $merchantRespTid = ! empty($payload['merchantRespTid']) ? (int) mb_trim($payload['merchantRespTid']) : '';
-        $merchantRespMerchantRef = mb_trim($payload['merchantRespMerchantRef'] ?? '');
-        $merchantRespMerchantSession = mb_trim($payload['merchantRespMerchantSession'] ?? '');
-        $merchantRespMessageID = mb_trim($payload['merchantRespMessageID'] ?? '');
-        $merchantRespPan = mb_trim($payload['merchantRespPan'] ?? '');
-        $merchantResp = mb_trim($payload['merchantResp'] ?? '');
-        $merchantRespTimeStamp = $payload['merchantRespTimeStamp'] ?? '';
-        $entityCode = ! empty($payload['merchantRespEntityCode']) ? (int) mb_trim($payload['merchantRespEntityCode']) : '';
-        $referenceNumber = ! empty($payload['merchantRespReferenceNumber']) ? (int) mb_trim($payload['merchantRespReferenceNumber']) : '';
-        $merchantRespClientReceipt = mb_trim($payload['merchantRespClientReceipt'] ?? '');
-        $merchantRespAdditionalErrorMessage = mb_trim($payload['merchantRespAdditionalErrorMessage'] ?? '');
-        $merchantRespReloadCode = mb_trim($payload['merchantRespReloadCode'] ?? '');
-
-        $purchaseAmount = $this->parseAmount($payload);
-
-        return $this->postAutCode->handle()
-            .mb_trim($payload['messageType'] ?? '')
-            .$merchantRespCP
-            .$merchantRespTid
-            .$merchantRespMerchantRef
-            .$merchantRespMerchantSession
-            .$purchaseAmount
-            .$merchantRespMessageID
-            .$merchantRespPan
-            .$merchantResp
-            .$merchantRespTimeStamp
-            .$referenceNumber
-            .$entityCode
-            .$merchantRespClientReceipt
-            .$merchantRespAdditionalErrorMessage
-            .$merchantRespReloadCode;
-    }
-
-    private function buildErrorFingerprint(array $payload): string
-    {
-        $merchantRespMessageID = mb_trim($payload['merchantRespMessageID'] ?? '');
-        $merchantRespErrorCode = mb_trim($payload['merchantRespErrorCode'] ?? '');
-        $merchantRespErrorDetail = mb_trim($payload['merchantRespErrorDetail'] ?? '');
-        $merchantRespErrorDescription = mb_trim($payload['merchantRespErrorDescription'] ?? '');
-        $merchantRespMerchantRef = mb_trim($payload['merchantRespMerchantRef'] ?? '');
-        $merchantRespMerchantSession = mb_trim($payload['merchantRespMerchantSession'] ?? '');
-        $merchantRespAdditionalErrorMessage = mb_trim($payload['merchantRespAdditionalErrorMessage'] ?? '');
-        $merchantRespTimeStamp = $payload['merchantRespTimeStamp'] ?? '';
-
-        return $this->postAutCode->handle()
-            .mb_trim($payload['messageType'] ?? '')
-            .$merchantRespMessageID
-            .$merchantRespErrorCode
-            .$merchantRespErrorDetail
-            .$merchantRespErrorDescription
-            .$merchantRespMerchantRef
-            .$merchantRespMerchantSession
-            .$merchantRespAdditionalErrorMessage
-            .$merchantRespTimeStamp;
-    }
-
-    private function parseAmount(array $payload): int
-    {
-        $amount = $payload['merchantRespPurchaseAmount'] ?? 0;
-
-        return (int) ((float) $amount * 1000);
+        return $posAutCode
+            .$messageType
+            .$clearingPeriod
+            .$amount
+            .$dateTime
+            .$merchantRef
+            .$pan
+            .$posID
+            .$responseCode;
     }
 }

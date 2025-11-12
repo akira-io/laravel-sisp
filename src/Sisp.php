@@ -41,6 +41,7 @@ final readonly class Sisp
     public function validateCallback(array $payload): bool
     {
         $callbackPayload = CallbackPayload::from($payload);
+
         $fingerprint = $callbackPayload->fingerprint;
 
         return $this->validateFingerprint->handle($callbackPayload->withoutFingerprint(), $fingerprint);
