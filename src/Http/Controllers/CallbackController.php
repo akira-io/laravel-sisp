@@ -7,6 +7,7 @@ namespace Akira\Sisp\Http\Controllers;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
+use Akira\Sisp\Exceptions\InvalidPaymentResponseException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Http\Request;
@@ -55,10 +56,9 @@ final readonly class CallbackController
     {
         $payload = $request->all();
 
-        //                TODO
-        //                if (! Sisp::validateCallback($payload)) {
-        //                    throw new InvalidPaymentResponseException('Invalid fingerprint signature');
-        //                }
+        if (! Sisp::validateCallback($payload)) {
+            throw new InvalidPaymentResponseException('Invalid fingerprint signature');
+        }
 
         $transaction = Sisp::handlePaymentCallback($payload);
 
