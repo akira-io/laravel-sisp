@@ -20,6 +20,9 @@ final readonly class CallbackController
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
     ) {}
 
+    /**
+     * @throws InvalidPaymentResponseException
+     */
     public function __invoke(Request $request)
     {
         if ($request->isMethod('get')) {
@@ -29,9 +32,6 @@ final readonly class CallbackController
         return $this->handlePostRequest($request);
     }
 
-    /**
-     * Handle GET requests - retrieve stored transaction data
-     */
     private function handleGetRequest()
     {
         $merchantRef = request()->query('ref');
@@ -50,7 +50,7 @@ final readonly class CallbackController
     }
 
     /**
-     * Handle POST requests - process callback from SISP
+     * @throws InvalidPaymentResponseException
      */
     private function handlePostRequest(Request $request)
     {
