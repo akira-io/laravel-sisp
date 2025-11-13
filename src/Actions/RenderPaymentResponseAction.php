@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\View\View;
 use Inertia\Inertia;
 
 final readonly class RenderPaymentResponseAction
 {
+    public function __construct(private GetPaymentErrorResponseAction $getErrorResponse) {}
+
     public function renderBlade(Transaction $transaction, array $payload): View
     {
         return view('sisp::payment-response', [
             'transaction' => $transaction,
             'payload' => $payload,
+            'error' => $this->getStructuredError($transaction),
         ]);
     }
 
@@ -37,11 +41,27 @@ final readonly class RenderPaymentResponseAction
                 'merchant_session' => $transaction->merchant_session,
                 'message_type' => $transaction->message_type,
             ],
+            'error' => $this->getStructuredError($transaction),
             'invoice' => $invoice ? [
                 'invoice_number' => $invoice->invoice_number,
                 'pdf_path' => $invoice->pdf_path,
             ] : null,
             'payload' => $payload,
         ]);
+    }
+
+    private function getStructuredError(Transaction $transaction): ?array
+    {
+        if (! $transaction->message_type) {
+            return null;
+        }
+
+        $errorType = ErrorMessageType::tryFrom($transaction->message_type);
+
+        if (! $errorType) {
+            return null;
+        }
+
+        return $this->getErrorResponse->handle($errorType)->toArray();
     }
 }

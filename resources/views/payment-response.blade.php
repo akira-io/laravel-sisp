@@ -38,7 +38,12 @@
                 </div>
 
                 <div class="space-y-2 rounded-lg bg-red-50 dark:bg-red-950 p-4 text-sm text-foreground border border-red-200 dark:border-red-800">
-                    <p><strong>Motivo:</strong> {{ $transaction->message_type ?? 'Recusado' }}</p>
+                    <p><strong>Referência:</strong> {{ $transaction->merchant_ref ?? 'Recusado' }}</p>
+                    @if($error)
+                        <p><strong>Categoria:</strong> {{ $error['categoryLabel'] }}</p>
+                        <p><strong>Motivo:</strong> {{ $error['label'] }}</p>
+                        <p><strong>Ação:</strong> {{ $error['actionLabel'] }}</p>
+                    @endif
                     <p><strong>Status:</strong> <span class="font-medium text-red-600 dark:text-red-500">Falhou</span></p>
                 </div>
             </div>

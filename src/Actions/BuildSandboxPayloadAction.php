@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Facades\Sisp;
@@ -14,6 +15,7 @@ final readonly class BuildSandboxPayloadAction
 {
     public function __construct(
         private ValidatePaymentResponseFingerprintAction $validateFingerprint,
+        private PaymentResponseFingerPrintAction $generateFingerprint,
     ) {}
 
     public function handle(PaymentRequestData $data, string $status = 'success'): CallbackPayload
@@ -27,34 +29,37 @@ final readonly class BuildSandboxPayloadAction
 
         $messageType = match ($status) {
             'success' => SuccessMessageType::purchase->value,
-            'failed' => ErrorMessageType::transactionError->value,
-            'pending' => 'P',
+            'failed' => ErrorMessageType::issuerError->value,
             default => 'P',
         };
 
         $payload = [
             'messageType' => $messageType,
-            'clearingPeriod' => '01',
-            'transactionID' => 'FAKE'.uniqid(),
-            'merchantReference' => $merchantRef,
-            'merchantSession' => $merchantSession,
-            'amount' => $amount,
-            'messageID' => 'MSG-'.uniqid(),
-            'pan' => '****-****-****-1234',
-            'merchantResponse' => '00',
-            'timeStamp' => $timestamp,
-            'reference' => uniqid(),
-            'entity' => '10010',
-            'clientReceipt' => 'RECEIPT-'.uniqid(),
-            'additionalErrorMessage' => $status === 'failed' ? 'Sandbox transaction failed' : '',
-            'reloadCode' => '',
+            'merchantRespCP' => '01',
+            'merchantRespTid' => 'FAKE'.uniqid(),
+            'merchantRespMerchantRef' => $merchantRef,
+            'merchantRespMerchantSession' => $merchantSession,
+            'merchantRespPurchaseAmount' => $amount,
+            'merchantRespMessageID' => 'MSG-'.uniqid(),
+            'merchantRespPan' => '****-****-****-1234',
+            'merchantResp' => '00',
+            'merchantRespTimeStamp' => $timestamp,
+            'merchantRespReferenceNumber' => uniqid(),
+            'merchantRespEntityCode' => '10010',
+            'merchantRespClientReceipt' => 'RECEIPT-'.uniqid(),
+            'merchantRespAdditionalErrorMessage' => $status === 'failed' ? 'Sandbox transaction failed' : '',
+            'merchantRespReloadCode' => '',
             'fingerPrintVersion' => '1',
             'posID' => Sisp::getPosId(),
             'currency' => $currency,
             'transactionCode' => $transactionCode,
         ];
 
-        $payload['fingerPrint'] = $this->validateFingerprint->computeFingerprint($payload);
+        $callbackPayload = CallbackPayload::from($payload);
+
+        $fingerprint = $this->generateFingerprint->handle($callbackPayload);
+
+        $payload['resultFingerPrint'] = $fingerprint;
 
         return CallbackPayload::from($payload);
     }

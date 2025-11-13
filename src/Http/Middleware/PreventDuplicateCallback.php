@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Middleware;
 
+use Akira\Sisp\Models\Transaction;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,7 +37,8 @@ final class PreventDuplicateCallback
             return false;
         }
 
-        $transaction = \Akira\Sisp\Models\Transaction::where('merchant_ref', $merchantRef)
+        $transaction = Transaction::query()
+            ->where('merchant_ref', $merchantRef)
             ->where('merchant_session', $merchantSession)
             ->first();
 

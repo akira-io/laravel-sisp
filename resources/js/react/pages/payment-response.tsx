@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 
 interface TransactionData {
     id: number;
@@ -11,6 +11,15 @@ interface TransactionData {
     message_type?: string;
 }
 
+interface ErrorData {
+    code: string;
+    label: string;
+    category: string;
+    categoryLabel: string;
+    action: string;
+    actionLabel: string;
+}
+
 interface InvoiceData {
     invoice_number: string;
     pdf_path: string;
@@ -18,11 +27,12 @@ interface InvoiceData {
 
 interface PaymentResponseProps {
     transaction: TransactionData;
+    error?: ErrorData | null;
     invoice?: InvoiceData | null;
     payload: Record<string, any>;
 }
 
-export default function PaymentResponse({transaction, invoice, payload}: PaymentResponseProps) {
+export default function PaymentResponse({transaction, error, invoice, payload}: PaymentResponseProps) {
     const isSuccess = transaction.status === 'completed';
     const isFailed = transaction.status === 'failed';
     const isPending = transaction.status === 'pending';
@@ -49,7 +59,9 @@ export default function PaymentResponse({transaction, invoice, payload}: Payment
                     <div className='space-y-2 text-center'>
                         <div className='flex justify-center'>
                             <div className='rounded-full bg-green-100 dark:bg-green-950 p-4'>
-                                <svg className='h-8 w-8 text-green-600 dark:text-green-500' fill='currentColor' viewBox='0 0 20 20'>
+                                <svg className='h-8 w-8 text-green-600 dark:text-green-500'
+                                     fill='currentColor'
+                                     viewBox='0 0 20 20'>
                                     <path fillRule='evenodd'
                                           d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
                                           clipRule='evenodd'/>
@@ -62,14 +74,15 @@ export default function PaymentResponse({transaction, invoice, payload}: Payment
                     <div className='space-y-2 rounded-lg bg-green-50 dark:bg-green-950 p-4 text-sm text-foreground border border-green-200 dark:border-green-800'>
                         <p><strong>Referência:</strong> {transaction.merchant_ref}</p>
                         <p><strong>Valor:</strong> {transaction.formatted_amount}</p>
-                        <p><strong>Status:</strong> <span className='text-green-600 dark:text-green-500 font-medium'>Completado</span></p>
+                        <p><strong>Status:</strong>
+                            <span className='text-green-600 dark:text-green-500 font-medium'>Completado</span></p>
                     </div>
                     {invoice && invoice.pdf_path && (
-                        <a href={`/storage/${invoice.pdf_path}`}
-                           download={`${invoice.invoice_number}.pdf`}
-                           className='block w-full rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 px-4 py-2 text-center text-sm font-medium text-blue-600 dark:text-blue-500 transition border border-blue-200 dark:border-blue-800'>
-                            Download da Fatura
-                        </a>
+                      <a href={`/storage/${invoice.pdf_path}`}
+                         download={`${invoice.invoice_number}.pdf`}
+                         className='block w-full rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 px-4 py-2 text-center text-sm font-medium text-blue-600 dark:text-blue-500 transition border border-blue-200 dark:border-blue-800'>
+                          Download da Fatura
+                      </a>
                     )}
                 </div>
               )}
@@ -78,7 +91,9 @@ export default function PaymentResponse({transaction, invoice, payload}: Payment
                     <div className='space-y-2 text-center'>
                         <div className='flex justify-center'>
                             <div className='rounded-full bg-red-100 dark:bg-red-950 p-4'>
-                                <svg className='h-8 w-8 text-red-600 dark:text-red-500' fill='currentColor' viewBox='0 0 20 20'>
+                                <svg className='h-8 w-8 text-red-600 dark:text-red-500'
+                                     fill='currentColor'
+                                     viewBox='0 0 20 20'>
                                     <path fillRule='evenodd'
                                           d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
                                           clipRule='evenodd'/>
@@ -89,8 +104,16 @@ export default function PaymentResponse({transaction, invoice, payload}: Payment
                         <p className='text-muted-foreground'>Desculpe, seu pagamento não foi processado.</p>
                     </div>
                     <div className='space-y-2 rounded-lg bg-red-50 dark:bg-red-950 p-4 text-sm text-foreground border border-red-200 dark:border-red-800'>
-                        <p><strong>Motivo:</strong> {transaction.message_type || 'Recusado'}</p>
-                        <p><strong>Status:</strong> <span className='text-red-600 dark:text-red-500 font-medium'>Falhou</span></p>
+                        <p><strong>Referência:</strong> {transaction.merchant_ref || 'Recusado'}</p>
+                        {error && (
+                            <>
+                                <p><strong>Categoria:</strong> {error.categoryLabel}</p>
+                                <p><strong>Motivo:</strong> {error.label}</p>
+                                <p><strong>Ação:</strong> {error.actionLabel}</p>
+                            </>
+                        )}
+                        <p><strong>Status:</strong>
+                            <span className='text-red-600 dark:text-red-500 font-medium'>Falhou</span></p>
                     </div>
                 </div>
               )}
@@ -115,7 +138,8 @@ export default function PaymentResponse({transaction, invoice, payload}: Payment
                     </div>
                     <div className='space-y-2 rounded-lg bg-yellow-50 dark:bg-yellow-950 p-4 text-sm text-foreground border border-yellow-200 dark:border-yellow-800'>
                         <p><strong>Referência:</strong> {transaction.merchant_ref}</p>
-                        <p><strong>Status:</strong> <span className='text-yellow-600 dark:text-yellow-500 font-medium'>Pendente</span></p>
+                        <p><strong>Status:</strong>
+                            <span className='text-yellow-600 dark:text-yellow-500 font-medium'>Pendente</span></p>
                     </div>
                     <p className='text-center text-xs text-muted-foreground'>
                         Você receberá uma confirmação em breve. Por favor, não feche esta página.

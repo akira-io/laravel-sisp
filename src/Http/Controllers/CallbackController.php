@@ -51,16 +51,9 @@ final readonly class CallbackController
         return $this->renderResponse->handle($transaction, []);
     }
 
-    /**
-     * @throws InvalidPaymentResponseException
-     */
     private function handlePostRequest(Request $request)
     {
         $payload = CallbackPayload::from($request->all());
-
-        if (! Sisp::validateCallback($payload)) {
-            throw new InvalidPaymentResponseException('Invalid fingerprint signature');
-        }
 
         $transaction = Sisp::handlePaymentCallback($payload);
 

@@ -84,4 +84,133 @@ enum ErrorMessageType: string
             self::genericError => __('Generic error'),
         };
     }
+
+    public function category(): string
+    {
+        return match ($this) {
+            self::cardExpired,
+            self::cardLost,
+            self::cardStolen,
+            self::cardBlocked,
+            self::cardNotActivated,
+            self::restrictedCard,
+            self::cardRetained => 'card',
+
+            self::insufficientFunds,
+            self::amountExceedsLimit,
+            self::transactionCountExceeded => 'funds',
+
+            self::fraudSuspected,
+            self::securityVerificationFailure,
+            self::authenticationError,
+            self::incorrectPin,
+            self::pinTriesExceeded => 'security',
+
+            self::invalidCard,
+            self::invalidAmount,
+            self::invalidTransaction,
+            self::invalidMerchant,
+            self::invalidFingerprint,
+            self::formatError,
+            self::expirationDateError,
+            self::cardRestrictedByCountry,
+            self::transactionNotAllowed,
+            self::transactionNotAllowedTerminal => 'validation',
+
+            self::encryptionError,
+            self::processingError,
+            self::systemError,
+            self::communicationTimeout,
+            self::issuerError,
+            self::issuerUnavailable,
+            self::financialInstitutionNotFound => 'system',
+
+            self::referToCardIssuer,
+            self::transactionRefused,
+            self::transactionDuplication => 'issuer',
+
+            self::genericError => 'unknown',
+        };
+    }
+
+    public function categoryLabel(): string
+    {
+        return match ($this->category()) {
+            'card' => __('Card Issue'),
+            'funds' => __('Insufficient Funds'),
+            'security' => __('Security Issue'),
+            'validation' => __('Invalid Details'),
+            'system' => __('System Error'),
+            'issuer' => __('Issuer Issue'),
+            'unknown' => __('Unknown Error'),
+        };
+    }
+
+    public function action(): string
+    {
+        return match ($this) {
+            self::cardExpired,
+            self::cardLost,
+            self::cardStolen,
+            self::cardBlocked => 'contact-issuer',
+
+            self::cardNotActivated,
+            self::restrictedCard,
+            self::cardRetained => 'contact-issuer-activate',
+
+            self::insufficientFunds => 'use-different-card',
+
+            self::amountExceedsLimit,
+            self::transactionCountExceeded => 'reduce-amount',
+
+            self::fraudSuspected,
+            self::securityVerificationFailure => 'contact-issuer-security',
+
+            self::authenticationError,
+            self::incorrectPin,
+            self::pinTriesExceeded => 'retry',
+
+            self::invalidCard,
+            self::invalidAmount,
+            self::formatError => 'check-payment-details',
+
+            self::invalidTransaction,
+            self::transactionDuplication => 'contact-support',
+
+            self::invalidMerchant,
+            self::invalidFingerprint,
+            self::encryptionError => 'contact-support',
+
+            self::expirationDateError,
+            self::cardRestrictedByCountry,
+            self::transactionNotAllowed,
+            self::transactionNotAllowedTerminal => 'use-different-card',
+
+            self::processingError,
+            self::systemError,
+            self::communicationTimeout,
+            self::issuerError,
+            self::issuerUnavailable => 'retry',
+
+            self::financialInstitutionNotFound,
+            self::referToCardIssuer,
+            self::transactionRefused => 'contact-issuer',
+
+            self::genericError => 'contact-support',
+        };
+    }
+
+    public function actionLabel(): string
+    {
+        return match ($this->action()) {
+            'contact-issuer' => __('Contact your card issuer'),
+            'contact-issuer-activate' => __('Contact your card issuer to activate your card'),
+            'use-different-card' => __('Use a different card'),
+            'reduce-amount' => __('Reduce the transaction amount'),
+            'contact-issuer-security' => __('Contact your card issuer for security verification'),
+            'retry' => __('Please try again'),
+            'check-payment-details' => __('Check your payment details and try again'),
+            'contact-support' => __('Contact customer support'),
+        };
+    }
 }
