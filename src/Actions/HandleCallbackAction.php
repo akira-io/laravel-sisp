@@ -10,6 +10,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
+use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
@@ -33,6 +34,13 @@ final readonly class HandleCallbackAction
 
     private function dispatchEvent(Transaction $transaction, CallbackPayload $payload): void
     {
+
+        if (! Sisp::validateCallback($payload)) {
+            PaymentFailed::dispatch($transaction, $payload);
+
+            return;
+        }
+
         match ($transaction->status) {
             TransactionStatus::completed => PaymentCompleted::dispatch($transaction, $payload),
             TransactionStatus::failed => PaymentFailed::dispatch($transaction, $payload),

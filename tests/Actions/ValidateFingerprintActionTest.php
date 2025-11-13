@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
@@ -57,10 +58,13 @@ it('fingerprint rejects altered amount', function () {
         'merchantRespReloadCode' => '',
     ];
 
-    $fingerprint = $this->action->computeFingerprint($payload);
+    $payload = CallbackPayload::from($payload);
+
+    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+
     $payload['merchantRespPurchaseAmount'] = '2000';
 
-    expect($this->action->handle($payload, $fingerprint))->toBeFalse();
+    expect($this->action->handle($payload))->toBeFalse();
 });
 
 it('fingerprint rejects altered message type', function () {
