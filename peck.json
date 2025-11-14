@@ -7,7 +7,14 @@
       "sisp",
       "pos",
       "decrypt",
-      "Dsec"
+      "Dsec",
+      "fingerprintversion",
+      "cp",
+      "encryptable",
+      "geolocation",
+      "vpn",
+      "vue",
+      "js"
     ],
     "paths": []
   }
