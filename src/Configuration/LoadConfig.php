@@ -172,4 +172,9 @@ final readonly class LoadConfig
     {
         return $this->app['config']->get('sisp.geolocation.provider', 'maxmind');
     }
+
+    public function isRetryAllowed(): bool
+    {
+        return $this->app['config']->get('sisp.allow_retry', true);
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\View\View;
@@ -11,7 +12,11 @@ use Inertia\Inertia;
 
 final readonly class RenderPaymentResponseAction
 {
-    public function __construct(private GetPaymentErrorResponseAction $getErrorResponse) {}
+    public function __construct(
+        private GetPaymentErrorResponseAction $getErrorResponse,
+        private GetPaymentResponseTranslationsAction $getTranslations,
+        private LoadConfig $config,
+    ) {}
 
     public function renderBlade(Transaction $transaction, array $payload): View
     {
@@ -19,6 +24,7 @@ final readonly class RenderPaymentResponseAction
             'transaction' => $transaction,
             'payload' => $payload,
             'error' => $this->getStructuredError($transaction),
+            'allowRetry' => $this->config->isRetryAllowed(),
         ]);
     }
 
@@ -42,6 +48,8 @@ final readonly class RenderPaymentResponseAction
                 'message_type' => $transaction->message_type,
             ],
             'error' => $this->getStructuredError($transaction),
+            'translations' => $this->getTranslations->handle(),
+            'allowRetry' => $this->config->isRetryAllowed(),
             'invoice' => $invoice ? [
                 'invoice_number' => $invoice->invoice_number,
                 'pdf_path' => $invoice->pdf_path,

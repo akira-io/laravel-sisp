@@ -13,14 +13,14 @@
                             </svg>
                         </div>
                     </div>
-                    <h2 class="text-2xl font-bold text-green-600 dark:text-green-500">Pagamento Realizado com Sucesso!</h2>
-                    <p class="text-muted-foreground">Sua transação foi processada com sucesso.</p>
+                    <h2 class="text-2xl font-bold text-green-600 dark:text-green-500">{{ __('sisp::messages.payment.response.success_title') }}</h2>
+                    <p class="text-muted-foreground">{{ __('sisp::messages.payment.response.success_message') }}</p>
                 </div>
 
                 <div class="space-y-2 rounded-lg bg-green-50 dark:bg-green-950 p-4 text-sm text-foreground border border-green-200 dark:border-green-800">
-                    <p><strong>Referência:</strong> {{ $transaction->merchant_ref }}</p>
-                    <p><strong>Valor:</strong> {{ $transaction->formatted_amount }}</p>
-                    <p><strong>Status:</strong> <span class="font-medium text-green-600 dark:text-green-500">Completado</span></p>
+                    <p><strong>{{ __('sisp::messages.payment.response.reference') }}:</strong> {{ $transaction->merchant_ref }}</p>
+                    <p><strong>{{ __('sisp::messages.payment.response.amount') }}:</strong> {{ $transaction->formatted_amount }}</p>
+                    <p><strong>{{ __('sisp::messages.payment.response.status') }}:</strong> <span class="font-medium text-green-600 dark:text-green-500">{{ __('sisp::messages.payment.response.success_status') }}</span></p>
                 </div>
             </div>
         @elseif($transaction->status === 'failed')
@@ -33,18 +33,18 @@
                             </svg>
                         </div>
                     </div>
-                    <h2 class="text-2xl font-bold text-red-600 dark:text-red-500">Pagamento Recusado</h2>
-                    <p class="text-muted-foreground">Desculpe, seu pagamento não foi processado.</p>
+                    <h2 class="text-2xl font-bold text-red-600 dark:text-red-500">{{ __('sisp::messages.payment.response.failed_title') }}</h2>
+                    <p class="text-muted-foreground">{{ __('sisp::messages.payment.response.failed_message') }}</p>
                 </div>
 
                 <div class="space-y-2 rounded-lg bg-red-50 dark:bg-red-950 p-4 text-sm text-foreground border border-red-200 dark:border-red-800">
-                    <p><strong>Referência:</strong> {{ $transaction->merchant_ref ?? 'Recusado' }}</p>
+                    <p><strong>{{ __('sisp::messages.payment.response.reference') }}:</strong> {{ $transaction->merchant_ref ?? __('sisp::messages.payment.response.declined') }}</p>
                     @if($error)
-                        <p><strong>Categoria:</strong> {{ $error['categoryLabel'] }}</p>
-                        <p><strong>Motivo:</strong> {{ $error['label'] }}</p>
-                        <p><strong>Ação:</strong> {{ $error['actionLabel'] }}</p>
+                        <p><strong>{{ __('sisp::messages.payment.response.category') }}:</strong> {{ $error['categoryLabel'] }}</p>
+                        <p><strong>{{ __('sisp::messages.payment.response.reason') }}:</strong> {{ $error['label'] }}</p>
+                        <p><strong>{{ __('sisp::messages.payment.response.action') }}:</strong> {{ $error['actionLabel'] }}</p>
                     @endif
-                    <p><strong>Status:</strong> <span class="font-medium text-red-600 dark:text-red-500">Falhou</span></p>
+                    <p><strong>{{ __('sisp::messages.payment.response.status') }}:</strong> <span class="font-medium text-red-600 dark:text-red-500">{{ __('sisp::messages.payment.response.failed_status') }}</span></p>
                 </div>
             </div>
         @else
@@ -57,24 +57,37 @@
                             </svg>
                         </div>
                     </div>
-                    <h2 class="text-2xl font-bold text-yellow-600 dark:text-yellow-500">Pagamento Pendente</h2>
-                    <p class="text-muted-foreground">Seu pagamento está sendo processado.</p>
+                    <h2 class="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{{ __('sisp::messages.payment.response.pending_title') }}</h2>
+                    <p class="text-muted-foreground">{{ __('sisp::messages.payment.response.pending_message') }}</p>
                 </div>
 
                 <div class="space-y-2 rounded-lg bg-yellow-50 dark:bg-yellow-950 p-4 text-sm text-foreground border border-yellow-200 dark:border-yellow-800">
-                    <p><strong>Referência:</strong> {{ $transaction->merchant_ref }}</p>
-                    <p><strong>Status:</strong> <span class="font-medium text-yellow-600 dark:text-yellow-500">Pendente</span></p>
+                    <p><strong>{{ __('sisp::messages.payment.response.reference') }}:</strong> {{ $transaction->merchant_ref }}</p>
+                    <p><strong>{{ __('sisp::messages.payment.response.status') }}:</strong> <span class="font-medium text-yellow-600 dark:text-yellow-500">{{ __('sisp::messages.payment.response.pending_status') }}</span></p>
                 </div>
 
                 <p class="text-center text-xs text-muted-foreground">
-                    Você receberá uma confirmação em breve. Por favor, não feche esta página.
+                    {{ __('sisp::messages.payment.response.pending_note') }}
                 </p>
             </div>
         @endif
 
-        <div class="mt-8">
-            <a href="/" class="block w-full rounded-lg bg-primary hover:bg-primary/90 px-4 py-2 text-center font-medium text-primary-foreground transition">
-                Voltar ao Início
+        <div class="mt-8 space-y-2">
+            @if($transaction->status === 'failed' && $allowRetry)
+                <form method="POST" action="{{ route('sisp.retry-payment') }}" class="w-full">
+                    @csrf
+                    <input type="hidden" name="transaction_id" value="{{ $transaction->id }}">
+                    <button type="submit" class="block w-full rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-center font-medium text-white transition">
+                        {{ __('sisp::messages.payment.response.retry_payment') }}
+                    </button>
+                </form>
+            @endif
+            <a href="/" class="block w-full rounded-lg @if($transaction->status === 'failed') bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 @else bg-primary hover:bg-primary/90 text-primary-foreground @endif px-4 py-2 text-center font-medium transition">
+                @if($transaction->status === 'failed')
+                    {{ __('sisp::messages.payment.response.cancel_payment') }}
+                @else
+                    {{ __('sisp::messages.payment.response.back_home') }}
+                @endif
             </a>
         </div>
     </div>

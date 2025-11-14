@@ -16,12 +16,12 @@ enum SuccessMessageType: string
     public function label(): string
     {
         return match ($this) {
-            self::purchase => __('Purchase'),
-            self::servicePayment => __('Service Payment'),
-            self::phoneRecharge => __('Phone Recharge'),
-            self::enrollmentRequest => __('Enrollment Request'),
-            self::tokenPayment => __('Token Payment'),
-            self::tokenCancel => __('Token Cancel'),
+            self::purchase => __('sisp::messages.success.labels.purchase'),
+            self::servicePayment => __('sisp::messages.success.labels.servicePayment'),
+            self::phoneRecharge => __('sisp::messages.success.labels.phoneRecharge'),
+            self::enrollmentRequest => __('sisp::messages.success.labels.enrollmentRequest'),
+            self::tokenPayment => __('sisp::messages.success.labels.tokenPayment'),
+            self::tokenCancel => __('sisp::messages.success.labels.tokenCancel'),
         };
     }
 }

@@ -184,20 +184,75 @@ return [
     */
     'redirect_url' => env('SISP_REDIRECT_URL', '/'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sandbox Mode
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the SISP payment gateway operates in sandbox mode for testing.
+    | This allows you to test payment flows without processing real transactions.
+    | Set to false in production environments.
+    |
+    */
     'sandbox' => env('SISP_SANDBOX', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Blade Template Rendering
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for server-side rendered Blade templates.
+    | Enable this if you're using traditional Blade templates for payment forms
+    | and response pages. You can customize the view paths for payment form
+    | and payment response components.
+    |
+    | - 'enabled': Toggle Blade rendering on/off
+    | - 'payment_form': View path for the payment form template
+    | - 'payment_response': View path for the payment response template
+    |
+    */
     'use_blade' => [
         'enabled' => env('SISP_USE_BLADE', true),
         'payment_form' => 'sisp::payment-form',
         'payment_response' => 'sisp::payment-response',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Inertia.js Rendering
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for client-side rendered Inertia.js components.
+    | Enable this if you're using Inertia.js with React or Vue for payment forms
+    | and response pages. Specify the component paths that Inertia should load.
+    |
+    | - 'enabled': Toggle Inertia rendering on/off
+    | - 'payment_form_component': Inertia component path for payment form
+    | - 'payment_response_component': Inertia component path for payment response
+    |
+    */
     'use_inertia' => [
         'enabled' => env('SISP_USE_INERTIA', false),
         'payment_form_component' => env('SISP_INERTIA_PAYMENT_COMPONENT', 'sisp/payment-form'),
         'payment_response_component' => env('SISP_INERTIA_CALLBACK_COMPONENT', 'sisp/payment-response'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Invoice Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Settings for generating and storing invoices after successful transactions.
+    | Configure the invoice number format, file storage location, and company
+    | details that will appear on invoices.
+    |
+    | - 'number_format': Format for invoice numbers (date-based, sequential, etc.)
+    | - 'prefix': Prefix to add to invoice numbers (e.g., 'INV-')
+    | - 'disk': Laravel filesystem disk for storing invoices
+    | - 'template': Template style for invoice generation (branded, minimal, etc.)
+    | - 'company_*': Company information displayed on invoices
+    |
+    */
     'invoice' => [
         'number_format' => env('SISP_INVOICE_NUMBER_FORMAT', 'date-based'),
         'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
@@ -212,6 +267,40 @@ return [
         'company_website' => env('SISP_COMPANY_WEBSITE', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Retry Payment Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Controls whether users can retry failed payment transactions.
+    | When enabled, a "Try Again" button will be displayed on the payment
+    | response page for failed transactions, allowing users to attempt payment
+    | again using the same transaction details.
+    |
+    */
+    'allow_retry' => env('SISP_ALLOW_RETRY', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Settings to prevent abuse and protect against brute force attacks.
+    | Configure rate limits per IP address, merchant, and individual user.
+    | Each limit is specified as a number of requests within a time window.
+    |
+    | - 'enabled': Global toggle for rate limiting
+    | - 'per_ip.enabled': Enable/disable IP-based rate limiting
+    | - 'per_ip.limit': Maximum requests allowed per IP
+    | - 'per_ip.window_seconds': Time window in seconds for IP rate limit
+    | - 'per_merchant.enabled': Enable/disable merchant-based rate limiting
+    | - 'per_merchant.limit': Maximum requests allowed per merchant
+    | - 'per_merchant.window_seconds': Time window for merchant rate limit
+    | - 'per_user.enabled': Enable/disable user-based rate limiting
+    | - 'per_user.limit': Maximum requests allowed per user
+    | - 'per_user.window_seconds': Time window for user rate limit
+    |
+    */
     'rate_limiting' => [
         'enabled' => env('SISP_RATE_LIMITING_ENABLED', true),
         'per_ip' => [
@@ -231,6 +320,25 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Security Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Advanced security settings for payment transaction protection.
+    | Configure fraud detection, VPN/proxy blocking, and transaction limits.
+    |
+    | - 'collect_metadata': Collect device and browser metadata for fraud detection
+    | - 'detect_vpn': Detect and flag transactions from VPN services
+    | - 'detect_proxy': Detect and flag transactions from proxy services
+    | - 'calculate_risk_score': Calculate risk score for each transaction
+    | - 'max_amount_per_day': Maximum transaction amount allowed per day (null = unlimited)
+    | - 'max_amount_per_month': Maximum transaction amount allowed per month (null = unlimited)
+    | - 'block_new_country_payments': Block payments from countries where user hasn't transacted before
+    | - 'block_vpn_proxy': Block transactions from detected VPN/proxy services
+    | - 'require_whitelist': Require IP addresses to be whitelisted before payment
+    |
+    */
     'security' => [
         'collect_metadata' => env('SISP_COLLECT_METADATA', true),
         'detect_vpn' => env('SISP_DETECT_VPN', true),
@@ -243,6 +351,20 @@ return [
         'require_whitelist' => env('SISP_REQUIRE_WHITELIST', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Geolocation Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Settings for geolocation detection and IP-based location services.
+    | Used for security checks and fraud prevention analysis.
+    |
+    | - 'provider': Geolocation service provider (maxmind, ip-api, etc.)
+    | - 'maxmind_key': API key for MaxMind GeoIP2 service
+    | - 'ip_api_key': API key for IP-API service
+    | - 'cache_ttl_minutes': Cache duration for geolocation data in minutes
+    |
+    */
     'geolocation' => [
         'provider' => env('SISP_GEOLOCATION_PROVIDER', 'maxmind'),
         'maxmind_key' => env('MAXMIND_KEY'),
