@@ -424,6 +424,168 @@ app(GenerateInvoicePdfAction::class)->handle(
 ): string // Returns pdf_path
 ```
 
+### GetPaymentErrorResponseAction
+
+Transform SISP error codes into structured, user-friendly error responses.
+
+```php
+$action = app(GetPaymentErrorResponseAction::class);
+
+// Transform error message type to structured response
+$errorResponse = $action->handle(
+    ErrorMessageType $errorType
+): PaymentErrorResponse
+
+// $errorResponse contains:
+[
+    'code' => 'card_declined',           // SISP error code identifier
+    'label' => 'Card Declined',          // Human-readable label (translated)
+    'category' => 'card',                 // Error category
+    'categoryLabel' => 'Card Issue',      // Category label (translated)
+    'action' => 'use-different-card',    // Suggested action for user
+    'actionLabel' => 'Try Another Card', // Action label (translated)
+]
+```
+
+### RetryPaymentAction
+
+Extract transaction data and build fresh payment request for retry.
+
+```php
+app(RetryPaymentAction::class)->handle(
+    Transaction $transaction
+): PaymentRequest
+
+// Rebuilds payment form with original transaction data
+```
+
+### ValidatePaymentResponseFingerprintAction
+
+Validate SHA512 fingerprint from SISP callback.
+
+```php
+$isValid = app(ValidatePaymentResponseFingerprintAction::class)->handle(
+    CallbackPayload $payload
+): bool
+
+// Returns true if fingerprint is valid (data integrity confirmed)
+// Returns false if tampering detected
+```
+
+### PreventDuplicateCallbackAction
+
+Prevent double-processing of callback requests.
+
+Registered as `PreventDuplicateCallback` middleware on callback routes.
+
+```php
+// Automatically redirects already-processed callbacks
+// to payment response page
+```
+
+### RenderPaymentResponseAction
+
+Render payment response in Blade or Inertia format.
+
+```php
+app(RenderPaymentResponseAction::class)->renderBlade(
+    Transaction $transaction,
+    ?string $renderEngine = 'blade'
+): View|Response
+
+app(RenderPaymentResponseAction::class)->renderInertia(
+    Transaction $transaction,
+    ?string $renderEngine = 'inertia'
+): Response
+
+// Includes:
+// - Transaction data
+// - Structured error response (if failed)
+// - allowRetry configuration flag
+// - Translations for UI text
+```
+
+### PaymentResponseFingerPrintAction
+
+Generate SHA512 fingerprint for callback validation.
+
+```php
+$fingerprint = app(PaymentResponseFingerPrintAction::class)->handle(
+    CallbackPayload $payload
+): string
+
+// Generates base64-encoded SHA512 hash of:
+// - posAutCode + messageType + amount + reference + timestamp + ...
+```
+
+### BuildSandboxPayloadAction
+
+Generate test callback payload with valid fingerprint for sandbox testing.
+
+```php
+$callbackPayload = app(BuildSandboxPayloadAction::class)->handle(
+    PaymentRequestData $data,
+    string $status = 'success'  // 'success', 'failed', or other
+): CallbackPayload
+
+// Includes auto-generated valid fingerprint
+// Useful for testing payment response handling
+```
+
+## Enums
+
+### ErrorMessageType
+
+SISP payment error codes with categories and suggested actions.
+
+```php
+// Card Issues (user's card cannot be used)
+ErrorMessageType::cardDeclined           // "6"
+ErrorMessageType::cardExpired            // Generic card error
+ErrorMessageType::cardBlocked            // Card is blocked
+ErrorMessageType::invalidCardNumber      // Invalid card format
+
+// Insufficient Funds
+ErrorMessageType::insufficientFunds      // Not enough balance
+ErrorMessageType::transactionLimitExceeded // Amount exceeds limit
+
+// Security Issues
+ErrorMessageType::fraudDetected          // Transaction flagged
+ErrorMessageType::cvvFailed              // Invalid CVV/CVC
+ErrorMessageType::suspiciousActivity     // Unusual pattern detected
+
+// Validation Issues
+ErrorMessageType::invalidAmount          // Amount invalid
+ErrorMessageType::invalidCurrency        // Currency mismatch
+ErrorMessageType::invalidMerchant        // Merchant not configured
+ErrorMessageType::missingField           // Required field missing
+
+// System/Gateway Issues
+ErrorMessageType::gatewayTimeout         // SISP timeout
+ErrorMessageType::processingError        // Generic processing error
+ErrorMessageType::serviceUnavailable     // SISP down
+ErrorMessageType::bankRejected           // Bank rejected transaction
+
+// Issuer Issues
+ErrorMessageType::issuerDecline          // Card issuer declined
+ErrorMessageType::issuerError            // Issuer system error
+
+// Unknown/Other
+ErrorMessageType::unknownError           // Unclassified error
+ErrorMessageType::other                  // Catch-all
+
+// Translated labels available for: EN (English), PT (Portuguese)
+```
+
+### SuccessMessageType
+
+SISP success response message types.
+
+```php
+SuccessMessageType::purchase             // "P" - Purchase transaction
+SuccessMessageType::other                // "O" - Other transaction type
+```
+
 ## Exceptions
 
 ### RateLimitExceededException
@@ -454,6 +616,7 @@ All routes are registered automatically with `/sisp` prefix.
 POST   /sisp/payment           -> PaymentController
 GET    /sisp/callback          -> CallbackController
 POST   /sisp/callback          -> CallbackController
+POST   /sisp/retry-payment     -> RetryPaymentController
 POST   /sisp/cancel            -> CancelTransactionController
 POST   /sisp/refund            -> RefundTransactionController
 GET    /sisp/sandbox           -> SandboxController
@@ -482,6 +645,7 @@ config('sisp.merchant_id')
 config('sisp.currency')
 config('sisp.language_messages')
 config('sisp.sandbox')
+config('sisp.allow_retry')             // Enable/disable retry button (default: true)
 config('sisp.rate_limiting.enabled')
 config('sisp.rate_limiting.per_ip.limit')
 config('sisp.rate_limiting.per_merchant.limit')

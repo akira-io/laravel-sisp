@@ -26,8 +26,10 @@ SISP Gateway (Real or Sandbox)
     v
 GET|POST /sisp/callback
     |
-    ├─ Validate Signature
+    ├─ Prevent Duplicate Callback
+    ├─ Validate Fingerprint
     ├─ Find Transaction
+    ├─ Parse Error Response (if failed)
     ├─ Update Status
     ├─ Store Callback Response
     ├─ Generate Invoice (if configured)
@@ -35,6 +37,10 @@ GET|POST /sisp/callback
     |
     v
 Response View
+    |
+    ├─ Show Transaction Result
+    ├─ Display Structured Error (if failed)
+    ├─ Show Retry Option (if configured)
     |
     └─ Show Result
 ```
@@ -121,25 +127,44 @@ After payment, SISP POSTs to `/sisp/callback` with:
 
 `CallbackController` with `HandleCallbackAction`:
 
-1. **Signature Verification**
-   - Validates SISP signature
-   - Prevents tampering
+### 9.1 Duplicate Prevention
+Uses `PreventDuplicateCallback` middleware to:
+- Check if callback already processed for this transaction
+- Prevent double-charging from duplicate callback requests
+- Redirect already-processed callbacks to response page
 
-2. **Transaction Lookup**
-   - Finds transaction by reference
+### 9.2 Fingerprint Validation
+`ValidatePaymentResponseFingerprintAction` validates:
+- SHA512 hash of callback fields with pos auth code
+- Verifies data integrity from SISP
+- Prevents callback tampering or spoofing
+- Fields included: messageType, amount, reference, timestamp, and 13+ others
 
-3. **Status Update**
-   - Sets status: `completed`, `failed`, or `pending`
-   - Stores SISP response data
+### 9.3 Error Response Parsing
+`GetPaymentErrorResponseAction` transforms error codes into structured responses:
+- Maps error code (e.g., "6") to human-readable label
+- Categorizes error: card, funds, security, validation, system, issuer
+- Suggests action: contact-issuer, use-different-card, retry, etc.
+- Provides translated messages for EN and PT
 
-4. **Invoice Generation** (if enabled)
-   - Generates PDF invoice
-   - Stores path in database
+### 9.4 Transaction Lookup
+- Finds transaction by merchant reference
+- Returns 404 if transaction not found
+- Validates transaction state
 
-5. **Event Dispatch**
-   - `PaymentCompleted` - Payment successful
-   - `PaymentFailed` - Payment rejected
-   - `PaymentPending` - Still processing
+### 9.5 Status Update
+- Sets status: `completed`, `failed`, or `pending`
+- Stores SISP response data
+- Records error code and response details
+
+### 9.6 Invoice Generation (if enabled)
+- Generates PDF invoice
+- Stores path in database
+
+### 9.7 Event Dispatch
+- `PaymentCompleted` - Payment successful
+- `PaymentFailed` - Payment rejected
+- `PaymentPending` - Still processing
 
 ## Events Dispatched
 
@@ -211,13 +236,40 @@ TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 
 ## Error Handling
 
-If error occurs:
+### Request Validation Errors
+- Returns 422 with validation messages
+- Specific validation rules for amount, items, customer data
 
-1. **Validation Error** - Returns 422 with validation messages
-2. **Rate Limit** - Returns 429 (Too Many Requests)
-3. **Blacklist** - Returns 403 (Forbidden)
-4. **Callback Error** - Returns error response
-5. **Invoice Error** - Logs but doesn't fail payment
+### Security Errors
+- **Rate Limit** - Returns 429 (Too Many Requests)
+- **Blacklist** - Returns 403 (Forbidden) for blacklisted IP/email
+- **Duplicate Callback** - Returns 409 if callback already processed
+
+### Callback/Payment Errors
+Payment failures return structured error information:
+
+```php
+[
+    'code' => 'card_declined',           // Error code from SISP (e.g., "6")
+    'label' => 'Card Declined',          // Human-readable label (translated)
+    'category' => 'card',                 // Category: card|funds|security|validation|system|issuer
+    'categoryLabel' => 'Card Issue',      // Category label (translated)
+    'action' => 'use-different-card',    // Suggested action for user
+    'actionLabel' => 'Try Another Card', // Action label (translated)
+]
+```
+
+These error responses are shown to user with retry option if configured.
+
+### Fingerprint Validation Errors
+- Returns 403 if fingerprint validation fails
+- Indicates potential tampering or replay attack
+- Callback is not processed
+
+### Invoice Generation Errors
+- Logs error but doesn't fail payment
+- Transaction still marked as completed/failed
+- User can still see payment result
 
 ## Flow Summary
 
