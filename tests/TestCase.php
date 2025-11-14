@@ -6,10 +6,13 @@ namespace Akira\Sisp\Tests;
 
 use Akira\Sisp\SispServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,20 +25,28 @@ abstract class TestCase extends Orchestra
     final public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
+        config()->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+        ]);
+        config()->set('sisp.url', 'https://test.sisp.example.com');
+        config()->set('sisp.posID', 'TEST_POS_001');
         config()->set('sisp.posAutCode', 'TEST_POS_AUT_CODE');
-        config()->set('sisp.merchantReference', 'TEST_MERCHANT_REF');
-        config()->set('sisp.merchantSession', 'TEST_MERCHANT_SESSION');
-        config()->set('sisp.posId', 'TEST_POS_001');
-        config()->set('sisp.currency', 'AOA');
-        config()->set('sisp.defaultTransactionCode', 'PURCHASE');
-
-        /*
-        $migration = include __DIR__.'/../database/migrations/create_laravel-sisp_table.php.stub';
-        $migration->up();
-        */
+        config()->set('sisp.merchantId', 'TEST_MERCHANT_ID');
+        config()->set('sisp.currency', '132');
+        config()->set('sisp.language_messages', 'EN');
+        config()->set('sisp.fingerprint_version', '1');
+        config()->set('sisp.is_3dsec', '0');
+        config()->set('sisp.transaction_code', '1');
+        config()->set('sisp.url_merchant_response', 'https://localhost/sisp/callback');
     }
 
-    protected function getPackageProviders($app)
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+    }
+
+    protected function getPackageProviders($app): array
     {
         return [
             SispServiceProvider::class,
