@@ -10,6 +10,7 @@ use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Illuminate\Support\Str;
 
 final readonly class BuildSandboxPayloadAction
 {
@@ -36,17 +37,17 @@ final readonly class BuildSandboxPayloadAction
         $payload = [
             'messageType' => $messageType,
             'merchantRespCP' => '01',
-            'merchantRespTid' => 'FAKE'.uniqid(),
+            'merchantRespTid' => 'FAKE'.Str::random(8),
             'merchantRespMerchantRef' => $merchantRef,
             'merchantRespMerchantSession' => $merchantSession,
             'merchantRespPurchaseAmount' => $amount,
-            'merchantRespMessageID' => 'MSG-'.uniqid(),
+            'merchantRespMessageID' => 'MSG-'.Str::random(8),
             'merchantRespPan' => '****-****-****-1234',
             'merchantResp' => '00',
             'merchantRespTimeStamp' => $timestamp,
-            'merchantRespReferenceNumber' => uniqid(),
+            'merchantRespReferenceNumber' => Str::random(12),
             'merchantRespEntityCode' => '10010',
-            'merchantRespClientReceipt' => 'RECEIPT-'.uniqid(),
+            'merchantRespClientReceipt' => 'RECEIPT-'.Str::random(8),
             'merchantRespAdditionalErrorMessage' => $status === 'failed' ? 'Sandbox transaction failed' : '',
             'merchantRespReloadCode' => '',
             'fingerPrintVersion' => '1',

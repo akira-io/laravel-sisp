@@ -13,7 +13,7 @@ beforeEach(function () {
 it(/**
  * @throws Exception
  */ 'fingerprint is computed with correct field order', function () {
-    $payload = [
+    $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
         'merchantRespMerchantRef' => 'R20251112123456',
@@ -27,13 +27,16 @@ it(/**
         'merchantRespEntityCode' => '10010',
         'merchantRespClientReceipt' => '**********',
         'merchantRespAdditionalErrorMessage' => '',
-        'merchantRespReloadCode' => '',
+        'reloadCode' => '',
     ];
 
     $expectedAmount = (int) ((float) 1000 * 1000);
     expect($expectedAmount)->toBe(1000000);
 
-    $payload = CallbackPayload::from($payload);
+    $payload = CallbackPayload::from($payloadData);
+    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $payloadData['resultFingerPrint'] = $fingerprint;
+    $payload = CallbackPayload::from($payloadData);
 
     $response = $this->action->handle($payload);
 
@@ -41,7 +44,7 @@ it(/**
 });
 
 it('fingerprint rejects altered amount', function () {
-    $payload = [
+    $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
         'merchantRespMerchantRef' => 'R20251112123456',
@@ -55,20 +58,21 @@ it('fingerprint rejects altered amount', function () {
         'merchantRespEntityCode' => '10010',
         'merchantRespClientReceipt' => '**********',
         'merchantRespAdditionalErrorMessage' => '',
-        'merchantRespReloadCode' => '',
+        'reloadCode' => '',
     ];
 
-    $payload = CallbackPayload::from($payload);
-
+    $payload = CallbackPayload::from($payloadData);
     $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $payloadData['resultFingerPrint'] = $fingerprint;
 
-    $payload['merchantRespPurchaseAmount'] = '2000';
+    $payloadData['merchantRespPurchaseAmount'] = '2000';
+    $alteredPayload = CallbackPayload::from($payloadData);
 
-    expect($this->action->handle($payload))->toBeFalse();
+    expect($this->action->handle($alteredPayload))->toBeFalse();
 });
 
 it('fingerprint rejects altered message type', function () {
-    $payload = [
+    $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
         'merchantRespMerchantRef' => 'R20251112123456',
@@ -82,17 +86,21 @@ it('fingerprint rejects altered message type', function () {
         'merchantRespEntityCode' => '10010',
         'merchantRespClientReceipt' => '**********',
         'merchantRespAdditionalErrorMessage' => '',
-        'merchantRespReloadCode' => '',
+        'reloadCode' => '',
     ];
 
-    $fingerprint = $this->action->computeFingerprint($payload);
-    $payload['messageType'] = 'E';
+    $payload = CallbackPayload::from($payloadData);
+    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $payloadData['resultFingerPrint'] = $fingerprint;
 
-    expect($this->action->handle($payload, $fingerprint))->toBeFalse();
+    $payloadData['messageType'] = 'E';
+    $alteredPayload = CallbackPayload::from($payloadData);
+
+    expect($this->action->handle($alteredPayload))->toBeFalse();
 });
 
 it('reload code is part of fingerprint', function () {
-    $payload = [
+    $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
         'merchantRespMerchantRef' => 'R20251112123456',
@@ -106,11 +114,15 @@ it('reload code is part of fingerprint', function () {
         'merchantRespEntityCode' => '10010',
         'merchantRespClientReceipt' => '**********',
         'merchantRespAdditionalErrorMessage' => '',
-        'merchantRespReloadCode' => '',
+        'reloadCode' => '',
     ];
 
-    $fingerprint = $this->action->computeFingerprint($payload);
-    $payload['merchantRespReloadCode'] = 'RELOAD-123';
+    $payload = CallbackPayload::from($payloadData);
+    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $payloadData['resultFingerPrint'] = $fingerprint;
 
-    expect($this->action->handle($payload, $fingerprint))->toBeFalse();
+    $payloadData['reloadCode'] = 'RELOAD-123';
+    $alteredPayload = CallbackPayload::from($payloadData);
+
+    expect($this->action->handle($alteredPayload))->toBeFalse();
 });

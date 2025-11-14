@@ -1,5 +1,5 @@
 import {useEffect} from 'react';
-import {useForm, usePage} from '@inertiajs/react';
+import {useForm} from '@inertiajs/react';
 
 interface TransactionData {
     id: number;
