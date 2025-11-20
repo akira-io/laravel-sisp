@@ -22,6 +22,12 @@
                     <p><strong>{{ __('sisp::messages.payment.response.amount') }}:</strong> {{ $transaction->formatted_amount }}</p>
                     <p><strong>{{ __('sisp::messages.payment.response.status') }}:</strong> <span class="font-medium text-green-600 dark:text-green-500">{{ __('sisp::messages.payment.response.success_status') }}</span></p>
                 </div>
+
+                @if($invoice && $invoice->pdf_url)
+                    <a href="{{ $invoice->pdf_url }}" target="_blank" download="{{ $invoice->invoice_number }}.pdf" class="block w-full rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 px-4 py-2 text-center text-sm font-medium text-blue-600 dark:text-blue-500 transition border border-blue-200 dark:border-blue-800">
+                        {{ __('sisp::messages.payment.response.invoice_download') }}
+                    </a>
+                @endif
             </div>
         @elseif($transaction->status === 'failed')
             <div class="space-y-6">

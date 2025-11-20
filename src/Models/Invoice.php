@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 final class Invoice extends Model
 {
@@ -34,6 +36,10 @@ final class Invoice extends Model
         'metadata' => 'array',
     ];
 
+    protected $appends = [
+        'pdf_url',
+    ];
+
     public function getTable(): string
     {
         return config('sisp.tables.invoices', 'sisp_invoices');
@@ -47,5 +53,22 @@ final class Invoice extends Model
     public function items(): HasMany
     {
         return $this->transaction->items();
+    }
+
+    public function getPdfUrlAttribute(): ?string
+    {
+        if (! $this->pdf_path) {
+            return null;
+        }
+
+        $disk = config('sisp.invoice.disk', 'public');
+
+        if ($disk === 's3') {
+            $expirationHours = app(LoadConfig::class)->getInvoiceTemporaryUrlExpirationHours();
+
+            return Storage::disk($disk)->temporaryUrl($this->pdf_path, now()->addHours($expirationHours));
+        }
+
+        return Storage::disk($disk)->url($this->pdf_path);
     }
 }

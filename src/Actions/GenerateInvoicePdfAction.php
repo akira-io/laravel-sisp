@@ -8,23 +8,29 @@ use Akira\PdfInvoices\Builder\EntityBuilder;
 use Akira\PdfInvoices\Builder\InvoiceBuilder;
 use Akira\PdfInvoices\Builder\ItemBuilder;
 use Akira\PdfInvoices\Contracts\PdfGeneratorContract;
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Models\Invoice;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 final readonly class GenerateInvoicePdfAction
 {
+    public function __construct(
+        private LoadConfig $config,
+    ) {}
+
     public function handle(Invoice $invoice): string
     {
         $transaction = $invoice->transaction;
 
         $seller = EntityBuilder::make()
-            ->name(config('sisp.invoice.company_name', config('app.name')))
-            ->address(config('sisp.invoice.company_address', ''))
-            ->vat(config('sisp.invoice.company_code', ''))
-            ->email(config('sisp.invoice.company_email', ''))
-            ->set('country', config('sisp.invoice.company_country', ''))
-            ->set('phone', config('sisp.invoice.company_phone', ''))
-            ->set('website', config('sisp.invoice.company_website', ''))
+            ->name($this->config->getInvoiceCompanyName() ?: config('app.name'))
+            ->address($this->config->getInvoiceCompanyAddress())
+            ->vat($this->config->getInvoiceCompanyCode())
+            ->email($this->config->getInvoiceCompanyEmail())
+            ->set('country', $this->config->getInvoiceCompanyCountry())
+            ->set('phone', $this->config->getInvoiceCompanyPhone())
+            ->set('website', $this->config->getInvoiceCompanyWebsite())
             ->build();
 
         $buyer = EntityBuilder::make()
@@ -57,18 +63,14 @@ final readonly class GenerateInvoicePdfAction
 
         $invoiceData = $invoiceBuilder->build();
         $pdfGenerator = app(PdfGeneratorContract::class);
-        $template = config('sisp.invoice.template', 'minimal');
+        $template = $this->config->getInvoiceTemplate();
         $pdfContent = $pdfGenerator->generate($invoiceData, $template);
 
         $filename = Str::uuid().'.pdf';
+        $storageDisk = $this->config->getInvoiceStorageDisk();
         $relativePath = "invoices/$filename";
-        $storagePath = storage_path('app/public/'.$relativePath);
 
-        if (! file_exists(dirname($storagePath))) {
-            mkdir(dirname($storagePath), 0755, true);
-        }
-
-        file_put_contents($storagePath, $pdfContent);
+        Storage::disk($storageDisk)->put($relativePath, $pdfContent);
 
         $invoice->update(['pdf_path' => $relativePath]);
 

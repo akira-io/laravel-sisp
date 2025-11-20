@@ -23,7 +23,7 @@ interface ErrorData {
 
 interface InvoiceData {
     invoice_number: string;
-    pdf_path: string;
+    pdf_url: string;
 }
 
 interface Translations {
@@ -149,8 +149,9 @@ export default function PaymentResponse({
                             <span className='text-green-600 dark:text-green-500 font-medium'>{t.success_status}</span>
                         </p>
                     </div>
-                    {invoice && invoice.pdf_path && (
-                      <a href={`/storage/${invoice.pdf_path}`}
+                    {invoice && invoice.pdf_url && (
+                      <a href={invoice.pdf_url}
+                         target="_blank"
                          download={`${invoice.invoice_number}.pdf`}
                          className='block w-full rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 px-4 py-2 text-center text-sm font-medium text-blue-600 dark:text-blue-500 transition border border-blue-200 dark:border-blue-800'>
                           {t.invoice_download}
