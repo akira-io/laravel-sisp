@@ -52,7 +52,7 @@ final readonly class RenderPaymentResponseAction
             'allowRetry' => $this->config->isRetryAllowed(),
             'invoice' => $invoice ? [
                 'invoice_number' => $invoice->invoice_number,
-                'pdf_path' => $invoice->pdf_path,
+                'pdf_url' => $invoice->pdf_url,
             ] : null,
             'payload' => $payload,
         ]);

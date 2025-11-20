@@ -123,6 +123,51 @@ final readonly class LoadConfig
         return $this->app['config']->get('sisp.invoice.prefix', 'INV');
     }
 
+    public function getInvoiceStorageDisk(): string
+    {
+        return $this->app['config']->get('sisp.invoice.disk', 'public');
+    }
+
+    public function getInvoiceTemplate(): string
+    {
+        return $this->app['config']->get('sisp.invoice.template', 'branded');
+    }
+
+    public function getInvoiceCompanyName(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_name', '');
+    }
+
+    public function getInvoiceCompanyAddress(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_address', '');
+    }
+
+    public function getInvoiceCompanyCode(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_code', '');
+    }
+
+    public function getInvoiceCompanyCountry(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_country', '');
+    }
+
+    public function getInvoiceCompanyPhone(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_phone', '');
+    }
+
+    public function getInvoiceCompanyEmail(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_email', '');
+    }
+
+    public function getInvoiceCompanyWebsite(): string
+    {
+        return $this->app['config']->get('sisp.invoice.company_website', '');
+    }
+
     public function isRateLimitingEnabled(): bool
     {
         return $this->app['config']->get('sisp.rate_limiting.enabled', true);
@@ -176,5 +221,10 @@ final readonly class LoadConfig
     public function isRetryAllowed(): bool
     {
         return $this->app['config']->get('sisp.allow_retry', true);
+    }
+
+    public function getInvoiceTemporaryUrlExpirationHours(): int
+    {
+        return (int) $this->app['config']->get('sisp.invoice.temporary_url_expiration_hours', 24);
     }
 }
