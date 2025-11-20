@@ -48,6 +48,7 @@ $invoice->customer_city;      // Customer city from transaction
 $invoice->customer_address;   // Customer address from transaction
 $invoice->customer_country;   // Customer country from transaction
 $invoice->pdf_path;           // Path to generated PDF file
+$invoice->pdf_url;            // Publicly accessible URL to PDF (handles S3 temporary URLs)
 $invoice->notes;              // Optional invoice notes
 $invoice->metadata;           // Additional metadata (array)
 ```
@@ -148,6 +149,69 @@ foreach ($transaction->items as $item) {
     echo $item->unit_price;
     echo $item->total_price;
 }
+```
+
+## Accessing Invoice PDFs
+
+Use the `pdf_url` accessor to get a publicly accessible URL to the PDF. This automatically handles both local and S3 storage:
+
+```php
+$invoice = $transaction->invoice;
+
+// Get the PDF URL (local storage)
+if ($invoice->pdf_url) {
+    echo $invoice->pdf_url;  // '/storage/invoices/550e8400-e29b-41d4-a716-446655440000.pdf'
+}
+
+// Get the PDF URL (S3 storage) - returns temporary signed URL
+if ($invoice->pdf_url) {
+    echo $invoice->pdf_url;  // 'https://s3.region.amazonaws.com/bucket/invoices/uuid.pdf?...'
+}
+```
+
+### PDF Storage Configuration
+
+Configure where invoices are stored:
+
+```env
+# Local storage (default)
+SISP_INVOICE_DISK=public
+
+# Or S3 storage
+SISP_INVOICE_DISK=s3
+```
+
+### S3 Temporary URL Expiration
+
+When using S3, PDFs are served via temporary signed URLs that expire after a configured time:
+
+```env
+# Set expiration time in hours (default: 24 hours)
+SISP_INVOICE_TEMPORARY_URL_EXPIRATION_HOURS=24
+```
+
+The expiration time is configured per application, not per URL. URLs are generated fresh each time `pdf_url` is accessed.
+
+### Using in Frontend
+
+In your Inertia/React components, use the `pdf_url` directly:
+
+```jsx
+{invoice && invoice.pdf_url && (
+  <a href={invoice.pdf_url} target="_blank" download={`${invoice.invoice_number}.pdf`}>
+    Download Invoice
+  </a>
+)}
+```
+
+Or in Blade templates:
+
+```blade
+@if($invoice && $invoice->pdf_url)
+    <a href="{{ $invoice->pdf_url }}" target="_blank" download="{{ $invoice->invoice_number }}.pdf">
+        Download Invoice
+    </a>
+@endif
 ```
 
 ## Customize Invoice Data
