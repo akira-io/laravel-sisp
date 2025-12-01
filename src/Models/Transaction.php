@@ -12,8 +12,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
+ * @property-read  int $id
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
+ * @property-read  string $customer_email
  */
 final class Transaction extends Model
 {

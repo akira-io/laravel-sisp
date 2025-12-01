@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -38,7 +40,7 @@ return new class extends Migration
         $tableName = config('sisp.tables.transactions', 'sisp_transactions');
 
         if (empty($tableName)) {
-            throw new \Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
+            throw new Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
         }
 
         Schema::create($tableName, function (Blueprint $table) {

@@ -21,7 +21,7 @@ it('fingerprint is generated with correct order', function () {
 
     $fingerprint = $this->action->handle($data);
     expect($fingerprint)->not->toBeEmpty()
-        ->and(strlen($fingerprint))->toBeGreaterThan(0);
+        ->and(mb_strlen($fingerprint))->toBeGreaterThan(0);
 });
 
 it('amount is converted to integer milliseconds', function () {
