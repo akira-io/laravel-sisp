@@ -40,7 +40,7 @@ final class SispServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->singleton(LoadConfig::class);
-        $this->app->singleton(Sisp::class, fn($app): \Akira\Sisp\Sisp => new Sisp(
+        $this->app->singleton(Sisp::class, fn ($app): Sisp => new Sisp(
             buildRequestPayload: $app->make(BuildRequestPayloadAction::class),
             buildSandboxPayload: $app->make(BuildSandboxPayloadAction::class),
             validateFingerprint: $app->make(ValidatePaymentResponseFingerprintAction::class),

@@ -27,7 +27,7 @@ final readonly class CreateAndStorePaymentTransactionAction
      */
     public function handle(PaymentRequest $paymentRequest, Request $request): Transaction
     {
-        return DB::transaction(function () use ($paymentRequest, $request): \Akira\Sisp\Models\Transaction {
+        return DB::transaction(function () use ($paymentRequest, $request): Transaction {
 
             $transaction = $this->storeTransaction->handle($paymentRequest);
 

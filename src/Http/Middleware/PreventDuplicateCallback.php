@@ -11,9 +11,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class PreventDuplicateCallback
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         // Check if this callback has already been processed
@@ -24,9 +21,6 @@ final class PreventDuplicateCallback
         return $next($request);
     }
 
-    /**
-     * Check if a callback for this transaction has already been processed.
-     */
     private function isAlreadyProcessed(Request $request): bool
     {
         $merchantRef = $request->input('merchantRespMerchantRef');
@@ -41,6 +35,7 @@ final class PreventDuplicateCallback
             ->where('merchant_ref', $merchantRef)
             ->where('merchant_session', $merchantSession)
             ->first();
+
         // If transaction exists and has been updated with response data, it's already processed
         return $transaction && $transaction->transaction_id;
     }
