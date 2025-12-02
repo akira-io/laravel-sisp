@@ -1,7 +1,71 @@
 # Path-based git attributes
 # https://www.kernel.org/pub/software/scm/git/docs/gitattributes.html
 
-# Ignore all test and documentation with "export-ignore".
+# ----------------------------------------
+# Text normalization and line endings
+# ----------------------------------------
+# Ensure consistent line endings across platforms. LF for source files.
+*                 text=auto
+*.php             text eol=lf
+*.blade.php       text eol=lf
+*.phpt            text eol=lf
+*.js              text eol=lf
+*.ts              text eol=lf
+*.json            text eol=lf
+*.css             text eol=lf
+*.scss            text eol=lf
+*.sass            text eol=lf
+*.md              text eol=lf
+*.yml             text eol=lf
+*.yaml            text eol=lf
+*.xml             text eol=lf
+*.html            text eol=lf
+*.svg             text eol=lf
+*.sh              text eol=lf
+*.sql             text eol=lf
+.env.example      text eol=lf
+composer.lock     text eol=lf
+pnpm-lock.yaml    text eol=lf
+package-lock.json text eol=lf
+
+# Windows-specific scripts
+*.bat             eol=crlf
+*.cmd             eol=crlf
+*.ps1             eol=crlf
+
+# ----------------------------------------
+# Binary files (no LF normalization, no diff heuristics)
+# ----------------------------------------
+*.png             binary
+*.jpg             binary
+*.jpeg            binary
+*.gif             binary
+*.ico             binary
+*.pdf             binary
+*.zip             binary
+*.gz              binary
+*.bz2             binary
+*.7z              binary
+*.xz              binary
+*.tgz             binary
+*.phar            binary
+*.ttf             binary
+*.otf             binary
+*.woff            binary
+*.woff2           binary
+*.eot             binary
+*.sqlite          binary
+*.sqlite3         binary
+*.mp4             binary
+*.mov             binary
+
+# ----------------------------------------
+# Reduce noisy diffs
+# ----------------------------------------
+*.min.js          -diff
+*.min.css         -diff
+
+# Ignore test, docs and dev-only files in archives with "export-ignore".
 /.github            export-ignore
 /.gitattributes     export-ignore
 /.gitignore         export-ignore
@@ -28,3 +92,8 @@
 /package.json       export-ignore
 /package-lock.json  export-ignore
 /CHANGELOG.md       export-ignore
+/.idea              export-ignore
+/.vscode            export-ignore
+/.phpunit.cache     export-ignore
+/node_modules       export-ignore
+/vendor             export-ignore
