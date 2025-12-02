@@ -14,7 +14,8 @@
       "geolocation",
       "vpn",
       "vue",
-      "js"
+      "js",
+      "pnpm"
     ],
     "paths": []
   }
