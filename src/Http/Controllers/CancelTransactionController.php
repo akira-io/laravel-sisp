@@ -20,10 +20,14 @@ final readonly class CancelTransactionController
     {
         $reason = $request->query('reason', 'user_cancelled');
 
+        dd($transaction->id);
+
         try {
+
             $this->cancelTransaction->handle($transaction, $reason);
 
-            return redirect()->back()->with('success', 'Transaction cancelled successfully.');
+            return redirect()->route('sisp.callback', ['ref' => $request->input('merchantRef')]);
+
         } catch (LogicException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

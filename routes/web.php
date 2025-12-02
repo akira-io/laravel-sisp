@@ -22,7 +22,7 @@ Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->middleware(Akira\Sisp\Http\Middleware\PreventDuplicateCallback::class)
     ->name('sisp.callback');
 
-Route::post('sisp/cancel', CancelTransactionController::class)
+Route::get('sisp/cancel', CancelTransactionController::class)
     ->name('sisp.cancel');
 
 Route::post('sisp/refund', RefundTransactionController::class)
