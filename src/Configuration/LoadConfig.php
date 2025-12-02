@@ -14,7 +14,7 @@ final readonly class LoadConfig
 
     public function shouldUseInertia(): bool
     {
-        return $this->app['config']->get('sisp.use_inertia.enabled', false) && class_exists('Inertia\Inertia');
+        return $this->app['config']->get('sisp.use_inertia.enabled', false) && class_exists(\Inertia\Inertia::class);
     }
 
     public function shouldUseBlade(): bool

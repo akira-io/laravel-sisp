@@ -29,7 +29,7 @@ final class Blacklist extends Model
 
     public function scopeActive($query)
     {
-        return $query->where(function ($q) {
+        return $query->where(function ($q): void {
             $q->whereNull('expires_at')
                 ->orWhere('expires_at', '>', now());
         });

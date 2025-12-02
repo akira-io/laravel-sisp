@@ -48,14 +48,14 @@ final class TransactionItemFactory extends Factory
 
     public function forTransaction(Transaction $transaction): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'transaction_id' => $transaction->id,
         ]);
     }
 
     public function withMetadata(array $metadata): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'metadata' => array_merge($attributes['metadata'] ?? [], $metadata),
         ]);
     }

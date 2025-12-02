@@ -28,7 +28,7 @@ final readonly class PaymentController
     /**
      * @throws Throwable
      */
-    public function __invoke(StorePaymentRequest $request)
+    public function __invoke(StorePaymentRequest $request): mixed
     {
         $ip = $request->ip();
 

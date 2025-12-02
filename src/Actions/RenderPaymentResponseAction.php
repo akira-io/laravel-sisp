@@ -30,7 +30,7 @@ final readonly class RenderPaymentResponseAction
 
     public function renderInertia(Transaction $transaction, array $payload, string $component = 'Sisp/PaymentResponse'): mixed
     {
-        if (! class_exists('Inertia\Inertia')) {
+        if (! class_exists(\Inertia\Inertia::class)) {
             return $this->renderBlade($transaction, $payload);
         }
 

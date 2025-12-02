@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\Cache;
 
 final readonly class CheckRateLimitAction
 {
-    public function __construct(
-        private CheckBlacklistAction $checkBlacklist,
-    ) {}
-
     public function handle(
 
         string $limitType = 'ip',
@@ -28,10 +24,8 @@ final readonly class CheckRateLimitAction
 
         $identifier ?? request()->ip();
 
-        $limit = $limit ?? $this->getDefaultLimit($limitType);
-        $windowSeconds = $windowSeconds ?? $this->getDefaultWindow($limitType);
-
-        $key = "rate_limit:{$limitType}:{$identifier}:{$context}";
+        $limit ??= $this->getDefaultLimit($limitType);
+        $windowSeconds ??= $this->getDefaultWindow($limitType);
         $blockedKey = "rate_limit_blocked:{$limitType}:{$identifier}:{$context}";
 
         if (Cache::has($blockedKey)) {

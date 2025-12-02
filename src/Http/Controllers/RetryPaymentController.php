@@ -16,7 +16,7 @@ final readonly class RetryPaymentController
         private RenderPaymentFormBasedOnConfigAction $renderForm,
     ) {}
 
-    public function __invoke(RetryPaymentRequest $request)
+    public function __invoke(RetryPaymentRequest $request): mixed
     {
         $transaction = Transaction::findOrFail($request->integer('transaction_id'));
 

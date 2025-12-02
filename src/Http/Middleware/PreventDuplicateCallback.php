@@ -31,7 +31,7 @@ final class PreventDuplicateCallback
     {
         $merchantRef = $request->input('merchantRespMerchantRef');
         $merchantSession = $request->input('merchantRespMerchantSession');
-        $transactionId = $request->input('merchantRespTid');
+        $request->input('merchantRespTid');
 
         if (! $merchantRef || ! $merchantSession) {
             return false;
@@ -41,12 +41,7 @@ final class PreventDuplicateCallback
             ->where('merchant_ref', $merchantRef)
             ->where('merchant_session', $merchantSession)
             ->first();
-
         // If transaction exists and has been updated with response data, it's already processed
-        if ($transaction && $transaction->transaction_id) {
-            return true;
-        }
-
-        return false;
+        return $transaction && $transaction->transaction_id;
     }
 }

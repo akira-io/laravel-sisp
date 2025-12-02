@@ -42,7 +42,7 @@ final class RateLimit extends Model
     public function scopeBlocked($query)
     {
         return $query->where('is_blocked', true)
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('blocked_until')
                     ->orWhere('blocked_until', '>', now());
             });
