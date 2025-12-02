@@ -1,7 +1,355 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Method Akira\\Sisp\\Sisp\:\:requestPayment\(\) never returns Illuminate\\Routing\\Redirector so it can be removed from the return type\.$#'
+			message: '#^Call to function in_array\(\) with Akira\\Sisp\\Enums\\TransactionStatus and array\{''completed'', ''cancelled''\} will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: src/Actions/CancelTransactionAction.php
+
+		-
+			message: '#^Part \$transaction\-\>status \(Akira\\Sisp\\Enums\\TransactionStatus\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: src/Actions/CancelTransactionAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Blacklist\:\:\$reason\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/CheckBlacklistAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\RateLimit\:\:\$reset_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/CheckRateLimitAction.php
+
+		-
+			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			identifier: typeCoverage.paramTypeCoverage
+			count: 1
+			path: src/Actions/CreateAndStorePaymentTransactionAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_address\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoiceAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_city\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoiceAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_country\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoiceAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoiceAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$due_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$invoice_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$invoice_number\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_address\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_city\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_country\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$items\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/GenerateInvoicePdfAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Actions/Generators/InvoiceNumberGeneratorAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RefundTransactionAction.php
+
+		-
+			message: '#^Call to function in_array\(\) with Akira\\Sisp\\Enums\\TransactionStatus and array\{''completed'', ''partially_refunded''\} will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: src/Actions/RefundTransactionAction.php
+
+		-
+			message: '#^Part \$transaction\-\>status \(Akira\\Sisp\\Enums\\TransactionStatus\) of encapsed string cannot be cast to string\.$#'
+			identifier: encapsedStringPart.nonString
+			count: 1
+			path: src/Actions/RefundTransactionAction.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between float and 0 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/Actions/RefundTransactionAction.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Actions/RenderPaymentFormAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$merchant_session\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$message_type\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_number\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pdf_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Actions/RenderPaymentResponseAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RetryPaymentAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RetryPaymentAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RetryPaymentAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$merchant_session\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RetryPaymentAction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$transaction_code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Actions/RetryPaymentAction.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: src/Actions/StoreRequestMetadataAction.php
+
+		-
+			message: '#^Match expression does not handle remaining values\: Akira\\Sisp\\Enums\\TransactionStatus\:\:cancelled\|Akira\\Sisp\\Enums\\TransactionStatus\:\:refunded$#'
+			identifier: match.unhandled
+			count: 1
+			path: src/Actions/UpdateInvoiceStatusAction.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: src/Commands/LaravelSispInstallCommand.php
+
+		-
+			message: '#^Trait Akira\\Sisp\\Concerns\\HasSispTransactions is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: src/Concerns/HasSispTransactions.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 2
+			path: src/Enums/ErrorMessageType.php
+
+		-
+			message: '#^Method Akira\\Sisp\\Http\\Controllers\\CallbackController\:\:handlePostRequest\(\) never returns Illuminate\\Routing\\Redirector so it can be removed from the return type\.$#'
 			identifier: return.unusedType
 			count: 1
-			path: src/Sisp.php
+			path: src/Http/Controllers/CallbackController.php
+
+		-
+			message: '#^Out of 199 possible return types, only 191 \- 95\.9 %% actually have it\. Add more return types to get over 99 %%$#'
+			identifier: typeCoverage.returnTypeCoverage
+			count: 1
+			path: src/Http/Controllers/CallbackController.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Blacklist\:\:\$expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/Blacklist.php
+
+		-
+			message: '#^Out of 199 possible return types, only 191 \- 95\.9 %% actually have it\. Add more return types to get over 99 %%$#'
+			identifier: typeCoverage.returnTypeCoverage
+			count: 4
+			path: src/Models/Blacklist.php
+
+		-
+			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			identifier: typeCoverage.paramTypeCoverage
+			count: 5
+			path: src/Models/Blacklist.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$pdf_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/Invoice.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:items\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Models/Invoice.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\RateLimit\:\:\$hits\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/RateLimit.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\RateLimit\:\:\$limit\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/RateLimit.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\RateLimit\:\:\$window_seconds\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/RateLimit.php
+
+		-
+			message: '#^Out of 199 possible return types, only 191 \- 95\.9 %% actually have it\. Add more return types to get over 99 %%$#'
+			identifier: typeCoverage.returnTypeCoverage
+			count: 3
+			path: src/Models/RateLimit.php
+
+		-
+			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			identifier: typeCoverage.paramTypeCoverage
+			count: 4
+			path: src/Models/RateLimit.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/Transaction.php
+
+		-
+			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			identifier: typeCoverage.paramTypeCoverage
+			count: 3
+			path: src/Models/Transaction.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$total_price_cents\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/TransactionItem.php
+
+		-
+			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$unit_price_cents\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/TransactionItem.php
+
+		-
+			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			identifier: typeCoverage.paramTypeCoverage
+			count: 1
+			path: src/SispServiceProvider.php
