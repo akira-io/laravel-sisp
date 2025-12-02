@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\ValueObjects;
 
-use Carbon\Carbon;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Date;
 
 final readonly class InvoiceData
 {
     public function __construct(
         public string $invoice_number,
-        public Carbon $invoice_date,
-        public ?Carbon $due_date = null,
+        public CarbonInterface $invoice_date,
+        public ?CarbonInterface $due_date = null,
         public ?string $notes = null,
         public ?array $metadata = null,
     ) {}
@@ -20,11 +21,11 @@ final readonly class InvoiceData
     {
         return new self(
             invoice_number: $data['invoice_number'],
-            invoice_date: $data['invoice_date'] instanceof Carbon
+            invoice_date: $data['invoice_date'] instanceof CarbonInterface
                 ? $data['invoice_date']
-                : \Illuminate\Support\Facades\Date::parse($data['invoice_date']),
+                : Date::parse($data['invoice_date']),
             due_date: isset($data['due_date'])
-                ? ($data['due_date'] instanceof Carbon ? $data['due_date'] : \Illuminate\Support\Facades\Date::parse($data['due_date']))
+                ? ($data['due_date'] instanceof CarbonInterface ? $data['due_date'] : Date::parse($data['due_date']))
                 : null,
             notes: $data['notes'] ?? null,
             metadata: $data['metadata'] ?? null,
