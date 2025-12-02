@@ -78,22 +78,16 @@ final class LaravelSispInstallCommand extends Command
 
                 info('Inertia components published.');
             }
-        } else {
-            if (confirm('Do you want to publish the Blade views?')) {
-                $forceBlade = confirm('Force overwrite if files already exist?', false);
-
-                $options = [
-                    '--tag' => 'sisp-views',
-                ];
-
-                if ($forceBlade) {
-                    $options['--force'] = true;
-                }
-
-                spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Blade views...');
-
-                info('Blade views published.');
+        } elseif (confirm('Do you want to publish the Blade views?')) {
+            $forceBlade = confirm('Force overwrite if files already exist?', false);
+            $options = [
+                '--tag' => 'sisp-views',
+            ];
+            if ($forceBlade) {
+                $options['--force'] = true;
             }
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Blade views...');
+            info('Blade views published.');
         }
 
         // Step 4: Run migration

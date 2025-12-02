@@ -43,7 +43,7 @@ return new class extends Migration
             throw new Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
         }
 
-        Schema::create($tableName, function (Blueprint $table) {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->id();
             $table->string('merchant_ref');
             $table->string('merchant_session');
@@ -80,7 +80,7 @@ return new class extends Migration
         $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
         $itemsTable = config('sisp.tables.transaction_items', 'sisp_transaction_items');
 
-        Schema::create($itemsTable, function (Blueprint $table) use ($transactionsTable) {
+        Schema::create($itemsTable, function (Blueprint $table) use ($transactionsTable): void {
             $table->id();
             $table->foreignId('transaction_id')
                 ->constrained($transactionsTable)
@@ -102,7 +102,7 @@ return new class extends Migration
         $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
         $invoicesTable = config('sisp.tables.invoices', 'sisp_invoices');
 
-        Schema::create($invoicesTable, function (Blueprint $table) use ($transactionsTable) {
+        Schema::create($invoicesTable, function (Blueprint $table) use ($transactionsTable): void {
             $table->id();
             $table->foreignId('transaction_id')
                 ->unique()
@@ -133,7 +133,7 @@ return new class extends Migration
         $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
         $metadataTable = config('sisp.tables.request_metadata', 'sisp_request_metadata');
 
-        Schema::create($metadataTable, function (Blueprint $table) use ($transactionsTable) {
+        Schema::create($metadataTable, function (Blueprint $table) use ($transactionsTable): void {
             $table->id();
             $table->foreignId('transaction_id')
                 ->nullable()
@@ -174,7 +174,7 @@ return new class extends Migration
     {
         $rateLimitsTable = config('sisp.tables.rate_limits', 'sisp_rate_limits');
 
-        Schema::create($rateLimitsTable, function (Blueprint $table) {
+        Schema::create($rateLimitsTable, function (Blueprint $table): void {
             $table->id();
             $table->string('identifier'); // IP, user ID, or merchant ID
             $table->string('limit_type'); // 'ip', 'user', 'merchant', 'product'
@@ -196,7 +196,7 @@ return new class extends Migration
     {
         $blacklistTable = config('sisp.tables.blacklist', 'sisp_blacklist');
 
-        Schema::create($blacklistTable, function (Blueprint $table) {
+        Schema::create($blacklistTable, function (Blueprint $table): void {
             $table->id();
             $table->string('type'); // 'ip', 'email', 'phone', 'card_hash', 'device_fingerprint'
             $table->string('value');

@@ -27,7 +27,7 @@ final readonly class CreateAndStorePaymentTransactionAction
      */
     public function handle(PaymentRequest $paymentRequest, Request $request): Transaction
     {
-        return DB::transaction(function () use ($paymentRequest, $request) {
+        return DB::transaction(function () use ($paymentRequest, $request): \Akira\Sisp\Models\Transaction {
 
             $transaction = $this->storeTransaction->handle($paymentRequest);
 
@@ -50,7 +50,7 @@ final readonly class CreateAndStorePaymentTransactionAction
     private function createAndGenerateInvoice(Transaction $transaction): void
     {
         $invoice = $this->generateInvoice->handle($transaction);
-        $invoice->load(['transaction' => function ($query) {
+        $invoice->load(['transaction' => function ($query): void {
             $query->with('items');
         }]);
 

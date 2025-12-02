@@ -31,7 +31,7 @@ final readonly class TransactionItemData
 
     public static function collection(array $items): array
     {
-        return array_map(fn (array $item) => self::from($item), $items);
+        return array_map(self::from(...), $items);
     }
 
     public function toArray(): array

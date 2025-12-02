@@ -15,7 +15,6 @@ use Illuminate\Support\Str;
 final readonly class BuildSandboxPayloadAction
 {
     public function __construct(
-        private ValidatePaymentResponseFingerprintAction $validateFingerprint,
         private PaymentResponseFingerPrintAction $generateFingerprint,
     ) {}
 

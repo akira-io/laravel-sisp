@@ -13,12 +13,12 @@ final readonly class StoreTransactionItemsAction
 {
     public function handle(Transaction $transaction, TransactionItemData ...$items): void
     {
-        if (empty($items)) {
+        if ($items === []) {
             return;
         }
 
         $records = array_map(
-            fn (TransactionItemData $item) => [
+            fn (TransactionItemData $item): array => [
                 'transaction_id' => $transaction->id,
                 'product_id' => $item->product_id,
                 'product_name' => $item->product_name,
@@ -33,6 +33,6 @@ final readonly class StoreTransactionItemsAction
             $items
         );
 
-        DB::table((new TransactionItem())->getTable())->insert($records);
+        DB::table(new TransactionItem()->getTable())->insert($records);
     }
 }
