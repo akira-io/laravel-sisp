@@ -35,6 +35,11 @@ final class TransactionItem extends Model
         return config('sisp.tables.transaction_items', 'sisp_transaction_items');
     }
 
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class);
+    }
+
     protected function getUnitPriceAttribute(): float
     {
         return $this->unit_price_cents / 100;
@@ -53,10 +58,5 @@ final class TransactionItem extends Model
     protected function setTotalPriceAttribute(float $value): void
     {
         $this->attributes['total_price_cents'] = (int) round($value * 100);
-    }
-
-    public function transaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class);
     }
 }

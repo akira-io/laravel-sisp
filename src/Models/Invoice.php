@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 final class Invoice extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
+
     protected $fillable = [
         'transaction_id',
         'invoice_number',

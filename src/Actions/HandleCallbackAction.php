@@ -36,15 +36,15 @@ final readonly class HandleCallbackAction
     {
 
         if (! Sisp::validateCallback($payload)) {
-            event(new \Akira\Sisp\Events\PaymentFailed($transaction, $payload));
+            event(new PaymentFailed($transaction, $payload));
 
             return;
         }
 
         match ($transaction->status) {
-            TransactionStatus::completed => event(new \Akira\Sisp\Events\PaymentCompleted($transaction, $payload)),
-            TransactionStatus::failed => event(new \Akira\Sisp\Events\PaymentFailed($transaction, $payload)),
-            TransactionStatus::pending => event(new \Akira\Sisp\Events\PaymentPending($transaction, $payload)),
+            TransactionStatus::completed => event(new PaymentCompleted($transaction, $payload)),
+            TransactionStatus::failed => event(new PaymentFailed($transaction, $payload)),
+            TransactionStatus::pending => event(new PaymentPending($transaction, $payload)),
             default => null,
         };
     }

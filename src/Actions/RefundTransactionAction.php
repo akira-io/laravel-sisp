@@ -39,7 +39,7 @@ final readonly class RefundTransactionAction
             'refunded_at' => now(),
         ]);
 
-        event(new \Akira\Sisp\Events\TransactionRefunded($transaction, $refundAmount, $reason));
+        event(new TransactionRefunded($transaction, $refundAmount, $reason));
 
         return $transaction;
     }

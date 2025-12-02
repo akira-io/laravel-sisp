@@ -10,6 +10,7 @@ final class Blacklist extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
+
     protected $fillable = [
         'type',
         'value',
@@ -27,6 +28,20 @@ final class Blacklist extends Model
     public function getTable(): string
     {
         return config('sisp.tables.blacklist', 'sisp_blacklist');
+    }
+
+    public function isActive(): bool
+    {
+        if ($this->expires_at === null) {
+            return true;
+        }
+
+        return $this->expires_at->isFuture();
+    }
+
+    public function isExpired(): bool
+    {
+        return ! $this->isActive();
     }
 
     #[\Illuminate\Database\Eloquent\Attributes\Scope]
@@ -55,19 +70,5 @@ final class Blacklist extends Model
     protected function bySeverity($query, string $severity)
     {
         return $query->where('severity', $severity);
-    }
-
-    public function isActive(): bool
-    {
-        if ($this->expires_at === null) {
-            return true;
-        }
-
-        return $this->expires_at->isFuture();
-    }
-
-    public function isExpired(): bool
-    {
-        return ! $this->isActive();
     }
 }
