@@ -72,7 +72,7 @@
     "test:arch": "pest --filter=arch",
     "test:types": "phpstan",
     "test:type-coverage": "pest --type-coverage --min=100 --compact",
-    "test:coverage": "pest --parallel --coverage --compact --exactly=5.9",
+    "test:coverage": "pest --parallel --coverage --compact --exactly=29.6",
     "test:typos": "peck",
     "test": [
       "@test:lint",
@@ -101,6 +101,6 @@
       }
     }
   },
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "prefer-stable": true
 }
