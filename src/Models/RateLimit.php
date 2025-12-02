@@ -10,6 +10,7 @@ final class RateLimit extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
+
     protected $fillable = [
         'identifier',
         'limit_type',
@@ -39,22 +40,6 @@ final class RateLimit extends Model
     public function expired($query)
     {
         return $query->where('reset_at', '<', now());
-    }
-
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
-    protected function blocked($query)
-    {
-        return $query->where('is_blocked', true)
-            ->where(function ($q): void {
-                $q->whereNull('blocked_until')
-                    ->orWhere('blocked_until', '>', now());
-            });
-    }
-
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
-    protected function active($query)
-    {
-        return $query->where('reset_at', '>', now());
     }
 
     public function isLimitExceeded(): bool
@@ -91,5 +76,21 @@ final class RateLimit extends Model
         ]);
 
         return $this;
+    }
+
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function blocked($query)
+    {
+        return $query->where('is_blocked', true)
+            ->where(function ($q): void {
+                $q->whereNull('blocked_until')
+                    ->orWhere('blocked_until', '>', now());
+            });
+    }
+
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function active($query)
+    {
+        return $query->where('reset_at', '>', now());
     }
 }

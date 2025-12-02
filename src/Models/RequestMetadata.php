@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class RequestMetadata extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
+
     protected $fillable = [
         'transaction_id',
         'ip_address',

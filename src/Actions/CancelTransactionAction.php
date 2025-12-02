@@ -25,7 +25,7 @@ final readonly class CancelTransactionAction
             'cancelled_at' => now(),
         ]);
 
-        event(new \Akira\Sisp\Events\TransactionCancelled($transaction, $reason));
+        event(new TransactionCancelled($transaction, $reason));
 
         return $transaction;
     }
