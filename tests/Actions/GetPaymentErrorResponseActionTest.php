@@ -6,11 +6,11 @@ use Akira\Sisp\Actions\GetPaymentErrorResponseAction;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\ValueObjects\PaymentErrorResponse;
 
-beforeEach(function () {
-    $this->action = app(GetPaymentErrorResponseAction::class);
+beforeEach(function (): void {
+    $this->action = resolve(GetPaymentErrorResponseAction::class);
 });
 
-it('transforms error message type to payment error response', function () {
+it('transforms error message type to payment error response', function (): void {
     $errorType = ErrorMessageType::cardExpired;
 
     $response = $this->action->handle($errorType);
@@ -24,7 +24,7 @@ it('transforms error message type to payment error response', function () {
         ->and($response->actionLabel)->toBeString();
 });
 
-it('converts payment error response to array', function () {
+it('converts payment error response to array', function (): void {
     $errorType = ErrorMessageType::insufficientFunds;
 
     $response = $this->action->handle($errorType);
@@ -39,7 +39,7 @@ it('converts payment error response to array', function () {
         ->and($array['actionLabel'])->toBeString();
 });
 
-it('handles all error message types', function () {
+it('handles all error message types', function (): void {
     $errorTypes = ErrorMessageType::cases();
 
     foreach ($errorTypes as $errorType) {

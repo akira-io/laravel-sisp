@@ -39,9 +39,7 @@ return new class extends Migration
     {
         $tableName = config('sisp.tables.transactions', 'sisp_transactions');
 
-        if (empty($tableName)) {
-            throw new Exception('Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
-        }
+        throw_if(empty($tableName), Exception::class, 'Error: config/sisp.php not loaded. Run [php artisan config:clear] and try again.');
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->id();

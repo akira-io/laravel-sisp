@@ -30,7 +30,7 @@ final class ProtectPaymentRoute
             return false;
         }
 
-        return Transaction::where('merchant_ref', $merchantRef)
+        return Transaction::query()->where('merchant_ref', $merchantRef)
             ->where('merchant_session', $merchantSession)
             ->whereIn('status', ['completed', 'failed', 'pending'])
             ->exists();

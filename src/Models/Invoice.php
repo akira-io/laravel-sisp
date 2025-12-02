@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 
 final class Invoice extends Model
 {
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
     protected $fillable = [
         'transaction_id',
         'invoice_number',
@@ -55,7 +56,7 @@ final class Invoice extends Model
         return $this->transaction->items();
     }
 
-    public function getPdfUrlAttribute(): ?string
+    protected function getPdfUrlAttribute(): ?string
     {
         if (! $this->pdf_path) {
             return null;
@@ -64,7 +65,7 @@ final class Invoice extends Model
         $disk = config('sisp.invoice.disk', 'public');
 
         if ($disk === 's3') {
-            $expirationHours = app(LoadConfig::class)->getInvoiceTemporaryUrlExpirationHours();
+            $expirationHours = resolve(LoadConfig::class)->getInvoiceTemporaryUrlExpirationHours();
 
             return Storage::disk($disk)->temporaryUrl($this->pdf_path, now()->addHours($expirationHours));
         }

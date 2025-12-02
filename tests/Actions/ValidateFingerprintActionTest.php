@@ -6,13 +6,13 @@ use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
-beforeEach(function () {
-    $this->action = app(ValidatePaymentResponseFingerprintAction::class);
+beforeEach(function (): void {
+    $this->action = resolve(ValidatePaymentResponseFingerprintAction::class);
 });
 
 it(/**
  * @throws Exception
- */ 'fingerprint is computed with correct field order', function () {
+ */ 'fingerprint is computed with correct field order', function (): void {
     $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
@@ -34,7 +34,7 @@ it(/**
     expect($expectedAmount)->toBe(1000000);
 
     $payload = CallbackPayload::from($payloadData);
-    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $fingerprint = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
     $payloadData['resultFingerPrint'] = $fingerprint;
     $payload = CallbackPayload::from($payloadData);
 
@@ -43,7 +43,7 @@ it(/**
     expect($response)->toBeTrue();
 });
 
-it('fingerprint rejects altered amount', function () {
+it('fingerprint rejects altered amount', function (): void {
     $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
@@ -62,7 +62,7 @@ it('fingerprint rejects altered amount', function () {
     ];
 
     $payload = CallbackPayload::from($payloadData);
-    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $fingerprint = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
     $payloadData['resultFingerPrint'] = $fingerprint;
 
     $payloadData['merchantRespPurchaseAmount'] = '2000';
@@ -71,7 +71,7 @@ it('fingerprint rejects altered amount', function () {
     expect($this->action->handle($alteredPayload))->toBeFalse();
 });
 
-it('fingerprint rejects altered message type', function () {
+it('fingerprint rejects altered message type', function (): void {
     $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
@@ -90,7 +90,7 @@ it('fingerprint rejects altered message type', function () {
     ];
 
     $payload = CallbackPayload::from($payloadData);
-    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $fingerprint = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
     $payloadData['resultFingerPrint'] = $fingerprint;
 
     $payloadData['messageType'] = 'E';
@@ -99,7 +99,7 @@ it('fingerprint rejects altered message type', function () {
     expect($this->action->handle($alteredPayload))->toBeFalse();
 });
 
-it('reload code is part of fingerprint', function () {
+it('reload code is part of fingerprint', function (): void {
     $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
@@ -118,7 +118,7 @@ it('reload code is part of fingerprint', function () {
     ];
 
     $payload = CallbackPayload::from($payloadData);
-    $fingerprint = app(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $fingerprint = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
     $payloadData['resultFingerPrint'] = $fingerprint;
 
     $payloadData['reloadCode'] = 'RELOAD-123';

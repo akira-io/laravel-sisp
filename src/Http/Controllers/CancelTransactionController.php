@@ -24,10 +24,10 @@ final readonly class CancelTransactionController
 
             $this->cancelTransaction->handle($transaction, $reason);
 
-            return redirect()->route('sisp.callback', ['ref' => $request->input('merchantRef')]);
+            return to_route('sisp.callback', ['ref' => $request->input('merchantRef')]);
 
         } catch (LogicException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 }

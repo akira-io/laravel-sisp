@@ -22,9 +22,9 @@ final readonly class InvoiceData
             invoice_number: $data['invoice_number'],
             invoice_date: $data['invoice_date'] instanceof Carbon
                 ? $data['invoice_date']
-                : Carbon::parse($data['invoice_date']),
+                : \Illuminate\Support\Facades\Date::parse($data['invoice_date']),
             due_date: isset($data['due_date'])
-                ? ($data['due_date'] instanceof Carbon ? $data['due_date'] : Carbon::parse($data['due_date']))
+                ? ($data['due_date'] instanceof Carbon ? $data['due_date'] : \Illuminate\Support\Facades\Date::parse($data['due_date']))
                 : null,
             notes: $data['notes'] ?? null,
             metadata: $data['metadata'] ?? null,

@@ -62,7 +62,7 @@ final readonly class GenerateInvoicePdfAction
         }
 
         $invoiceData = $invoiceBuilder->build();
-        $pdfGenerator = app(PdfGeneratorContract::class);
+        $pdfGenerator = resolve(PdfGeneratorContract::class);
         $template = $this->config->getInvoiceTemplate();
         $pdfContent = $pdfGenerator->generate($invoiceData, $template);
 
