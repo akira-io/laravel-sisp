@@ -20,8 +20,6 @@ final readonly class CancelTransactionController
     {
         $reason = $request->query('reason', 'user_cancelled');
 
-        dd($transaction->id);
-
         try {
 
             $this->cancelTransaction->handle($transaction, $reason);
