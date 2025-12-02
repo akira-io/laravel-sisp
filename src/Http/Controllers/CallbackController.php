@@ -7,7 +7,6 @@ namespace Akira\Sisp\Http\Controllers;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
-use Akira\Sisp\Exceptions\InvalidPaymentResponseException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -21,11 +20,13 @@ final readonly class CallbackController
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
     ) {}
 
-    /**
-     * @throws InvalidPaymentResponseException
-     */
     public function __invoke(Request $request)
     {
+
+        if ($request->boolean('UserCancelled')) {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
         if ($request->isMethod('get')) {
             return $this->handleGetRequest();
         }

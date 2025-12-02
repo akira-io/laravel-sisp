@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
  * @property-read  string $customer_email
+ * @property-read  string $merchant_ref
  */
 final class Transaction extends Model
 {
