@@ -7,12 +7,12 @@ use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\View\View;
 
-beforeEach(function () {
-    $this->action = app(RenderPaymentResponseAction::class);
-    $this->config = app(LoadConfig::class);
+beforeEach(function (): void {
+    $this->action = resolve(RenderPaymentResponseAction::class);
+    $this->config = resolve(LoadConfig::class);
 });
 
-it('renders blade view with transaction data', function () {
+it('renders blade view with transaction data', function (): void {
     $transaction = new Transaction([
         'id' => 1,
         'status' => 'completed',
@@ -29,7 +29,7 @@ it('renders blade view with transaction data', function () {
         ->and($view->getName())->toBe('sisp::payment-response');
 });
 
-it('passes allow retry to blade view', function () {
+it('passes allow retry to blade view', function (): void {
     config(['sisp.allow_retry' => true]);
 
     $transaction = new Transaction([
@@ -47,7 +47,7 @@ it('passes allow retry to blade view', function () {
     expect($view->getData()['allowRetry'])->toBeTrue();
 });
 
-it('respects allow retry config in blade', function () {
+it('respects allow retry config in blade', function (): void {
     config(['sisp.allow_retry' => false]);
 
     $transaction = new Transaction([
@@ -65,7 +65,7 @@ it('respects allow retry config in blade', function () {
     expect($view->getData()['allowRetry'])->toBeFalse();
 });
 
-it('includes error response in blade view when transaction has error', function () {
+it('includes error response in blade view when transaction has error', function (): void {
     $transaction = new Transaction([
         'id' => 1,
         'status' => 'failed',
@@ -83,7 +83,7 @@ it('includes error response in blade view when transaction has error', function 
         ->toHaveKeys(['code', 'label', 'category', 'categoryLabel', 'action', 'actionLabel']);
 });
 
-it('returns null error when transaction has no message type', function () {
+it('returns null error when transaction has no message type', function (): void {
     $transaction = new Transaction([
         'id' => 1,
         'status' => 'failed',

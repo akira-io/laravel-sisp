@@ -35,22 +35,22 @@ final class TransactionItem extends Model
         return config('sisp.tables.transaction_items', 'sisp_transaction_items');
     }
 
-    public function getUnitPriceAttribute(): float
+    protected function getUnitPriceAttribute(): float
     {
         return $this->unit_price_cents / 100;
     }
 
-    public function setUnitPriceAttribute(float $value): void
+    protected function setUnitPriceAttribute(float $value): void
     {
         $this->attributes['unit_price_cents'] = (int) round($value * 100);
     }
 
-    public function getTotalPriceAttribute(): float
+    protected function getTotalPriceAttribute(): float
     {
         return $this->total_price_cents / 100;
     }
 
-    public function setTotalPriceAttribute(float $value): void
+    protected function setTotalPriceAttribute(float $value): void
     {
         $this->attributes['total_price_cents'] = (int) round($value * 100);
     }

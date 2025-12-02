@@ -52,7 +52,7 @@ final readonly class CallbackController
         return $this->renderResponse->handle($transaction, []);
     }
 
-    private function handlePostRequest(Request $request)
+    private function handlePostRequest(Request $request): \Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse
     {
         $payload = CallbackPayload::from($request->all());
 
@@ -62,6 +62,6 @@ final readonly class CallbackController
 
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
-        return redirect()->route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+        return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
     }
 }

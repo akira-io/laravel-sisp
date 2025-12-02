@@ -19,11 +19,11 @@ abstract class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Akira\\Sisp\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName): string => 'Akira\\Sisp\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
-    final public function getEnvironmentSetUp($app)
+    final public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
         config()->set('database.connections.testing', [

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\GetPaymentResponseTranslationsAction;
 
-beforeEach(function () {
-    $this->action = app(GetPaymentResponseTranslationsAction::class);
+beforeEach(function (): void {
+    $this->action = resolve(GetPaymentResponseTranslationsAction::class);
 });
 
-it('returns translations array with all required keys', function () {
+it('returns translations array with all required keys', function (): void {
     $translations = $this->action->handle();
 
     expect($translations)->toBeArray()
@@ -38,7 +38,7 @@ it('returns translations array with all required keys', function () {
         ]);
 });
 
-it('returns string values for all translation keys', function () {
+it('returns string values for all translation keys', function (): void {
     $translations = $this->action->handle();
 
     foreach ($translations['payment'] as $key => $value) {
@@ -46,7 +46,7 @@ it('returns string values for all translation keys', function () {
     }
 });
 
-it('returns non-empty strings for all translations', function () {
+it('returns non-empty strings for all translations', function (): void {
     $translations = $this->action->handle();
 
     foreach ($translations['payment'] as $key => $value) {
@@ -54,7 +54,7 @@ it('returns non-empty strings for all translations', function () {
     }
 });
 
-it('contains retry and cancel payment translations', function () {
+it('contains retry and cancel payment translations', function (): void {
     $translations = $this->action->handle();
 
     expect($translations['payment']['retry_payment'])->toBeString()

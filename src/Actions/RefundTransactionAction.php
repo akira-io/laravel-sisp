@@ -27,9 +27,7 @@ final readonly class RefundTransactionAction
             );
         }
 
-        if ($refundAmount <= 0) {
-            throw new LogicException('Refund amount must be greater than 0.');
-        }
+        throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
         $newAmount = $transaction->amount - $refundAmount;
         $status = $newAmount === 0 ? 'refunded' : 'partially_refunded';
@@ -41,7 +39,7 @@ final readonly class RefundTransactionAction
             'refunded_at' => now(),
         ]);
 
-        TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
+        event(new \Akira\Sisp\Events\TransactionRefunded($transaction, $refundAmount, $reason));
 
         return $transaction;
     }

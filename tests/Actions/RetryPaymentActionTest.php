@@ -6,11 +6,11 @@ use Akira\Sisp\Actions\RetryPaymentAction;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 
-beforeEach(function () {
-    $this->action = app(RetryPaymentAction::class);
+beforeEach(function (): void {
+    $this->action = resolve(RetryPaymentAction::class);
 });
 
-it('extracts data and returns payment request', function () {
+it('extracts data and returns payment request', function (): void {
     $transaction = Transaction::factory()->create([
         'amount' => 10000.0,
         'merchant_ref' => 'REF123456',
@@ -25,7 +25,7 @@ it('extracts data and returns payment request', function () {
         ->and($paymentRequest->amount)->toBe(10000.0);
 });
 
-it('includes all transaction details', function () {
+it('includes all transaction details', function (): void {
     $transaction = Transaction::factory()->create([
         'amount' => 25000.0,
         'merchant_ref' => 'CUSTOM-REF-123',
@@ -41,7 +41,7 @@ it('includes all transaction details', function () {
         ->and($paymentRequest->currency)->toBe('CVE');
 });
 
-it('creates valid payment request with data from transaction', function () {
+it('creates valid payment request with data from transaction', function (): void {
     $transaction = Transaction::factory()->create([
         'amount' => 50000.0,
         'merchant_ref' => 'REF-789',

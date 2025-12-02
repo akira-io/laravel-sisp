@@ -28,25 +28,18 @@ final readonly class CheckRateLimitAction
         $windowSeconds ??= $this->getDefaultWindow($limitType);
         $blockedKey = "rate_limit_blocked:{$limitType}:{$identifier}:{$context}";
 
-        if (Cache::has($blockedKey)) {
-            throw new RateLimitExceededException(
-                "Rate limit exceeded for {$limitType}: {$identifier}"
-            );
-        }
+        throw_if(Cache::has($blockedKey), RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}");
 
-        $rateLimit = RateLimit::firstOrCreate(
-            [
-                'identifier' => $identifier,
-                'limit_type' => $limitType,
-                'context' => $context,
-            ],
-            [
-                'hits' => 0,
-                'limit' => $limit,
-                'window_seconds' => $windowSeconds,
-                'reset_at' => now()->addSeconds($windowSeconds),
-            ]
-        );
+        $rateLimit = RateLimit::query()->firstOrCreate([
+            'identifier' => $identifier,
+            'limit_type' => $limitType,
+            'context' => $context,
+        ], [
+            'hits' => 0,
+            'limit' => $limit,
+            'window_seconds' => $windowSeconds,
+            'reset_at' => now()->addSeconds($windowSeconds),
+        ]);
 
         if ($rateLimit->reset_at->isPast()) {
             $rateLimit->reset();

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\GenerateFingerprintAction;
 
-beforeEach(function () {
-    $this->action = app(GenerateFingerprintAction::class);
+beforeEach(function (): void {
+    $this->action = resolve(GenerateFingerprintAction::class);
 });
 
-it('fingerprint is generated with correct order', function () {
+it('fingerprint is generated with correct order', function (): void {
     $data = [
         'timeStamp' => '2024-01-15 14:30:00',
         'amount' => 100.50,
@@ -21,10 +21,10 @@ it('fingerprint is generated with correct order', function () {
 
     $fingerprint = $this->action->handle($data);
     expect($fingerprint)->not->toBeEmpty()
-        ->and(mb_strlen($fingerprint))->toBeGreaterThan(0);
+        ->and(mb_strlen((string) $fingerprint))->toBeGreaterThan(0);
 });
 
-it('amount is converted to integer milliseconds', function () {
+it('amount is converted to integer milliseconds', function (): void {
     $data1 = [
         'timeStamp' => '2024-01-15 14:30:00',
         'amount' => 100.50,
@@ -51,7 +51,7 @@ it('amount is converted to integer milliseconds', function () {
     expect($fingerprint1)->toBe($fingerprint2);
 });
 
-it('different amounts generate different fingerprints', function () {
+it('different amounts generate different fingerprints', function (): void {
     $data1 = [
         'timeStamp' => '2024-01-15 14:30:00',
         'amount' => 100.50,

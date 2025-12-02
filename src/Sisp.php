@@ -30,7 +30,7 @@ final readonly class Sisp
 
     public function getTransactions(): Collection
     {
-        return Transaction::get();
+        return Transaction::query()->get();
     }
 
     public function buildRequestPayload(PaymentRequestData $data): PaymentRequest

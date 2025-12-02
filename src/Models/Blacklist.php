@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class Blacklist extends Model
 {
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
     protected $fillable = [
         'type',
         'value',
@@ -27,7 +29,8 @@ final class Blacklist extends Model
         return config('sisp.tables.blacklist', 'sisp_blacklist');
     }
 
-    public function scopeActive($query)
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function active($query)
     {
         return $query->where(function ($q): void {
             $q->whereNull('expires_at')
@@ -35,18 +38,21 @@ final class Blacklist extends Model
         });
     }
 
-    public function scopeExpired($query)
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function expired($query)
     {
         return $query->whereNotNull('expires_at')
             ->where('expires_at', '<=', now());
     }
 
-    public function scopeByType($query, string $type)
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function byType($query, string $type)
     {
         return $query->where('type', $type);
     }
 
-    public function scopeBySeverity($query, string $severity)
+    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    protected function bySeverity($query, string $severity)
     {
         return $query->where('severity', $severity);
     }

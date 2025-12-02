@@ -11,7 +11,7 @@ final readonly class CreateTransactionAction
 {
     public function handle(TransactionData $data): Transaction
     {
-        return Transaction::create([
+        return Transaction::query()->create([
             'merchant_ref' => $data->merchantRef,
             'merchant_session' => $data->merchantSession,
             'amount' => $data->amount,

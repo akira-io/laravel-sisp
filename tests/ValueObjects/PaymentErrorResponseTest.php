@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\ValueObjects\PaymentErrorResponse;
 
-it('creates instance from array', function () {
+it('creates instance from array', function (): void {
     $data = [
         'code' => '3',
         'label' => 'Insufficient Funds',
@@ -25,7 +25,7 @@ it('creates instance from array', function () {
         ->and($error->actionLabel)->toBe('Please retry with sufficient funds');
 });
 
-it('converts to array', function () {
+it('converts to array', function (): void {
     $error = new PaymentErrorResponse(
         code: '12',
         label: 'Card Expired',
@@ -43,7 +43,7 @@ it('converts to array', function () {
         ->and($array['label'])->toBe('Card Expired');
 });
 
-it('maintains data integrity on array conversion', function () {
+it('maintains data integrity on array conversion', function (): void {
     $data = [
         'code' => '6',
         'label' => 'Declined',
@@ -59,7 +59,7 @@ it('maintains data integrity on array conversion', function () {
     expect($converted)->toBe($data);
 });
 
-it('is readonly and prevents modifications', function () {
+it('is readonly and prevents modifications', function (): void {
     $error = new PaymentErrorResponse(
         code: '3',
         label: 'Test',

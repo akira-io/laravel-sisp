@@ -31,7 +31,7 @@ final readonly class CheckBlacklistAction
 
     public function isBlacklisted(string $type, string $value): bool
     {
-        return Blacklist::active()
+        return Blacklist::query()->active()
             ->byType($type)
             ->where('value', $value)
             ->exists();
@@ -46,7 +46,7 @@ final readonly class CheckBlacklistAction
         ?string $addedBy = null,
         ?int $expiresInMinutes = null
     ): Blacklist {
-        return Blacklist::create([
+        return Blacklist::query()->create([
             'type' => $type,
             'value' => $value,
             'severity' => $severity,
@@ -61,7 +61,7 @@ final readonly class CheckBlacklistAction
 
     public function remove(string $type, string $value): bool
     {
-        return Blacklist::where('type', $type)
+        return Blacklist::query()->where('type', $type)
             ->where('value', $value)
             ->delete() > 0;
     }
