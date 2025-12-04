@@ -6,11 +6,22 @@ namespace Akira\Sisp\Models;
 
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\InvoiceStatus;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property-read  string|null $pdf_url
+ * @property-read  InvoiceStatus $status
+ * @property-read  Transaction $transaction
+ * @property-read  array $items
+ * @property-read  int $items_count
+ * @property-read  CarbonInterface $invoice_date
+ * @property-read  CarbonInterface|null $due_date
+ * @property-read  string $invoice_number
+ */
 final class Invoice extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;

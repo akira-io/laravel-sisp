@@ -39,7 +39,6 @@ final readonly class GenerateInvoicePdfAction
             ->address($invoice->customer_address ?? $transaction->customer_address)
             ->set('country', $invoice->customer_country ?? $transaction->customer_country)
             ->set('phone', $transaction->customer_phone)
-
             ->set('city', $invoice->customer_city ?? $transaction->customer_city)
             ->build();
 
@@ -49,6 +48,7 @@ final readonly class GenerateInvoicePdfAction
             ->invoiceNumber($invoice->invoice_number)
             ->issuedAt($invoice->invoice_date)
             ->dueAt($invoice->due_date)
+            ->locale($transaction->locale)
             ->currency('ECV');
 
         foreach ($transaction->items as $item) {
