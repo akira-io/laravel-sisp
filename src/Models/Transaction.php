@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string $customer_email
  * @property-read  string $merchant_ref
  * @property-read  int $transaction_id
+ * @property-read  string $locale
  */
 final class Transaction extends Model
 {
@@ -48,6 +49,7 @@ final class Transaction extends Model
         'customer_country',
         'customer_city',
         'customer_address',
+        'locale',
         'cancelled_at',
         'refunded_at',
     ];
@@ -67,13 +69,6 @@ final class Transaction extends Model
         return $this->hasOne(Invoice::class, 'transaction_id');
     }
 
-    protected function getFormattedAmountAttribute(): string
-    {
-        $formatted = number_format($this->amount, 0, ',', '.');
-
-        return "{$formatted} ECV";
-    }
-
     protected function casts(): array
     {
         return [
@@ -85,6 +80,13 @@ final class Transaction extends Model
             'cancelled_at' => 'datetime',
             'refunded_at' => 'datetime',
         ];
+    }
+
+    protected function getFormattedAmountAttribute(): string
+    {
+        $formatted = number_format($this->amount, 0, ',', '.');
+
+        return "{$formatted} ECV";
     }
 
     protected function encryptable(): array
