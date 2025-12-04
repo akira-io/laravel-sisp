@@ -51,6 +51,7 @@ User submits payment form with:
 - `amount` - Total payment amount
 - `items[]` - Array of line items
 - `customer_email` - Optional customer email
+- `locale` - Optional customer language (pt, en) - defaults to 'pt'
 - Other customer details (optional)
 
 ## Step 2: Request Validation
@@ -215,6 +216,7 @@ TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 - merchant_ref (unique reference)
 - merchant_session
 - customer_email
+- locale (customer language preference)
 - customer data
 
 ### sisp_transaction_items

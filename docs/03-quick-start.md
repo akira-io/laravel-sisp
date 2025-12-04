@@ -48,6 +48,7 @@ Create a form that POSTs to `POST /sisp/payment`:
 - `customer_country`
 - `customer_city`
 - `customer_address`
+- `locale` - Customer's language preference (pt, en) - defaults to 'pt'
 - `items[*][product_id]`
 - `items[*][description]`
 - `items[*][metadata]`

@@ -30,6 +30,7 @@ $transaction->customer_phone      // Customer phone (encrypted)
 $transaction->customer_country    // Customer country code
 $transaction->customer_city       // Customer city
 $transaction->customer_address    // Customer address
+$transaction->locale              // Transaction locale (pt, en, etc.)
 $transaction->cancelled_at        // When transaction was cancelled
 $transaction->refunded_at         // When transaction was refunded
 $transaction->created_at          // Created timestamp
