@@ -13,6 +13,7 @@ final readonly class TransactionData
         public string $currency = '132',
         public string $transactionCode = '1',
         public array $payload = [],
+        public ?string $locale = null,
     ) {}
 
     public static function from(array $data): self
@@ -24,6 +25,7 @@ final readonly class TransactionData
             currency: $data['currency'] ?? '132',
             transactionCode: $data['transactionCode'] ?? '1',
             payload: $data['payload'] ?? [],
+            locale: $data['locale'] ?? null,
         );
     }
 }

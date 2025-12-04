@@ -17,10 +17,6 @@ final class StorePaymentRequest extends FormRequest
     {
         return [
             'amount' => ['required', 'numeric', 'min:0.01'],
-            //            'currency' => ['sometimes', 'string', 'size:3'],
-            //            'merchant_ref' => ['sometimes', 'string', 'max:255'],
-            //            'merchant_session' => ['sometimes', 'string', 'max:255'],
-            //            'transaction_code' => ['sometimes', 'string', 'max:255'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['sometimes', 'string', 'max:255'],
             'items.*.product_name' => ['required', 'string', 'max:255'],
@@ -35,6 +31,7 @@ final class StorePaymentRequest extends FormRequest
             'customer_country' => ['sometimes', 'string', 'max:2'],
             'customer_city' => ['sometimes', 'string', 'max:255'],
             'customer_address' => ['sometimes', 'string', 'max:255'],
+            'locale' => ['sometimes', 'string', 'max:10'],
         ];
     }
 }

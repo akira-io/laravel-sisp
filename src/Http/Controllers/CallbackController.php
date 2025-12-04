@@ -49,6 +49,10 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
+        if ($transaction->locale) {
+            app()->setLocale($transaction->locale);
+        }
+
         return $this->renderResponse->handle($transaction, []);
     }
 

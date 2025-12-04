@@ -41,14 +41,14 @@ final readonly class GenerateInvoicePdfAction
             ->set('phone', $transaction->customer_phone)
             ->set('city', $invoice->customer_city ?? $transaction->customer_city)
             ->build();
-
+        
         $invoiceBuilder = InvoiceBuilder::make()
             ->seller($seller)
             ->buyer($buyer)
             ->invoiceNumber($invoice->invoice_number)
             ->issuedAt($invoice->invoice_date)
             ->dueAt($invoice->due_date)
-            ->locale($transaction->locale)
+            ->locale(str_replace('-', '_', $transaction->locale))
             ->currency('ECV');
 
         foreach ($transaction->items as $item) {

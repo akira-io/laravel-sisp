@@ -23,6 +23,7 @@ final readonly class StorePaymentTransactionAction
             'currency' => $paymentRequest->currency,
             'transactionCode' => $paymentRequest->transactionCode,
             'payload' => $paymentRequest->toArray(),
+            'locale' => $paymentRequest->locale,
         ]);
 
         return $this->createTransaction->handle($transactionData);

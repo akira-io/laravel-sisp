@@ -4,12 +4,12 @@
 			<div class="sisp-icon-wrapper">
 				<x-sisp::icons.check-circle class="sisp-icon success-icon"/>
 			</div>
-			<h1 class="sisp-title success-text">{{ __('Purchase Completed') }}</h1>
+			<h1 class="sisp-title success-text">{{ __('sisp::messages.payment.response.success_title') }}</h1>
 			<p class="sisp-description">
-				{{ __('Dear customer, thank you for completing your transaction. We appreciate your trust in our services. If you have any questions or require assistance, please do not hesitate to contact our support team. Have a great day!') }}
+				{{ __('sisp::messages.payment.response.success_message') }}
 			</p>
 			<div class="sisp-button-wrapper">
-				<x-sisp::redirect-button :name="__('Ok')"/>
+				<x-sisp::redirect-button :name="__('sisp::messages.payment.response.back_home')"/>
 			</div>
 		</div>
 	</div>

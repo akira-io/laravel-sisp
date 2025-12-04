@@ -16,6 +16,7 @@ final readonly class PaymentRequestData
         public ?string $token = null,
         public ?string $entityCode = null,
         public ?string $referenceNumber = null,
+        public ?string $locale = null,
     ) {}
 
     public static function from(array $data): self
@@ -30,6 +31,7 @@ final readonly class PaymentRequestData
             token: $data['token'] ?? null,
             entityCode: $data['entityCode'] ?? null,
             referenceNumber: $data['referenceNumber'] ?? null,
+            locale: $data['locale'] ?? null,
         );
     }
 }
