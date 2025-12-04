@@ -19,6 +19,7 @@ final readonly class CreateTransactionAction
             'status' => 'pending',
             'transaction_code' => $data->transactionCode,
             'payload' => $data->payload,
+            'locale' => $data->locale,
         ]);
     }
 }

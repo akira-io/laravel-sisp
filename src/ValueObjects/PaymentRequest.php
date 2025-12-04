@@ -22,6 +22,7 @@ final readonly class PaymentRequest
         public string $token = '',
         public string $entityCode = '',
         public string $referenceNumber = '',
+        public string $locale = 'pt',
     ) {}
 
     public static function from(array $data): self
@@ -42,6 +43,7 @@ final readonly class PaymentRequest
             token: $data['token'] ?? '',
             entityCode: $data['entityCode'] ?? '',
             referenceNumber: $data['referenceNumber'] ?? '',
+            locale: $data['locale'] ?? 'pt',
         );
     }
 
@@ -63,6 +65,7 @@ final readonly class PaymentRequest
             'token' => $this->token,
             'entityCode' => $this->entityCode,
             'referenceNumber' => $this->referenceNumber,
+            'locale' => $this->locale,
         ];
     }
 }

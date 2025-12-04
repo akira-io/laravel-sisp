@@ -25,6 +25,7 @@ final readonly class BuildRequestPayloadAction
         $token = $data->token ?? '';
         $entityCode = $data->entityCode ?? '';
         $referenceNumber = $data->referenceNumber ?? '';
+        $locale = $data->locale ?? 'pt_PT';
 
         $payload = [
             'posID' => Sisp::getPosId(),
@@ -41,6 +42,7 @@ final readonly class BuildRequestPayloadAction
             'token' => $token,
             'entityCode' => $entityCode,
             'referenceNumber' => $referenceNumber,
+            'locale' => $locale,
         ];
 
         $payload['fingerprint'] = $this->generateFingerprint->handle($payload);
