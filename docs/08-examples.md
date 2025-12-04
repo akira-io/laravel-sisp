@@ -174,6 +174,14 @@ Create a branded payment form in your application.
         >
     </div>
 
+    <div class="form-group">
+        <label>Language</label>
+        <select name="locale">
+            <option value="pt">Português</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+
     <button type="submit">Pay Now</button>
 </form>
 ```
@@ -229,6 +237,7 @@ $request = new Request([
     ],
     'customer_email' => 'customer@example.com',
     'customer_name' => 'John Doe',
+    'locale' => 'pt', // Optional: customer language preference
 ]);
 
 // Create transaction
@@ -270,6 +279,15 @@ $average = Transaction::where('status', TransactionStatus::completed)
 // Transactions by customer
 $byCustomer = Transaction::where('customer_email', 'user@example.com')
     ->paginate(20);
+
+// Transactions by locale
+$portugueseTransactions = Transaction::where('locale', 'pt')
+    ->where('status', TransactionStatus::completed)
+    ->count();
+
+$englishTransactions = Transaction::where('locale', 'en')
+    ->where('status', TransactionStatus::completed)
+    ->count();
 
 // Transactions with high risk score
 $risky = Transaction::with('metadata')

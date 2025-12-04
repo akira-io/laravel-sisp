@@ -22,6 +22,8 @@ SISP_CURRENCY=132              # 132 = CVE (Cape Verde Escudo)
 SISP_LANGUAGE_MESSAGES=en      # en or pt
 ```
 
+The locale for each transaction is automatically stored in the `locale` field of the transaction record. This allows you to track and filter transactions by customer language preference.
+
 ## Optional Configuration
 
 ### 3D Secure

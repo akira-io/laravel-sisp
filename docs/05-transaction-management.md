@@ -33,6 +33,7 @@ $transaction->customer_phone;      // Customer phone
 $transaction->customer_country;    // Customer country
 $transaction->customer_city;       // Customer city
 $transaction->customer_address;    // Customer address
+$transaction->locale;              // Transaction locale (pt, en, etc.)
 $transaction->transaction_id;      // SISP transaction ID
 $transaction->response_code;       // SISP response code
 $transaction->merchant_response;   // SISP response message
@@ -213,6 +214,10 @@ use Akira\Sisp\Enums\TransactionStatus;
 
 // By customer
 $transactions = Transaction::where('customer_email', 'user@example.com')->get();
+
+// By locale
+$portugueseTransactions = Transaction::where('locale', 'pt')->get();
+$englishTransactions = Transaction::where('locale', 'en')->get();
 
 // By status
 $completed = Transaction::where('status', TransactionStatus::completed)->get();
