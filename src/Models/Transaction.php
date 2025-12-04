@@ -19,6 +19,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string $merchant_ref
  * @property-read  int $transaction_id
  * @property-read  string $locale
+ * @property-read  string $customer_name
+ * @property-read  string $customer_phone
+ * @property-read  string $customer_country
+ * @property-read  string $customer_city
+ * @property-read  string $customer_address
  */
 final class Transaction extends Model
 {
