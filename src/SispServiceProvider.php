@@ -11,6 +11,7 @@ use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Configuration\LoadConfig;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\View\Compilers\BladeCompiler;
 use Spatie\LaravelPackageTools\Package;
@@ -18,9 +19,6 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class SispServiceProvider extends PackageServiceProvider
 {
-    /**
-     * Register the package services.
-     */
     public function configurePackage(Package $package): void
     {
         $package
@@ -32,15 +30,12 @@ final class SispServiceProvider extends PackageServiceProvider
             ->hasCommand(LaravelSispInstallCommand::class);
     }
 
-    /**
-     * Register the package's services in the container.
-     */
     public function register(): void
     {
         parent::register();
 
         $this->app->singleton(LoadConfig::class);
-        $this->app->singleton(Sisp::class, fn ($app): Sisp => new Sisp(
+        $this->app->singleton(Sisp::class, fn (Application $app): Sisp => new Sisp(
             buildRequestPayload: $app->make(BuildRequestPayloadAction::class),
             buildSandboxPayload: $app->make(BuildSandboxPayloadAction::class),
             validateFingerprint: $app->make(ValidatePaymentResponseFingerprintAction::class),
@@ -50,9 +45,6 @@ final class SispServiceProvider extends PackageServiceProvider
         ));
     }
 
-    /**
-     * Perform post-registration booting of services.
-     */
     public function boot(): self
     {
         $this->registerComponents();
@@ -61,9 +53,6 @@ final class SispServiceProvider extends PackageServiceProvider
         return parent::boot();
     }
 
-    /**
-     * Register package factories.
-     */
     private function registerFactories(): void
     {
         Factory::guessFactoryNamesUsing(function (string $modelName): string {
@@ -75,9 +64,6 @@ final class SispServiceProvider extends PackageServiceProvider
         });
     }
 
-    /**
-     * Register the package's Blade components and views.
-     */
     private function registerComponents(): void
     {
         // Load Blade views from package

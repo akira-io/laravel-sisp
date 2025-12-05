@@ -15,9 +15,8 @@ it('renders inertia with locale applied', function (): void {
         'customer_email' => 'a@b.test',
     ]);
 
-    $req = resolve(\Akira\Sisp\Facades\Sisp::getFacadeRoot()::class)->buildRequestPayload($data);
+    $req = resolve(Akira\Sisp\Facades\Sisp::getFacadeRoot()::class)->buildRequestPayload($data);
 
     $resp = resolve(RenderPaymentFormAction::class)->renderInertia($req, 'Sisp/PaymentForm', 'pt');
     expect($resp)->toBeInstanceOf(Inertia\Response::class);
 });
-

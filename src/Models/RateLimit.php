@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Akira\Sisp\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class RateLimit extends Model
 {
-    use \Illuminate\Database\Eloquent\Factories\HasFactory;
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = [
@@ -75,23 +75,23 @@ final class RateLimit extends Model
     }
 
     #[Scope]
-    public function expired($query)
+    protected function expired(Builder $query): Builder
     {
         return $query->where('reset_at', '<', now());
     }
 
     #[Scope]
-    protected function blocked($query)
+    protected function blocked(Builder $query): Builder
     {
         return $query->where('is_blocked', true)
-            ->where(function ($q): void {
+            ->where(function (Builder $q): void {
                 $q->whereNull('blocked_until')
                     ->orWhere('blocked_until', '>', now());
             });
     }
 
     #[Scope]
-    protected function active($query)
+    protected function active(Builder $query): Builder
     {
         return $query->where('reset_at', '>', now());
     }

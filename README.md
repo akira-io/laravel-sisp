@@ -116,3 +116,40 @@ For issues or questions:
 ## License
 
 MIT License. See LICENSE file for details.
+
+## Testing & Coverage
+
+- Run full test suite with code coverage at exactly 100%:
+
+  - `vendor/bin/pest --parallel --coverage --compact --exactly=100`
+
+- Enforce 100% type coverage:
+
+  - `vendor/bin/pest --type-coverage --min=100`
+
+### Driving sisp:install in tests (no TTY, no mocks)
+
+In tests, interactive prompts for `sisp:install` are controlled by config flags under `sisp.tests.*`. These flags are only read when `app()->runningUnitTests()` is true. In normal usage the command remains fully interactive.
+
+Available toggles (bool):
+
+- `sisp.tests.publish_config` / `sisp.tests.force_config`
+- `sisp.tests.publish_migrations` / `sisp.tests.force_migrations`
+- `sisp.tests.publish_inertia` / `sisp.tests.force_inertia`
+- `sisp.tests.publish_blade` / `sisp.tests.force_blade`
+- `sisp.tests.run_migrations` – whether to run migrations step
+- `sisp.tests.fake_migrate` – short-circuit actual `migrate` call in tests (defaults to true)
+- `sisp.tests.give_star` – whether to show the “give a star” note
+
+Example (Pest test):
+
+```php
+config()->set('sisp.tests.publish_config', true);
+config()->set('sisp.tests.publish_migrations', true);
+config()->set('sisp.tests.run_migrations', true);
+config()->set('sisp.tests.fake_migrate', true); // don’t run real migrations again
+config()->set('sisp.tests.publish_inertia', false); // avoid vendor:publish in CI
+config()->set('sisp.tests.publish_blade', false);
+```
+
+This keeps tests stable and fast in parallel CI runs while allowing full branch coverage without using mocks.

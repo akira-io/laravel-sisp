@@ -9,6 +9,5 @@ it('generates a random 32 length merchant session', function (): void {
     $session = $gen();
 
     expect($session)->toBeString()
-        ->and(strlen($session))->toBe(32);
+        ->and(mb_strlen($session))->toBe(32);
 });
-

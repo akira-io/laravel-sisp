@@ -18,4 +18,3 @@ it('exposes simple getters through facade', function (): void {
         ->and(Sisp::getDefaultTransactionCode())->toBeString()
         ->and(Sisp::getUri())->toBeString();
 });
-

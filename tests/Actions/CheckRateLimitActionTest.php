@@ -34,7 +34,7 @@ it('blocks after exceeding the limit and sets cache key', function (): void {
     $thrown = false;
     try {
         $action->handle('ip', $identifier, null, $limit, $window);
-    } catch (RateLimitExceededException $e) {
+    } catch (RateLimitExceededException) {
         $thrown = true;
     }
     expect($thrown)->toBeTrue();

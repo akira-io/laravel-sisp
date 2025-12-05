@@ -1,18 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Call to function in_array\(\) with Akira\\Sisp\\Enums\\TransactionStatus and array\{''completed'', ''cancelled''\} will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: src/Actions/CancelTransactionAction.php
-
-		-
-			message: '#^Part \$transaction\-\>status \(Akira\\Sisp\\Enums\\TransactionStatus\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 1
-			path: src/Actions/CancelTransactionAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Blacklist\:\:\$reason\.$#'
 			identifier: property.notFound
 			count: 1
@@ -23,12 +11,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: src/Actions/CheckRateLimitAction.php
-
-		-
-			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
-			identifier: typeCoverage.paramTypeCoverage
-			count: 1
-			path: src/Actions/CreateAndStorePaymentTransactionAction.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product_name\.$#'
@@ -109,6 +91,12 @@ parameters:
 			path: src/Actions/RetryPaymentAction.php
 
 		-
+			message: '#^Dead catch \- Exception is never thrown in the try block\.$#'
+			identifier: catch.neverThrown
+			count: 1
+			path: src/Actions/StoreRequestMetadataAction.php
+
+		-
 			message: '#^Negated boolean expression is always true\.$#'
 			identifier: booleanNot.alwaysTrue
 			count: 1
@@ -119,6 +107,18 @@ parameters:
 			identifier: match.unhandled
 			count: 1
 			path: src/Actions/UpdateInvoiceStatusAction.php
+
+		-
+			message: '#^Method Akira\\Sisp\\Commands\\LaravelSispInstallCommand\:\:publishAssets\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: src/Commands/LaravelSispInstallCommand.php
+
+		-
+			message: '#^Method Akira\\Sisp\\Commands\\LaravelSispInstallCommand\:\:publishVueComponents\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: src/Commands/LaravelSispInstallCommand.php
 
 		-
 			message: '#^Trait Akira\\Sisp\\Concerns\\HasSispTransactions is used zero times and is not analysed\.$#'
@@ -139,27 +139,9 @@ parameters:
 			path: src/Http/Controllers/CallbackController.php
 
 		-
-			message: '#^Out of 199 possible return types, only 191 \- 95\.9 %% actually have it\. Add more return types to get over 99 %%$#'
-			identifier: typeCoverage.returnTypeCoverage
-			count: 1
-			path: src/Http/Controllers/CallbackController.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Blacklist\:\:\$expires_at\.$#'
 			identifier: property.notFound
 			count: 1
-			path: src/Models/Blacklist.php
-
-		-
-			message: '#^Out of 199 possible return types, only 191 \- 95\.9 %% actually have it\. Add more return types to get over 99 %%$#'
-			identifier: typeCoverage.returnTypeCoverage
-			count: 4
-			path: src/Models/Blacklist.php
-
-		-
-			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
-			identifier: typeCoverage.paramTypeCoverage
-			count: 5
 			path: src/Models/Blacklist.php
 
 		-
@@ -187,19 +169,7 @@ parameters:
 			path: src/Models/RateLimit.php
 
 		-
-			message: '#^Out of 199 possible return types, only 191 \- 95\.9 %% actually have it\. Add more return types to get over 99 %%$#'
-			identifier: typeCoverage.returnTypeCoverage
-			count: 3
-			path: src/Models/RateLimit.php
-
-		-
-			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
-			identifier: typeCoverage.paramTypeCoverage
-			count: 4
-			path: src/Models/RateLimit.php
-
-		-
-			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 299 possible param types, only 296 \- 98\.9 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 3
 			path: src/Models/Transaction.php
@@ -215,9 +185,3 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: src/Models/TransactionItem.php
-
-		-
-			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
-			identifier: typeCoverage.paramTypeCoverage
-			count: 1
-			path: src/SispServiceProvider.php

@@ -23,8 +23,8 @@ it('registers singletons and factory guesser', function (): void {
             return [];
         }
     });
-    $class = Factory::resolveFactoryName('Akira\\Sisp\\Models\\Transaction');
-    expect($class)->toBe('Akira\\Sisp\\Database\\Factories\\TransactionFactory');
+    $class = Factory::resolveFactoryName(Akira\Sisp\Models\Transaction::class);
+    expect($class)->toBe(Akira\Sisp\Database\Factories\TransactionFactory::class);
 
     $other = Factory::resolveFactoryName('App\\Models\\User');
     expect($other)->toBe('Database\\Factories\\UserFactory');

@@ -9,7 +9,6 @@ it('generates a valid uuid merchant reference', function (): void {
     $ref = $gen();
 
     expect($ref)->toBeString()
-        ->and(strlen($ref))->toBe(36)
+        ->and(mb_strlen($ref))->toBe(36)
         ->and((bool) preg_match('/^[0-9a-f\-]{36}$/i', $ref))->toBeTrue();
 });
-

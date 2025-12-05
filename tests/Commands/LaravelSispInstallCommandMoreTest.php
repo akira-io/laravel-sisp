@@ -9,13 +9,11 @@ it('publishes config and migrations with and without force', function (): void {
     $ref = new ReflectionClass($cmd);
 
     foreach ([false, true] as $force) {
-        foreach (['publishConfig','publishMigrations'] as $method) {
+        foreach (['publishConfig', 'publishMigrations'] as $method) {
             $m = $ref->getMethod($method);
-            $m->setAccessible(true);
             $m->invoke($cmd, $force);
         }
     }
 
     expect(true)->toBeTrue();
 });
-

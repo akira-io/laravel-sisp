@@ -21,4 +21,3 @@ it('renders blade payment form view', function (): void {
     $view = resolve(RenderPaymentFormAction::class)->renderBlade($req);
     expect($view->name())->toBe('sisp::payment-form');
 });
-

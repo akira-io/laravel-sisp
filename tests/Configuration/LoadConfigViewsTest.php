@@ -32,4 +32,3 @@ it('returns inertia components and shouldUseInertia respects config', function (
     config()->set('sisp.use_inertia.enabled', false);
     expect($cfg->shouldUseInertia())->toBeFalse();
 });
-

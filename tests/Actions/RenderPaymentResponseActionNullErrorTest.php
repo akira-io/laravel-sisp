@@ -13,4 +13,3 @@ it('getStructuredError returns null for unknown message type', function (): void
     $view = resolve(RenderPaymentResponseAction::class)->renderBlade($t, []);
     expect($view->name())->toBe('sisp::payment-response');
 });
-

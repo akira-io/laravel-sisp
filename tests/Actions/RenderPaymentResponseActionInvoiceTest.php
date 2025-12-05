@@ -20,4 +20,3 @@ it('renderInertia includes invoice data when present', function (): void {
     $resp = resolve(RenderPaymentResponseAction::class)->renderInertia($t, []);
     expect($resp)->toBeInstanceOf(Inertia\Response::class);
 });
-

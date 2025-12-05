@@ -20,7 +20,7 @@ final readonly class CallbackController
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
     ) {}
 
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): mixed
     {
 
         if ($request->boolean('UserCancelled')) {
@@ -34,7 +34,7 @@ final readonly class CallbackController
         return $this->handlePostRequest($request);
     }
 
-    private function handleGetRequest()
+    private function handleGetRequest(): mixed
     {
         $merchantRef = request()->query('ref');
 
