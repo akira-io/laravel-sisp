@@ -14,12 +14,13 @@ final readonly class RenderPaymentFormBasedOnConfigAction
         private LoadConfig $config,
     ) {}
 
-    public function handle(PaymentRequest $paymentRequest): mixed
+    public function handle(PaymentRequest $paymentRequest, ?string $locale = null): mixed
     {
         if ($this->config->shouldUseInertia()) {
             return $this->render->renderInertia(
                 $paymentRequest,
-                $this->config->getPaymentFormComponent()
+                $this->config->getPaymentFormComponent(),
+                $locale
             );
         }
 

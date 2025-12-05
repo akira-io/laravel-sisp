@@ -46,6 +46,6 @@ final readonly class PaymentController
 
         $this->storeMetadata->handle($request, $transaction);
 
-        return $this->renderForm->handle($paymentRequest);
+        return $this->renderForm->handle($paymentRequest, $transaction->locale);
     }
 }
