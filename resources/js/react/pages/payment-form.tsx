@@ -16,7 +16,8 @@ interface PaymentFormProps {
 }
 
 export default function PaymentForm({endpoint, fields, translations}: PaymentFormProps) {
-    const t = translations || {
+    const hasValidTranslations = translations && Object.keys(translations).length > 0;
+    const t = hasValidTranslations ? translations : {
         redirect_title: 'Redirecting to SISP',
         redirect_description: 'You will be redirected to the secure payment portal',
         secure_transaction: 'Secure Transaction',

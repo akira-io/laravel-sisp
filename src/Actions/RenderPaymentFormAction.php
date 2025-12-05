@@ -27,7 +27,7 @@ final readonly class RenderPaymentFormAction
         ]);
     }
 
-    public function renderInertia(PaymentRequest $paymentRequest, string $component = 'Sisp/PaymentForm'): mixed
+    public function renderInertia(PaymentRequest $paymentRequest, string $component = 'Sisp/PaymentForm', ?string $locale = null): mixed
     {
         if (! class_exists(Inertia::class)) {
             return $this->renderBlade($paymentRequest);
@@ -36,6 +36,10 @@ final readonly class RenderPaymentFormAction
         $fields = $paymentRequest->toArray();
 
         $endpoint = $this->buildFormAction($fields);
+
+        if ($locale) {
+            app()->setLocale($locale);
+        }
 
         return Inertia::render($component, [
             'endpoint' => $endpoint,
