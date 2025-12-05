@@ -28,3 +28,28 @@ it('stores request metadata with basic fields', function (): void {
         ->and($meta->ip_address)->toBe('127.0.0.1')
         ->and(is_string($meta->browser))->toBeTrue();
 });
+
+it('detects browser/OS/device/mobile flags from user-agent variants', function (): void {
+    $action = resolve(StoreRequestMetadataAction::class);
+
+    $transaction = Transaction::factory()->create();
+
+    $variants = [
+        'Mozilla/5.0 (Linux; Android 10; SM-A205G) AppleWebKit/537.36 Chrome/86.0 Mobile',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) Safari/605.1.15',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0',
+    ];
+
+    foreach ($variants as $ua) {
+        $server = [
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_USER_AGENT' => $ua,
+            'HTTP_ACCEPT_LANGUAGE' => 'en',
+        ];
+        $request = \Illuminate\Http\Request::create('/test', 'GET', server: $server);
+        $meta = $action->handle($request, $transaction);
+        expect($meta->browser)->not->toBe('')
+            ->and($meta->os)->not->toBe('')
+            ->and(is_bool($meta->is_mobile))->toBeTrue();
+    }
+});
