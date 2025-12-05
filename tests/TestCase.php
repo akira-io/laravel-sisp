@@ -40,6 +40,17 @@ abstract class TestCase extends Orchestra
         config()->set('sisp.is_3dsec', '0');
         config()->set('sisp.transaction_code', '1');
         config()->set('sisp.url_merchant_response', 'https://localhost/sisp/callback');
+
+        // App key for encryption
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+
+        // Ensure a base layout exists for package Blade views extending 'layouts.app'
+        $paths = $app['config']->get('view.paths', []);
+        $testViews = __DIR__.'/resources/views';
+        if (! in_array($testViews, $paths, true)) {
+            $paths[] = $testViews;
+            $app['config']->set('view.paths', $paths);
+        }
     }
 
     protected function defineDatabaseMigrations()

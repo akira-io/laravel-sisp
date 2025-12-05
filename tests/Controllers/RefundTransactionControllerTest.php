@@ -21,3 +21,16 @@ it('refunds a completed transaction and returns json', function (): void {
     $data = $response->getData(true);
     expect($data['success'])->toBeTrue();
 });
+
+it('returns 400 when refund amount exceeds transaction', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => 'completed',
+        'amount' => 100.0,
+    ]);
+
+    $controller = resolve(RefundTransactionController::class);
+    $request = Request::create('/sisp/refund', 'POST', ['amount' => 150.0]);
+
+    $response = $controller($t, $request);
+    expect($response->getStatusCode())->toBe(400);
+});
