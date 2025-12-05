@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Sisp;
 use Akira\Sisp\SispServiceProvider;
-use Akira\Sisp\Configuration\LoadConfig;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 it('registers singletons and factory guesser', function (): void {
@@ -16,8 +16,16 @@ it('registers singletons and factory guesser', function (): void {
         ->and(app()->make(Sisp::class))->toBeInstanceOf(Sisp::class);
 
     // Validate factory guesser mapping
-    $guesser = (new class extends Factory { public function definition(): array { return []; } });
+    $guesser = (new class extends Factory
+    {
+        public function definition(): array
+        {
+            return [];
+        }
+    });
     $class = Factory::resolveFactoryName('Akira\\Sisp\\Models\\Transaction');
     expect($class)->toBe('Akira\\Sisp\\Database\\Factories\\TransactionFactory');
-});
 
+    $other = Factory::resolveFactoryName('App\\Models\\User');
+    expect($other)->toBe('Database\\Factories\\UserFactory');
+});
