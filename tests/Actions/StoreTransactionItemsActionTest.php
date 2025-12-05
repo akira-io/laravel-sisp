@@ -37,3 +37,15 @@ it('stores transaction items with converted cents', function (): void {
         ->and($items[1]->unit_price_cents)->toBe(550)
         ->and($items[1]->total_price_cents)->toBe(550);
 });
+
+it('does nothing when no items provided', function (): void {
+    $t = \Akira\Sisp\Models\Transaction::factory()->create();
+
+    $action = resolve(\Akira\Sisp\Actions\StoreTransactionItemsAction::class);
+
+    // Call with no variadic items
+    $action->handle($t);
+
+    $count = \Akira\Sisp\Models\TransactionItem::query()->where('transaction_id', $t->id)->count();
+    expect($count)->toBe(0);
+});

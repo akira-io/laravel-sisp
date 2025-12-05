@@ -78,7 +78,7 @@ final readonly class StoreRequestMetadataAction
                 'is_vpn' => false,
                 'is_proxy' => false,
             ];
-        } catch (Exception) {
+        } catch (Exception|\Throwable) {
             return [];
         }
     }
@@ -87,12 +87,12 @@ final readonly class StoreRequestMetadataAction
     {
         $userAgent = mb_strtolower($request->userAgent() ?? '');
 
-        if (str_contains($userAgent, 'mobile') || str_contains($userAgent, 'android')) {
-            return 'mobile';
-        }
-
         if (str_contains($userAgent, 'tablet') || str_contains($userAgent, 'ipad')) {
             return 'tablet';
+        }
+
+        if (str_contains($userAgent, 'mobile') || str_contains($userAgent, 'android')) {
+            return 'mobile';
         }
 
         return 'desktop';
