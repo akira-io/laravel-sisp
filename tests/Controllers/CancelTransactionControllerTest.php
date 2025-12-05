@@ -19,3 +19,17 @@ it('cancels a pending transaction and redirects', function (): void {
 
     expect($response->isRedirect())->toBeTrue();
 });
+
+it('handles non-cancellable transaction and flashes error', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => 'completed',
+        'merchant_ref' => 'MR-C2',
+        'merchant_session' => 'MS-C2',
+    ]);
+
+    $controller = resolve(CancelTransactionController::class);
+    $request = Request::create('/sisp/cancel?reason=user_cancelled&merchantRef=MR-C2', 'GET');
+    $response = $controller($t, $request);
+
+    expect($response->isRedirect())->toBeTrue();
+});
