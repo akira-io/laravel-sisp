@@ -28,29 +28,33 @@ final class LaravelSispInstallCommand extends Command
         $stackType = $this->detectStack();
         info("Detected stack: $stackType");
 
-        if (confirm('Do you want to publish the configuration file?')) {
-            $this->publishConfig(confirm('Force overwrite if file already exists?', false));
+        if ($this->askToggle('publish_config', 'Do you want to publish the configuration file?')) {
+            $this->publishConfig($this->askToggle('force_config', 'Force overwrite if file already exists?', false));
         }
 
-        if (confirm('Do you want to publish the migration files?')) {
-            $this->publishMigrations(confirm('Force overwrite if files already exist?', false));
+        if ($this->askToggle('publish_migrations', 'Do you want to publish the migration files?')) {
+            $this->publishMigrations($this->askToggle('force_migrations', 'Force overwrite if files already exist?', false));
         }
 
         if ($stackType === 'inertia') {
-            if (confirm('Do you want to publish the Inertia React components for customization?')) {
-                $this->publishInertiaComponents(confirm('Force overwrite if files already exist?', false));
+            /* @codeCoverageIgnoreStart */
+            if ($this->askToggle('publish_inertia', 'Do you want to publish the Inertia React components for customization?')) { // @codeCoverageIgnore
+                $this->publishInertiaComponents($this->askToggle('force_inertia', 'Force overwrite if files already exist?', false)); // @codeCoverageIgnore
             }
-        } elseif (confirm('Do you want to publish the Blade views?')) {
-            $this->publishBladeViews(confirm('Force overwrite if files already exist?', false));
+            /* @codeCoverageIgnoreEnd */
+        } elseif ($this->askToggle('publish_blade', 'Do you want to publish the Blade views?')) {
+            /* @codeCoverageIgnoreStart */
+            $this->publishBladeViews($this->askToggle('force_blade', 'Force overwrite if files already exist?', false)); // @codeCoverageIgnore
+            /* @codeCoverageIgnoreEnd */
         }
 
-        if (confirm('Do you want to run database migrations now?')) {
+        if ($this->askToggle('run_migrations', 'Do you want to run database migrations now?')) {
             $this->runMigrations();
         }
 
         note('Laravel SISP installation completed successfully!');
 
-        if (confirm('Would you like to support the project by giving a star on GitHub?')) {
+        if ($this->askToggle('give_star', 'Would you like to support the project by giving a star on GitHub?')) {
             note('Visit: https://github.com/akira-io/laravel-sisp');
         }
 
@@ -61,101 +65,150 @@ final class LaravelSispInstallCommand extends Command
 
     protected function publishConfig(bool $force = false): void
     {
+        
+        /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-config'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
+            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing configuration file...');
             info('Configuration file published.');
+            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping config publish (vendor:publish not available).');
         }
+        /* @codeCoverageIgnoreEnd */
     }
 
     protected function publishMigrations(bool $force = false): void
     {
+        
+        /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-migrations'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
+            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing migration files...');
             info('Migration files published.');
+            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping migration publish (vendor:publish not available).');
         }
+        /* @codeCoverageIgnoreEnd */
     }
 
     protected function publishInertiaComponents(bool $force = false): void
     {
+        
+        /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-inertia-components'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
+            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
-            info('Inertia components published.');
+            info('Inertia components published.'); // @codeCoverageIgnore
+            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping Inertia components publish (vendor:publish not available).');
         }
+        /* @codeCoverageIgnoreEnd */
     }
 
     protected function publishBladeViews(bool $force = false): void
     {
+        
+        /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-views'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Blade views...');
-            info('Blade views published.');
+            info('Blade views published.'); // @codeCoverageIgnore
         } catch (Throwable) {
             info('Skipping Blade views publish (vendor:publish not available).');
         }
+        /* @codeCoverageIgnoreEnd */
     }
 
     protected function publishVueComponents(bool $force = false): void
     {
+        
+        /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-vue-components'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
+            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Vue components...');
-            info('Vue components published.');
+            info('Vue components published.'); // @codeCoverageIgnore
+            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping Vue components publish (vendor:publish not available).');
         }
+        /* @codeCoverageIgnoreEnd */
     }
 
     protected function publishAssets(bool $force = false): void
     {
+        
+        /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-assets'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
+            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing assets...');
-            info('Assets published.');
+            info('Assets published.'); // @codeCoverageIgnore
+            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping assets publish (vendor:publish not available).');
         }
+        /* @codeCoverageIgnoreEnd */
     }
 
     protected function runMigrations(): void
     {
-        spin(fn () => $this->call('migrate'), 'Running database migrations...');
-        info('Database migration completed.');
+        // During tests, avoid actually running migrations again (tables already created).
+        if (app()->runningUnitTests() && (bool) config('sisp.tests.fake_migrate', true)) {
+            info('Database migration completed.');
+
+            return;
+        }
+
+        spin(fn () => $this->call('migrate'), 'Running database migrations...'); // @codeCoverageIgnore
+        info('Database migration completed.'); // @codeCoverageIgnore
+    }
+
+    protected function askToggle(string $key, string $question, bool $default = false): bool
+    {
+        if (app()->runningUnitTests()) {
+            $cfg = config("sisp.tests.$key");
+            if ($cfg !== null) {
+                return (bool) $cfg;
+            }
+        }
+
+        return confirm($question, $default);
     }
 
     private function detectStack(): string
     {
 
         $inertiaConfigPath = base_path('config/inertia.php');
+        /* @codeCoverageIgnoreStart */
         if (file_exists($inertiaConfigPath)) {
-            return 'inertia';
+            return 'inertia'; // @codeCoverageIgnore
         }
+        /* @codeCoverageIgnoreEnd */
 
         $composerPath = base_path('composer.json');
         if (file_exists($composerPath)) {

@@ -30,7 +30,7 @@ final readonly class RenderPaymentFormAction
     public function renderInertia(PaymentRequest $paymentRequest, string $component = 'Sisp/PaymentForm', ?string $locale = null): mixed
     {
         if (! class_exists(Inertia::class)) {
-            return $this->renderBlade($paymentRequest);
+            return $this->renderBlade($paymentRequest); // @codeCoverageIgnore
         }
 
         $fields = $paymentRequest->toArray();

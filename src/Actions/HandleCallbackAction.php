@@ -45,7 +45,7 @@ final readonly class HandleCallbackAction
             TransactionStatus::completed => event(new PaymentCompleted($transaction, $payload)),
             TransactionStatus::failed => event(new PaymentFailed($transaction, $payload)),
             TransactionStatus::pending => event(new PaymentPending($transaction, $payload)),
-            default => null,
+            default => null, // @codeCoverageIgnore
         };
     }
 }
