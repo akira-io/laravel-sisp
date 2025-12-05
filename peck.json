@@ -1,22 +1,23 @@
 {
-  "preset": "laravel",
-  "ignore": {
-    "words": [
-      "php",
-      "postcss",
-      "sisp",
-      "pos",
-      "decrypt",
-      "Dsec",
-      "fingerprintversion",
-      "cp",
-      "encryptable",
-      "geolocation",
-      "vpn",
-      "vue",
-      "js",
-      "pnpm"
-    ],
-    "paths": []
-  }
+    "preset": "laravel",
+    "ignore": {
+        "words": [
+            "php",
+            "postcss",
+            "sisp",
+            "pos",
+            "decrypt",
+            "dsec",
+            "fingerprintversion",
+            "cp",
+            "encryptable",
+            "geolocation",
+            "vpn",
+            "vue",
+            "js",
+            "pnpm",
+            "getters"
+        ],
+        "paths": []
+    }
 }

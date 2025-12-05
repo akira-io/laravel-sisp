@@ -19,4 +19,3 @@ it('filters blacklist entries by type and severity', function (): void {
     expect(Blacklist::query()->byType('ip')->count())->toBe(1)
         ->and(Blacklist::query()->bySeverity('low')->count())->toBe(1);
 });
-

@@ -58,17 +58,17 @@ it('detects browser/OS/device/mobile flags from user-agent variants', function (
 
 it('handles public ip when location driver is missing', function (): void {
     // No location.driver configured; ensure action catches and returns [] geo
-    config()->set('location.driver', null);
+    config()->set('location.driver');
 
-    $action = resolve(\Akira\Sisp\Actions\StoreRequestMetadataAction::class);
-    $transaction = \Akira\Sisp\Models\Transaction::factory()->create();
+    $action = resolve(StoreRequestMetadataAction::class);
+    $transaction = Transaction::factory()->create();
 
     $server = [
         'REMOTE_ADDR' => '8.8.8.8',
         'HTTP_USER_AGENT' => 'Mozilla/5.0',
         'HTTP_ACCEPT_LANGUAGE' => 'en',
     ];
-    $request = \Illuminate\Http\Request::create('/test', 'GET', server: $server);
+    $request = Request::create('/test', 'GET', server: $server);
 
     $meta = $action->handle($request, $transaction);
 
@@ -77,32 +77,32 @@ it('handles public ip when location driver is missing', function (): void {
 });
 
 it('detects tablet (iPad) and marks mobile true', function (): void {
-    $action = resolve(\Akira\Sisp\Actions\StoreRequestMetadataAction::class);
-    $transaction = \Akira\Sisp\Models\Transaction::factory()->create();
+    $action = resolve(StoreRequestMetadataAction::class);
+    $transaction = Transaction::factory()->create();
 
     $server = [
         'REMOTE_ADDR' => '127.0.0.1',
         'HTTP_USER_AGENT' => 'Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15 Version/15.0 Mobile/15E148 Safari/604.1',
         'HTTP_ACCEPT_LANGUAGE' => 'en',
     ];
-    $request = \Illuminate\Http\Request::create('/test', 'GET', server: $server);
+    $request = Request::create('/test', 'GET', server: $server);
     $meta = $action->handle($request, $transaction);
 
     expect($meta->device_type)->toBe('tablet')
         ->and($meta->is_mobile)->toBeTrue()
-        ->and(in_array($meta->os, ['iOS','macOS','Unknown']))->toBeTrue();
+        ->and(in_array($meta->os, ['iOS', 'macOS', 'Unknown']))->toBeTrue();
 });
 
 it('detects Linux OS from user agent', function (): void {
-    $action = resolve(\Akira\Sisp\Actions\StoreRequestMetadataAction::class);
-    $transaction = \Akira\Sisp\Models\Transaction::factory()->create();
+    $action = resolve(StoreRequestMetadataAction::class);
+    $transaction = Transaction::factory()->create();
 
     $server = [
         'REMOTE_ADDR' => '127.0.0.1',
         'HTTP_USER_AGENT' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36',
         'HTTP_ACCEPT_LANGUAGE' => 'en',
     ];
-    $request = \Illuminate\Http\Request::create('/test', 'GET', server: $server);
+    $request = Request::create('/test', 'GET', server: $server);
     $meta = $action->handle($request, $transaction);
 
     expect($meta->os)->toBe('Linux');

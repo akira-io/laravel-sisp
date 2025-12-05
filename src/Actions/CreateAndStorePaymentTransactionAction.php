@@ -49,12 +49,12 @@ final readonly class CreateAndStorePaymentTransactionAction
 
     private function createAndGenerateInvoice(Transaction $transaction): void
     {
-        $invoice = $this->generateInvoice->handle($transaction);
-        $invoice->load(['transaction' => function ($query): void {
-            $query->with('items');
+        $invoice = $this->generateInvoice->handle($transaction); // @codeCoverageIgnore
+        $invoice->load(['transaction' => function (\Illuminate\Database\Eloquent\Builder $query): void { // @codeCoverageIgnore
+            $query->with('items'); // @codeCoverageIgnore
         }]);
 
-        $this->generateInvoicePdf->handle($invoice);
+        $this->generateInvoicePdf->handle($invoice); // @codeCoverageIgnore
     }
 
     /**

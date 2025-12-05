@@ -29,4 +29,3 @@ it('builds sandbox payload for unknown status as P', function (): void {
     $payload = resolve(BuildSandboxPayloadAction::class)->handle($data, 'other');
     expect($payload->messageType)->toBe('P');
 });
-

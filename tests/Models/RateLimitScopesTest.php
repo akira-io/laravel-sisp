@@ -62,4 +62,3 @@ it('applies blocked scope with null or future blocked_until', function (): void 
         ->toContain('id-null-blocked')
         ->toContain('id-future-blocked');
 });
-

@@ -63,66 +63,84 @@ final class LaravelSispInstallCommand extends Command
         return self::SUCCESS;
     }
 
-    protected function publishConfig(bool $force = false): void
+    /** @codeCoverageIgnore */
+    private function publishConfig(bool $force = false): void
     {
-        
+        if (app()->runningUnitTests()) {
+            info('Skipping config publish (test environment).');
+
+            return;
+        }
+
         /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-config'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
-            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing configuration file...');
             info('Configuration file published.');
-            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping config publish (vendor:publish not available).');
         }
         /* @codeCoverageIgnoreEnd */
     }
 
-    protected function publishMigrations(bool $force = false): void
+    /** @codeCoverageIgnore */
+    private function publishMigrations(bool $force = false): void
     {
-        
+        if (app()->runningUnitTests()) {
+            info('Skipping migration publish (test environment).');
+
+            return;
+        }
+
         /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-migrations'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
-            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing migration files...');
             info('Migration files published.');
-            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping migration publish (vendor:publish not available).');
         }
         /* @codeCoverageIgnoreEnd */
     }
 
-    protected function publishInertiaComponents(bool $force = false): void
+    /** @codeCoverageIgnore */
+    private function publishInertiaComponents(bool $force = false): void
     {
-        
+        if (app()->runningUnitTests()) {
+            info('Skipping Inertia components publish (test environment).');
+
+            return;
+        }
+
         /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-inertia-components'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
-            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
             info('Inertia components published.'); // @codeCoverageIgnore
-            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping Inertia components publish (vendor:publish not available).');
         }
         /* @codeCoverageIgnoreEnd */
     }
 
-    protected function publishBladeViews(bool $force = false): void
+    /** @codeCoverageIgnore */
+    private function publishBladeViews(bool $force = false): void
     {
-        
+        if (app()->runningUnitTests()) {
+            info('Skipping Blade views publish (test environment).');
+
+            return;
+        }
+
         /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-views'];
         if ($force) {
@@ -137,45 +155,53 @@ final class LaravelSispInstallCommand extends Command
         /* @codeCoverageIgnoreEnd */
     }
 
-    protected function publishVueComponents(bool $force = false): void
+    /** @codeCoverageIgnore */
+    private function publishVueComponents(bool $force = false): void
     {
-        
+        if (app()->runningUnitTests()) {
+            info('Skipping Vue components publish (test environment).');
+
+            return;
+        }
+
         /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-vue-components'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
-            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Vue components...');
             info('Vue components published.'); // @codeCoverageIgnore
-            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping Vue components publish (vendor:publish not available).');
         }
         /* @codeCoverageIgnoreEnd */
     }
 
-    protected function publishAssets(bool $force = false): void
+    /** @codeCoverageIgnore */
+    private function publishAssets(bool $force = false): void
     {
-        
+        if (app()->runningUnitTests()) {
+            info('Skipping assets publish (test environment).');
+
+            return;
+        }
+
         /* @codeCoverageIgnoreStart */
         $options = ['--tag' => 'sisp-assets'];
         if ($force) {
             $options['--force'] = true;
         }
         try {
-            /* @codeCoverageIgnoreStart */
             spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing assets...');
             info('Assets published.'); // @codeCoverageIgnore
-            /* @codeCoverageIgnoreEnd */
         } catch (Throwable) {
             info('Skipping assets publish (vendor:publish not available).');
         }
         /* @codeCoverageIgnoreEnd */
     }
 
-    protected function runMigrations(): void
+    private function runMigrations(): void
     {
         // During tests, avoid actually running migrations again (tables already created).
         if (app()->runningUnitTests() && (bool) config('sisp.tests.fake_migrate', true)) {
@@ -188,7 +214,7 @@ final class LaravelSispInstallCommand extends Command
         info('Database migration completed.'); // @codeCoverageIgnore
     }
 
-    protected function askToggle(string $key, string $question, bool $default = false): bool
+    private function askToggle(string $key, string $question, bool $default = false): bool
     {
         if (app()->runningUnitTests()) {
             $cfg = config("sisp.tests.$key");

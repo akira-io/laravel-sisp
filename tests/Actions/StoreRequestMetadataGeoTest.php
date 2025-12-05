@@ -57,7 +57,6 @@ it('handles unknown UA and sets defaults', function (): void {
     ]);
 
     $meta = $action->handle($request, $transaction);
-    expect(in_array($meta->browser, ['Unknown','Chrome','Firefox','Safari','IE','Edge']))->toBeTrue()
-        ->and(in_array($meta->os, ['Unknown','Windows','macOS','Linux','Android','iOS']))->toBeTrue();
+    expect(in_array($meta->browser, ['Unknown', 'Chrome', 'Firefox', 'Safari', 'IE', 'Edge']))->toBeTrue()
+        ->and(in_array($meta->os, ['Unknown', 'Windows', 'macOS', 'Linux', 'Android', 'iOS']))->toBeTrue();
 });
-

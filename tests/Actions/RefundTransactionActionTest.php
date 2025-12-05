@@ -48,4 +48,3 @@ it('does not allow zero or negative refund', function (): void {
     expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 0.0))
         ->toThrow(LogicException::class);
 });
-

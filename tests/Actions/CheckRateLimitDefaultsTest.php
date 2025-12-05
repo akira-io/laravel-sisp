@@ -18,10 +18,10 @@ it('uses configured defaults for different limit types', function (): void {
     $action = resolve(CheckRateLimitAction::class);
 
     // Should not throw on first hit for any type when using defaults
-    $action->handle('ip', '9.9.9.9', null, null, null);
-    $action->handle('user', 'user-1', 'ctx', null, null);
-    $action->handle('merchant', 'merchant-1', null, null, null);
-    $action->handle('unknown', 'x', null, null, null); // exercise default branch
+    $action->handle('ip', '9.9.9.9');
+    $action->handle('user', 'user-1', 'ctx');
+    $action->handle('merchant', 'merchant-1');
+    $action->handle('unknown', 'x'); // exercise default branch
 
     expect(true)->toBeTrue();
 });

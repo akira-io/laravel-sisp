@@ -9,6 +9,7 @@ use Akira\Sisp\Models\Transaction;
 use Exception;
 use Illuminate\Http\Request;
 use Stevebauman\Location\Facades\Location;
+use Throwable;
 
 final readonly class StoreRequestMetadataAction
 {
@@ -78,7 +79,7 @@ final readonly class StoreRequestMetadataAction
                 'is_vpn' => false,
                 'is_proxy' => false,
             ];
-        } catch (Exception|\Throwable) {
+        } catch (Exception|Throwable) {
             return [];
         }
     }

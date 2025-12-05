@@ -9,7 +9,6 @@ it('generates a timestamp in YmdHis format', function (): void {
     $ts = $gen();
 
     expect($ts)->toBeString()
-        ->and(strlen($ts))->toBe(14)
+        ->and(mb_strlen($ts))->toBe(14)
         ->and((bool) preg_match('/^\d{14}$/', $ts))->toBeTrue();
 });
-

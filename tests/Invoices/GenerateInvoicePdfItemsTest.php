@@ -41,4 +41,3 @@ it('includes transaction items when generating invoice PDF', function (): void {
 
     Storage::disk('public')->assertExists($relativePath);
 });
-

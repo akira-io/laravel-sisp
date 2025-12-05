@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class Blacklist extends Model
 {
-    use \Illuminate\Database\Eloquent\Factories\HasFactory;
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
 
     protected $fillable = [
@@ -44,30 +45,30 @@ final class Blacklist extends Model
         return ! $this->isActive();
     }
 
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
-    protected function active($query)
+    #[Scope]
+    protected function active(Builder $query): Builder
     {
-        return $query->where(function ($q): void {
+        return $query->where(function (Builder $q): void {
             $q->whereNull('expires_at')
                 ->orWhere('expires_at', '>', now());
         });
     }
 
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
-    protected function expired($query)
+    #[Scope]
+    protected function expired(Builder $query): Builder
     {
         return $query->whereNotNull('expires_at')
             ->where('expires_at', '<=', now());
     }
 
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
-    protected function byType($query, string $type)
+    #[Scope]
+    protected function byType(Builder $query, string $type): Builder
     {
         return $query->where('type', $type);
     }
 
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
-    protected function bySeverity($query, string $severity)
+    #[Scope]
+    protected function bySeverity(Builder $query, string $severity): Builder
     {
         return $query->where('severity', $severity);
     }

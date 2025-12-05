@@ -34,4 +34,3 @@ it('can add and remove a blacklist entry via action helpers', function (): void 
     expect($removed)->toBeTrue()
         ->and($action->isBlacklisted('email', 'user@example.com'))->toBeFalse();
 });
-

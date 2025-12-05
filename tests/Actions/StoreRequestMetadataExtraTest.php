@@ -10,7 +10,7 @@ use Stevebauman\Location\Facades\Location;
 
 final class FakeLocationServiceFalse
 {
-    public function get(string $ip): object|false
+    public function get(): object|false
     {
         return false;
     }

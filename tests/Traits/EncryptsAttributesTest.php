@@ -107,7 +107,7 @@ it('does not double-encrypt values already encrypted', function (): void {
     $m->secret = $already;
     $m->save();
 
-    $raw = DB::table('tmp_encrypts2')->where('id', $m->id)->value('secret');
+    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts2')->where('id', $m->id)->value('secret');
     expect($raw)->toBe($already);
 
     $found = new TmpEncrypted()->setTable('tmp_encrypts2')->find($m->id);
@@ -120,7 +120,7 @@ it('falls back when raw attribute decryption fails and returns original', functi
         $table->text('secret')->nullable();
     });
 
-    $id = DB::table('tmp_encrypts_fail')->insertGetId(['secret' => 'bogus']);
+    $id = Illuminate\Support\Facades\DB::table('tmp_encrypts_fail')->insertGetId(['secret' => 'bogus']);
 
     $model = new TmpEncrypted();
     $model->setTable('tmp_encrypts_fail');

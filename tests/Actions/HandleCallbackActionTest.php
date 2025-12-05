@@ -13,7 +13,8 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Facade;
 
-function cb_payload(string $msgType): CallbackPayload {
+function cb_payload(string $msgType): CallbackPayload
+{
     return new CallbackPayload(
         merchantRef: 'mref',
         merchantSession: 'msess',
@@ -37,8 +38,12 @@ beforeEach(function (): void {
 
 it('dispatches PaymentFailed when callback validation fails', function (): void {
     // Override Sisp facade binding to control validation
-    app()->instance(\Akira\Sisp\Sisp::class, new class {
-        public function validateCallback(\Akira\Sisp\ValueObjects\CallbackPayload $payload): bool { return false; }
+    app()->instance(Akira\Sisp\Sisp::class, new class
+    {
+        public function validateCallback(CallbackPayload $payload): bool
+        {
+            return false;
+        }
     });
 
     Event::fake();
@@ -52,8 +57,12 @@ it('dispatches PaymentFailed when callback validation fails', function (): void 
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
     // Override Sisp facade binding to control validation
-    app()->instance(\Akira\Sisp\Sisp::class, new class {
-        public function validateCallback(\Akira\Sisp\ValueObjects\CallbackPayload $payload): bool { return true; }
+    app()->instance(Akira\Sisp\Sisp::class, new class
+    {
+        public function validateCallback(CallbackPayload $payload): bool
+        {
+            return true;
+        }
     });
 
     Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);

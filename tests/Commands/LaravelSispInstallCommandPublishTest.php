@@ -8,11 +8,9 @@ it('publishes blade views, inertia components, vue components and assets', funct
     $cmd = resolve(LaravelSispInstallCommand::class);
     $ref = new ReflectionClass($cmd);
 
-    foreach (['publishBladeViews','publishInertiaComponents','publishVueComponents','publishAssets'] as $method) {
+    foreach (['publishBladeViews', 'publishInertiaComponents', 'publishVueComponents', 'publishAssets'] as $method) {
         $m = $ref->getMethod($method);
-        $m->setAccessible(true);
         $m->invoke($cmd, false);
         expect(true)->toBeTrue();
     }
 });
-
