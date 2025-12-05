@@ -22,7 +22,7 @@ final readonly class CheckRateLimitAction
             return;
         }
 
-        $identifier ?? request()->ip();
+        $identifier ??= request()->ip();
 
         $limit ??= $this->getDefaultLimit($limitType);
         $windowSeconds ??= $this->getDefaultWindow($limitType);

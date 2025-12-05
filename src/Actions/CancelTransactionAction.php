@@ -12,9 +12,13 @@ final readonly class CancelTransactionAction
 {
     public function handle(Transaction $transaction, string $reason = 'user_cancelled'): Transaction
     {
+        $status = is_object($transaction->status) && property_exists($transaction->status, 'value')
+            ? $transaction->status->value
+            : (string) $transaction->status;
+
         if ($this->cannotBeCancelled($transaction)) {
             throw new LogicException(
-                "Transaction with status '{$transaction->status}' cannot be cancelled."
+                "Transaction with status '{$status}' cannot be cancelled."
             );
         }
 
@@ -32,9 +36,7 @@ final readonly class CancelTransactionAction
 
     private function cannotBeCancelled(Transaction $transaction): bool
     {
-        return in_array($transaction->status, [
-            'completed',
-            'cancelled',
-        ]);
+
+        return in_array($transaction->status->value, ['completed', 'cancelled'], true);
     }
 }
