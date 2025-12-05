@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Model;
 
 final class RateLimit extends Model
@@ -35,11 +36,6 @@ final class RateLimit extends Model
     public function getTable(): string
     {
         return config('sisp.tables.rate_limits', 'sisp_rate_limits');
-    }
-
-    public function expired($query)
-    {
-        return $query->where('reset_at', '<', now());
     }
 
     public function isLimitExceeded(): bool
@@ -78,7 +74,13 @@ final class RateLimit extends Model
         return $this;
     }
 
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
+    public function expired($query)
+    {
+        return $query->where('reset_at', '<', now());
+    }
+
+    #[Scope]
     protected function blocked($query)
     {
         return $query->where('is_blocked', true)
@@ -88,7 +90,7 @@ final class RateLimit extends Model
             });
     }
 
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function active($query)
     {
         return $query->where('reset_at', '>', now());
