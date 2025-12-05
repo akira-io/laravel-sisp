@@ -13,7 +13,7 @@ use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\Storage;
 
-class TestPdfGenerator implements PdfGeneratorContract
+final class TestPdfGenerator implements PdfGeneratorContract
 {
     public function generate(DtoInvoiceData $invoice, string $template = 'modern'): string
     {

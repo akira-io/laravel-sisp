@@ -24,3 +24,18 @@ it('casts unit and total price via accessors/mutators', function (): void {
         ->and($fresh->total_price)->toBe(12.34);
 });
 
+it('casts metadata as array and returns configured table name', function (): void {
+    config()->set('sisp.tables.transaction_items', 'sisp_transaction_items');
+    $t = Transaction::factory()->create();
+    $item = TransactionItem::query()->create([
+        'transaction_id' => $t->id,
+        'product_name' => 'Meta',
+        'quantity' => 1,
+        'unit_price_cents' => 100,
+        'total_price_cents' => 100,
+        'metadata' => ['x' => 'y'],
+    ]);
+
+    expect($item->getTable())->toBe('sisp_transaction_items')
+        ->and($item->metadata)->toBe(['x' => 'y']);
+});

@@ -23,4 +23,3 @@ it('updates invoice status based on transaction status', function (): void {
     $invoice->refresh();
     expect($invoice->status)->toBe(InvoiceStatus::cancelled);
 });
-

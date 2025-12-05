@@ -38,6 +38,8 @@ it('detects browser/OS/device/mobile flags from user-agent variants', function (
         'Mozilla/5.0 (Linux; Android 10; SM-A205G) AppleWebKit/537.36 Chrome/86.0 Mobile',
         'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) Safari/605.1.15',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0',
+        'Mozilla/5.0 (Windows NT 10.0; Trident/7.0; rv:11.0) like Gecko',
+        'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19041',
     ];
 
     foreach ($variants as $ua) {

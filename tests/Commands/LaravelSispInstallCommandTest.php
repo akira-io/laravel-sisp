@@ -49,3 +49,35 @@ it('runs install command non-interactively', function (): void {
     $code = Artisan::call('sisp:install', ['--no-interaction' => true]);
     expect($code)->toBe(0);
 });
+
+it('detects inertia stack via vite config containing react', function (): void {
+    file_put_contents(base_path('vite.config.js'), "export default { plugins: ['react'] }");
+    $cmd = resolve(LaravelSispInstallCommand::class);
+    $ref = new ReflectionClass($cmd);
+    $m = $ref->getMethod('detectStack');
+    $m->setAccessible(true);
+    $stack = $m->invoke($cmd);
+    expect($stack)->toBe('inertia');
+});
+
+it('detects inertia stack via inertia.php config file', function (): void {
+    @mkdir(base_path('config'), 0777, true);
+    file_put_contents(base_path('config/inertia.php'), "<?php return []; ");
+    $cmd = resolve(LaravelSispInstallCommand::class);
+    $ref = new ReflectionClass($cmd);
+    $m = $ref->getMethod('detectStack');
+    $m->setAccessible(true);
+    $stack = $m->invoke($cmd);
+    expect($stack)->toBe('inertia');
+});
+
+it('detects inertia stack via vite.config.ts containing react', function (): void {
+    @unlink(base_path('vite.config.js'));
+    file_put_contents(base_path('vite.config.ts'), "export default { plugins: ['react'] }");
+    $cmd = resolve(LaravelSispInstallCommand::class);
+    $ref = new ReflectionClass($cmd);
+    $m = $ref->getMethod('detectStack');
+    $m->setAccessible(true);
+    $stack = $m->invoke($cmd);
+    expect($stack)->toBe('inertia');
+});

@@ -25,6 +25,8 @@ final class TransactionFactory extends Factory
             'customer_name' => $this->faker->name(),
             'customer_email' => $this->faker->email(),
             'customer_phone' => $this->faker->phoneNumber(),
+            'customer_city' => $this->faker->city(),
+            'customer_address' => $this->faker->address(),
             'customer_country' => 'cv',
         ];
     }
