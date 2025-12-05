@@ -69,10 +69,10 @@ it('dispatches PaymentPending for pending status', function (): void {
         'transactionCode' => '1',
     ];
 
-    $payload = \Akira\Sisp\ValueObjects\CallbackPayload::from($data);
+    $payload = Akira\Sisp\ValueObjects\CallbackPayload::from($data);
     $fp = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
     $data['resultFingerPrint'] = $fp;
-    $payload = \Akira\Sisp\ValueObjects\CallbackPayload::from($data);
+    $payload = Akira\Sisp\ValueObjects\CallbackPayload::from($data);
 
     Sisp::handlePaymentCallback($payload);
 

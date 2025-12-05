@@ -10,4 +10,3 @@ it('generates base64 sha512 of posAutCode', function (): void {
 
     expect($action->handle())->toBe($expected);
 });
-

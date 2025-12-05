@@ -37,4 +37,3 @@ it('stores transaction items with converted cents', function (): void {
         ->and($items[1]->unit_price_cents)->toBe(550)
         ->and($items[1]->total_price_cents)->toBe(550);
 });
-

@@ -44,7 +44,7 @@ it('computes pdf_url from public disk and respects table config', function (): v
 it('items relation proxies transaction items', function (): void {
     $t = Transaction::factory()->create();
     // Criar um item
-    \DB::table(config('sisp.tables.transaction_items', 'sisp_transaction_items'))->insert([
+    Illuminate\Support\Facades\DB::table(config('sisp.tables.transaction_items', 'sisp_transaction_items'))->insert([
         'transaction_id' => $t->id,
         'product_name' => 'Item 1',
         'quantity' => 1,

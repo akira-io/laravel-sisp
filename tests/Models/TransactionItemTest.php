@@ -37,5 +37,6 @@ it('casts metadata as array and returns configured table name', function (): voi
     ]);
 
     expect($item->getTable())->toBe('sisp_transaction_items')
-        ->and($item->metadata)->toBe(['x' => 'y']);
+        ->and($item->metadata)->toBe(['x' => 'y'])
+        ->and($item->transaction->id)->toBe($t->id);
 });

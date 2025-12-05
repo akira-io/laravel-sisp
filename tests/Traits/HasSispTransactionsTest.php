@@ -5,15 +5,19 @@ declare(strict_types=1);
 use Akira\Sisp\Concerns\HasSispTransactions;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-class OrderWithSisp extends Model
+final class OrderWithSisp extends Model
 {
     use HasSispTransactions;
-    protected $table = 'orders_with_sisp';
-    protected $fillable = ['sisp_transaction_id'];
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+
     public $timestamps = false;
+
+    protected $table = 'orders_with_sisp';
+
+    protected $fillable = ['sisp_transaction_id'];
 }
 
 it('defines belongsTo relation to Transaction via sisp_transaction_id', function (): void {
@@ -29,4 +33,3 @@ it('defines belongsTo relation to Transaction via sisp_transaction_id', function
     expect($related)->toBeInstanceOf(Transaction::class)
         ->and($related->id)->toBe($transaction->id);
 });
-

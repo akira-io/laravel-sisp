@@ -31,5 +31,8 @@ it('records hits, checks limits, resets and blocks', function (): void {
     $rl->reset()->refresh();
     expect($rl->hits)->toBe(0)
         ->and($rl->is_blocked)->toBeFalse();
-});
 
+    $rl->block()->refresh();
+    expect($rl->is_blocked)->toBeTrue()
+        ->and($rl->blocked_until)->toBeNull();
+});

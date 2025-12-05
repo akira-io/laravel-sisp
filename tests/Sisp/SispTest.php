@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\GenerateFingerprintAction;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\TransactionData;
-use Akira\Sisp\Actions\GenerateFingerprintAction;
 
 it('builds request payload via facade with deterministic fingerprint', function (): void {
     $data = PaymentRequestData::from([
@@ -67,7 +67,7 @@ it('stores a transaction and lists it via facade', function (): void {
         ->and($t->exists)->toBeTrue();
 
     $all = Sisp::getTransactions();
-    expect($all->contains(fn ($tr) => $tr->id === $t->id))->toBeTrue();
+    expect($all->contains(fn ($tr): bool => $tr->id === $t->id))->toBeTrue();
 });
 
 it('handles payment callback and updates status', function (): void {
@@ -95,4 +95,3 @@ it('handles payment callback and updates status', function (): void {
 
     expect($updated->status->value)->toBe('completed');
 });
-

@@ -18,4 +18,3 @@ it('transaction codes have labels', function (): void {
             ->and($case->label())->not->toBe('');
     }
 });
-

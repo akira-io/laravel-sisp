@@ -18,4 +18,3 @@ it('redirects duplicate callback requests', function (): void {
         'merchantRespMerchantSession' => 'MS-CB-DUP',
     ])->assertRedirect('/home');
 });
-

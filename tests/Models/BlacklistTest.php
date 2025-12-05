@@ -22,12 +22,9 @@ it('evaluates active and expired blacklist entries', function (): void {
     ]);
 
     expect($active->isActive())->toBeTrue()
-        ->and($active->isExpired())->toBeFalse();
-
-    expect($expired->isActive())->toBeFalse()
-        ->and($expired->isExpired())->toBeTrue();
-
-    expect(Blacklist::query()->active()->count())->toBeGreaterThanOrEqual(1)
+        ->and($active->isExpired())->toBeFalse()
+        ->and($expired->isActive())->toBeFalse()
+        ->and($expired->isExpired())->toBeTrue()
+        ->and(Blacklist::query()->active()->count())->toBeGreaterThanOrEqual(1)
         ->and(Blacklist::query()->expired()->count())->toBeGreaterThanOrEqual(1);
 });
-

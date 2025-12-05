@@ -19,4 +19,3 @@ it('cancels a pending transaction and redirects', function (): void {
 
     expect($response->isRedirect())->toBeTrue();
 });
-

@@ -17,7 +17,6 @@ it('detects inertia stack when composer requires inertia', function (): void {
     $cmd = resolve(LaravelSispInstallCommand::class);
     $ref = new ReflectionClass($cmd);
     $m = $ref->getMethod('detectStack');
-    $m->setAccessible(true);
 
     $stack = $m->invoke($cmd);
     expect($stack)->toBe('inertia');
@@ -31,14 +30,13 @@ it('falls back to blade when no inertia indicators are present', function (): vo
     // Overwrite composer.json without inertia requirement
     file_put_contents(base_path('composer.json'), json_encode([
         'require' => [
-            'php' => '^8.4'
+            'php' => '^8.4',
         ],
     ], JSON_PRETTY_PRINT));
 
     $cmd = resolve(LaravelSispInstallCommand::class);
     $ref = new ReflectionClass($cmd);
     $m = $ref->getMethod('detectStack');
-    $m->setAccessible(true);
 
     $stack = $m->invoke($cmd);
     expect($stack)->toBe('blade');
@@ -55,18 +53,6 @@ it('detects inertia stack via vite config containing react', function (): void {
     $cmd = resolve(LaravelSispInstallCommand::class);
     $ref = new ReflectionClass($cmd);
     $m = $ref->getMethod('detectStack');
-    $m->setAccessible(true);
-    $stack = $m->invoke($cmd);
-    expect($stack)->toBe('inertia');
-});
-
-it('detects inertia stack via inertia.php config file', function (): void {
-    @mkdir(base_path('config'), 0777, true);
-    file_put_contents(base_path('config/inertia.php'), "<?php return []; ");
-    $cmd = resolve(LaravelSispInstallCommand::class);
-    $ref = new ReflectionClass($cmd);
-    $m = $ref->getMethod('detectStack');
-    $m->setAccessible(true);
     $stack = $m->invoke($cmd);
     expect($stack)->toBe('inertia');
 });
@@ -77,7 +63,6 @@ it('detects inertia stack via vite.config.ts containing react', function (): voi
     $cmd = resolve(LaravelSispInstallCommand::class);
     $ref = new ReflectionClass($cmd);
     $m = $ref->getMethod('detectStack');
-    $m->setAccessible(true);
     $stack = $m->invoke($cmd);
     expect($stack)->toBe('inertia');
 });

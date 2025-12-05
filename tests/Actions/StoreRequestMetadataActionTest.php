@@ -48,7 +48,7 @@ it('detects browser/OS/device/mobile flags from user-agent variants', function (
             'HTTP_USER_AGENT' => $ua,
             'HTTP_ACCEPT_LANGUAGE' => 'en',
         ];
-        $request = \Illuminate\Http\Request::create('/test', 'GET', server: $server);
+        $request = Request::create('/test', 'GET', server: $server);
         $meta = $action->handle($request, $transaction);
         expect($meta->browser)->not->toBe('')
             ->and($meta->os)->not->toBe('')
