@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
 use LogicException;
@@ -17,7 +18,7 @@ final readonly class RefundTransactionAction
     ): Transaction {
         if (! $this->canBeRefunded($transaction)) {
             throw new LogicException(
-                "Transaction with status '{$transaction->status}' cannot be refunded."
+                "Transaction with status '{$transaction->status->value}' cannot be refunded."
             );
         }
 
@@ -30,10 +31,9 @@ final readonly class RefundTransactionAction
         throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
         $newAmount = $transaction->amount - $refundAmount;
-        $status = $newAmount === 0 ? 'refunded' : 'partially_refunded';
 
         $transaction->update([
-            'status' => $status,
+            'status' => TransactionStatus::refunded->value,
             'amount' => $newAmount,
             'merchant_response' => "{$reason}::{$refundAmount}",
             'refunded_at' => now(),
@@ -46,9 +46,6 @@ final readonly class RefundTransactionAction
 
     private function canBeRefunded(Transaction $transaction): bool
     {
-        return in_array($transaction->status, [
-            'completed',
-            'partially_refunded',
-        ]);
+        return $transaction->status->value === 'completed';
     }
 }

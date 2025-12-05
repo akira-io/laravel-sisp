@@ -41,3 +41,25 @@ it('computes pdf_url from public disk and respects table config', function (): v
         ->and($invoice->pdf_url)->not->toBeNull();
 });
 
+it('items relation proxies transaction items', function (): void {
+    $t = Transaction::factory()->create();
+    // Criar um item
+    \DB::table(config('sisp.tables.transaction_items', 'sisp_transaction_items'))->insert([
+        'transaction_id' => $t->id,
+        'product_name' => 'Item 1',
+        'quantity' => 1,
+        'unit_price_cents' => 100,
+        'total_price_cents' => 100,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $t->id,
+        'invoice_number' => 'INV-3',
+        'invoice_date' => now(),
+        'status' => 'pending',
+    ]);
+
+    expect($invoice->items()->count())->toBe(1);
+});

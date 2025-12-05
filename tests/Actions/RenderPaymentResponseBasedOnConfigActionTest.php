@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
-use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Models\Transaction;
 
 it('uses Inertia when configured for response rendering', function (): void {
     config()->set('sisp.use_inertia.enabled', true);
@@ -19,7 +19,7 @@ it('uses Inertia when configured for response rendering', function (): void {
     ]);
     $result = $action->handle($transaction, []);
 
-    expect($result)->toBeInstanceOf(\Inertia\Response::class);
+    expect($result)->toBeInstanceOf(Inertia\Response::class);
 });
 
 it('falls back to Blade when Inertia disabled for response rendering', function (): void {
@@ -35,5 +35,5 @@ it('falls back to Blade when Inertia disabled for response rendering', function 
     ]);
     $result = $action->handle($transaction, ['foo' => 'bar']);
 
-    expect($result)->toBeInstanceOf(\Illuminate\Contracts\View\View::class);
+    expect($result)->toBeInstanceOf(Illuminate\Contracts\View\View::class);
 });

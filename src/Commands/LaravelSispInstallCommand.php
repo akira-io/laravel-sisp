@@ -130,7 +130,10 @@ final class LaravelSispInstallCommand extends Command
 
         // Check for Vite with React (Inertia indicator)
         if (file_exists(base_path('vite.config.ts')) || file_exists(base_path('vite.config.js'))) {
-            $viteConfig = file_get_contents(base_path('vite.config.ts') ?? base_path('vite.config.js'));
+            $path = file_exists(base_path('vite.config.ts'))
+                ? base_path('vite.config.ts')
+                : base_path('vite.config.js');
+            $viteConfig = @file_get_contents($path) ?: '';
             if (str_contains($viteConfig, 'react')) {
                 return 'inertia';
             }
