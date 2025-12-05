@@ -8,6 +8,8 @@ use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CustomerData;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\TransactionItemData;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -50,7 +52,7 @@ final readonly class CreateAndStorePaymentTransactionAction
     private function createAndGenerateInvoice(Transaction $transaction): void
     {
         $invoice = $this->generateInvoice->handle($transaction); // @codeCoverageIgnore
-        $invoice->load(['transaction' => function (\Illuminate\Database\Eloquent\Builder $query): void { // @codeCoverageIgnore
+        $invoice->load(['transaction' => function (Builder|BelongsTo $query): void { // @codeCoverageIgnore
             $query->with('items'); // @codeCoverageIgnore
         }]);
 
