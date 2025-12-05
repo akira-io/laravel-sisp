@@ -113,3 +113,18 @@ it('does not double-encrypt values already encrypted', function (): void {
     $found = new TmpEncrypted()->setTable('tmp_encrypts2')->find($m->id);
     expect($found->secret)->toBe('already');
 });
+
+it('falls back when raw attribute decryption fails and returns original', function (): void {
+    Schema::create('tmp_encrypts_fail', function (Blueprint $table): void {
+        $table->id();
+        $table->text('secret')->nullable();
+    });
+
+    $id = DB::table('tmp_encrypts_fail')->insertGetId(['secret' => 'bogus']);
+
+    $model = new TmpEncrypted();
+    $model->setTable('tmp_encrypts_fail');
+    $found = $model->find($id);
+
+    expect($found->secret)->toBe('bogus');
+});
