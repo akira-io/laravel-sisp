@@ -96,6 +96,35 @@ SISP_SANDBOX=true
 
 The sandbox route is `/sisp/sandbox`. Access it directly in browser to test.
 
+## Testing & CI
+
+### Paratest hangs or interactive prompts block CI
+
+When running `sisp:install` in tests/CI without a TTY, drive prompts via config flags (only read during unit tests):
+
+```php
+config()->set('sisp.tests.publish_config', true);
+config()->set('sisp.tests.publish_migrations', true);
+config()->set('sisp.tests.run_migrations', true);
+config()->set('sisp.tests.fake_migrate', true); // skip real migrate
+config()->set('sisp.tests.publish_inertia', false); // avoid vendor:publish in CI
+config()->set('sisp.tests.publish_blade', false);
+```
+
+Then call with no interaction:
+
+```php
+Artisan::call('sisp:install', ['--no-interaction' => true]);
+```
+
+### Exact 100% coverage checks fail at 99.x%
+
+Use the exact-coverage flag and ensure environment-dependent branches are excluded or driven via the test toggles above.
+
+```bash
+vendor/bin/pest --parallel --coverage --compact --exactly=100
+```
+
 ### Invoice company info missing
 
 Error: Invoices generated but company name/address blank

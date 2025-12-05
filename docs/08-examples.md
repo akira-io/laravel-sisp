@@ -102,6 +102,23 @@ Event::listen(TransactionRefunded::class, function (TransactionRefunded $event) 
 });
 ```
 
+## Drive sisp:install in Tests (No TTY)
+
+Use config toggles to control the interactive prompts only when running unit tests:
+
+```php
+config()->set('sisp.tests.publish_config', true);
+config()->set('sisp.tests.publish_migrations', true);
+config()->set('sisp.tests.run_migrations', true);
+config()->set('sisp.tests.fake_migrate', true); // don’t execute real migrate again
+
+// Avoid vendor:publish for UI assets during CI
+config()->set('sisp.tests.publish_inertia', false);
+config()->set('sisp.tests.publish_blade', false);
+
+Artisan::call('sisp:install', ['--no-interaction' => true]);
+```
+
 ## Custom Payment Form
 
 Create a branded payment form in your application.

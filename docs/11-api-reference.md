@@ -2,6 +2,41 @@
 
 Complete reference for models, actions, and events.
 
+## Commands
+
+### sisp:install
+
+Installs and configures the package.
+
+Prompts:
+
+- Publish configuration file? (with optional force overwrite)
+- Publish migration files? (with optional force overwrite)
+- If Inertia detected: publish Inertia components? (with optional force)
+- Else: publish Blade views? (with optional force)
+- Run database migrations now?
+- Support the project with a GitHub star?
+
+Test toggles (only read during unit tests):
+
+- `sisp.tests.publish_config` / `sisp.tests.force_config`
+- `sisp.tests.publish_migrations` / `sisp.tests.force_migrations`
+- `sisp.tests.publish_inertia` / `sisp.tests.force_inertia`
+- `sisp.tests.publish_blade` / `sisp.tests.force_blade`
+- `sisp.tests.run_migrations` – run migrations step
+- `sisp.tests.fake_migrate` – short-circuit actual `migrate` call (defaults to true)
+- `sisp.tests.give_star` – show star note
+
+Example (Pest):
+
+```php
+config()->set('sisp.tests.publish_config', true);
+config()->set('sisp.tests.publish_migrations', true);
+config()->set('sisp.tests.run_migrations', true);
+config()->set('sisp.tests.fake_migrate', true);
+Artisan::call('sisp:install', ['--no-interaction' => true]);
+```
+
 ## Models
 
 ### Transaction

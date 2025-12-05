@@ -27,6 +27,28 @@ This command will:
 - Create required database tables
 - Register service provider
 
+#### Non‑interactive in CI (optional)
+
+When running in CI/tests without a TTY, you can drive the install prompts via config flags. These flags are only read when the app is running unit tests.
+
+```php
+// In your test bootstrap or a specific test before calling the command:
+config()->set('sisp.tests.publish_config', true);
+config()->set('sisp.tests.publish_migrations', true);
+config()->set('sisp.tests.run_migrations', true);
+config()->set('sisp.tests.fake_migrate', true); // don’t re-run real migrations in tests
+
+// Disable publish steps to keep paratest stable
+config()->set('sisp.tests.publish_inertia', false);
+config()->set('sisp.tests.publish_blade', false);
+```
+
+Then call:
+
+```php
+Artisan::call('sisp:install', ['--no-interaction' => true]);
+```
+
 ### Step 3: Verify Installation
 
 Confirm the package is installed by checking the routes:
