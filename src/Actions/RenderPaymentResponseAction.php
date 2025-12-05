@@ -20,7 +20,10 @@ final readonly class RenderPaymentResponseAction
 
     public function renderBlade(Transaction $transaction, array $payload): View
     {
-        return view('sisp::payment-response', [
+        /** @var view-string $viewName */
+        $viewName = 'sisp::payment-response';
+
+        return view($viewName, [
             'transaction' => $transaction,
             'payload' => $payload,
             'error' => $this->getStructuredError($transaction),
