@@ -31,9 +31,9 @@ final readonly class PaymentController
     public function __invoke(StorePaymentRequest $request): mixed
     {
         $ip = $request->ip();
-        
+
         $this->checkBlacklist->handle('ip', $ip);
-        
+
         $this->checkRateLimit->handle(
             identifier: $ip,
         );

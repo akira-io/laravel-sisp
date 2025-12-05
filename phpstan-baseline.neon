@@ -25,91 +25,25 @@ parameters:
 			path: src/Actions/CheckRateLimitAction.php
 
 		-
-			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 1
 			path: src/Actions/CreateAndStorePaymentTransactionAction.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_address\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoiceAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_city\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoiceAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_country\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoiceAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$customer_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoiceAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$due_date\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product_name\.$#'
 			identifier: property.notFound
 			count: 1
 			path: src/Actions/GenerateInvoicePdfAction.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$invoice_date\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$quantity\.$#'
 			identifier: property.notFound
 			count: 1
 			path: src/Actions/GenerateInvoicePdfAction.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$invoice_number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_address\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_city\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_country\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$customer_phone\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$items\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$unit_price_cents\.$#'
 			identifier: property.notFound
 			count: 1
 			path: src/Actions/GenerateInvoicePdfAction.php
@@ -145,12 +79,6 @@ parameters:
 			path: src/Actions/RefundTransactionAction.php
 
 		-
-			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Actions/RenderPaymentFormAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
 			identifier: property.notFound
 			count: 1
@@ -183,12 +111,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pdf_url\.$#'
 			identifier: property.notFound
-			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
-			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Actions/RenderPaymentResponseAction.php
 
@@ -277,7 +199,7 @@ parameters:
 			path: src/Models/Blacklist.php
 
 		-
-			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 5
 			path: src/Models/Blacklist.php
@@ -285,12 +207,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Invoice\:\:\$pdf_path\.$#'
 			identifier: property.notFound
-			count: 1
-			path: src/Models/Invoice.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:items\(\)\.$#'
-			identifier: method.notFound
 			count: 1
 			path: src/Models/Invoice.php
 
@@ -319,7 +235,7 @@ parameters:
 			path: src/Models/RateLimit.php
 
 		-
-			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 4
 			path: src/Models/RateLimit.php
@@ -331,7 +247,7 @@ parameters:
 			path: src/Models/Transaction.php
 
 		-
-			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 3
 			path: src/Models/Transaction.php
@@ -349,7 +265,7 @@ parameters:
 			path: src/Models/TransactionItem.php
 
 		-
-			message: '#^Out of 285 possible param types, only 271 \- 95\.0 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 1
 			path: src/SispServiceProvider.php

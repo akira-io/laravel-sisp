@@ -40,6 +40,16 @@ final readonly class RenderPaymentFormAction
         return Inertia::render($component, [
             'endpoint' => $endpoint,
             'fields' => $fields,
+            'translations' => [
+                'redirect_title' => __('sisp::payment.redirect_title'),
+                'redirect_description' => __('sisp::payment.redirect_description'),
+                'secure_transaction' => __('sisp::payment.secure_transaction'),
+                'official_portal' => __('sisp::payment.official_portal'),
+                'ssl_encryption' => __('sisp::payment.ssl_encryption'),
+                'data_protected' => __('sisp::payment.data_protected'),
+                'redirecting_in' => trans('sisp::payment.redirecting_in'),
+                'connecting' => __('sisp::payment.connecting'),
+            ],
         ]);
     }
 
