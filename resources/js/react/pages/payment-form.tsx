@@ -3,9 +3,29 @@ import {useEffect, useRef, useState} from 'react';
 interface PaymentFormProps {
     endpoint: string;
     fields: Record<string, string | number>;
+    translations?: {
+        redirect_title: string;
+        redirect_description: string;
+        secure_transaction: string;
+        official_portal: string;
+        ssl_encryption: string;
+        data_protected: string;
+        redirecting_in: string;
+        connecting: string;
+    };
 }
 
-export default function PaymentForm({endpoint, fields}: PaymentFormProps) {
+export default function PaymentForm({endpoint, fields, translations}: PaymentFormProps) {
+    const t = translations || {
+        redirect_title: 'Redirecting to SISP',
+        redirect_description: 'You will be redirected to the secure payment portal',
+        secure_transaction: 'Secure Transaction',
+        official_portal: 'Official portal of Cabo Verde Banking System',
+        ssl_encryption: 'Bank-level SSL encryption',
+        data_protected: 'Your data is protected',
+        redirecting_in: 'Redirecting in :count second|Redirecting in :count seconds',
+        connecting: 'Connecting to SISP...',
+    };
     const formRef = useRef<HTMLFormElement>(null);
     const [countdown, setCountdown] = useState(2);
     const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -41,8 +61,8 @@ export default function PaymentForm({endpoint, fields}: PaymentFormProps) {
                               </svg>
                           </div>
                       </div>
-                      <h2 className='text-xl font-semibold text-foreground'>Redirecionando para SISP</h2>
-                      <p className='text-sm text-muted-foreground'>Você será redirecionado para o portal seguro de pagamentos</p>
+                      <h2 className='text-xl font-semibold text-foreground'>{t.redirect_title}</h2>
+                      <p className='text-sm text-muted-foreground'>{t.redirect_description}</p>
                   </div>
                   <div className='rounded-lg bg-muted p-4 text-left border border-border'>
                       <div className='flex items-start gap-3'>
@@ -54,27 +74,31 @@ export default function PaymentForm({endpoint, fields}: PaymentFormProps) {
                                     clipRule='evenodd'/>
                           </svg>
                           <div className='text-sm'>
-                              <p className='mb-1 font-medium text-foreground'>Transação Segura</p>
+                              <p className='mb-1 font-medium text-foreground'>{t.secure_transaction}</p>
                               <ul className='space-y-1 text-xs text-muted-foreground'>
-                                  <li>• Portal oficial do Sistema Bancário de Cabo Verde</li>
-                                  <li>• Criptografia SSL de nível bancário</li>
-                                  <li>• Seus dados estão protegidos</li>
+                                  <li>• {t.official_portal}</li>
+                                  <li>• {t.ssl_encryption}</li>
+                                  <li>• {t.data_protected}</li>
                               </ul>
                           </div>
                       </div>
                   </div>
-                  {countdown > 0 ? (
+                  {countdown !== null && countdown > 0 ? (
                     <div className='space-y-4'>
                         <div className='rounded-lg bg-blue-50 dark:bg-blue-950 p-4 border border-blue-200 dark:border-blue-800'>
                             <p className='text-sm font-medium text-blue-700 dark:text-blue-300'>
-                                Redirecionando em {countdown} segundo{countdown !== 1 ? 's' : ''}...
+                                {(() => {
+                                    const parts = t.redirecting_in.split('|');
+                                    const text = countdown === 1 ? parts[0] : (parts[1] || parts[0]);
+                                    return text.replace(':count', countdown.toString());
+                                })()}
                             </p>
                         </div>
                     </div>
-                  ) : (
+                  ) : countdown === null ? null : (
                     <div className='space-y-4'>
                         <div className='rounded-lg bg-green-50 dark:bg-green-950 p-4 border border-green-200 dark:border-green-800'>
-                            <p className='text-sm font-medium text-green-700 dark:text-green-300'>Conectando ao SISP...</p>
+                            <p className='text-sm font-medium text-green-700 dark:text-green-300'>{t.connecting}</p>
                         </div>
                     </div>
                   )}

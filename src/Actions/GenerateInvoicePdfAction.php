@@ -41,7 +41,7 @@ final readonly class GenerateInvoicePdfAction
             ->set('phone', $transaction->customer_phone)
             ->set('city', $invoice->customer_city ?? $transaction->customer_city)
             ->build();
-        
+
         $invoiceBuilder = InvoiceBuilder::make()
             ->seller($seller)
             ->buyer($buyer)
