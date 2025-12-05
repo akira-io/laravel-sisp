@@ -18,7 +18,7 @@ it('encrypts and decrypts payload array transparently', function (): void {
         'locale' => 'pt',
     ]);
 
-    $raw = \DB::table($t->getTable())->where('id', $t->id)->value('payload');
+    $raw = Illuminate\Support\Facades\DB::table($t->getTable())->where('id', $t->id)->value('payload');
     expect(is_string($raw))->toBeTrue()
         ->and($raw)->not->toContain('foo')
         ->and($raw)->not->toContain('bar');
@@ -26,4 +26,3 @@ it('encrypts and decrypts payload array transparently', function (): void {
     $fresh = Transaction::query()->findOrFail($t->id);
     expect($fresh->payload)->toBe($payload);
 });
-

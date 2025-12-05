@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'redirect_title' => 'Redirecting to SISP',
     'redirect_description' => 'You will be redirected to the secure payment portal',

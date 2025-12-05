@@ -5,7 +5,8 @@ declare(strict_types=1);
 use Akira\Sisp\Actions\RenderPaymentFormBasedOnConfigAction;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 
-function samplePaymentRequest(): PaymentRequest {
+function samplePaymentRequest(): PaymentRequest
+{
     return PaymentRequest::from([
         'posID' => config('sisp.posID'),
         'merchantRef' => 'R123',
@@ -29,7 +30,7 @@ it('uses Inertia when configured', function (): void {
     $action = resolve(RenderPaymentFormBasedOnConfigAction::class);
     $result = $action->handle(samplePaymentRequest(), 'en');
 
-    expect($result)->toBeInstanceOf(\Inertia\Response::class);
+    expect($result)->toBeInstanceOf(Inertia\Response::class);
 });
 
 it('falls back to Blade when Inertia disabled', function (): void {
@@ -38,5 +39,5 @@ it('falls back to Blade when Inertia disabled', function (): void {
     $action = resolve(RenderPaymentFormBasedOnConfigAction::class);
     $result = $action->handle(samplePaymentRequest());
 
-    expect($result)->toBeInstanceOf(\Illuminate\Contracts\View\View::class);
+    expect($result)->toBeInstanceOf(Illuminate\Contracts\View\View::class);
 });

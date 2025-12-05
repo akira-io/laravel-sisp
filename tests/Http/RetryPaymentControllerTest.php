@@ -15,4 +15,3 @@ it('retries payment for an existing transaction', function (): void {
         'transaction_id' => $t->id,
     ])->assertOk();
 });
-

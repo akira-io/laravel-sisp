@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\DeterminePaymentEndpointAction;
-use Illuminate\Support\Facades\URL;
 
 it('returns sandbox route when sandbox enabled', function (): void {
     config()->set('sisp.sandbox', true);
@@ -23,4 +22,3 @@ it('returns configured URI when sandbox disabled', function (): void {
 
     expect($endpoint)->toBe('https://payments.example.test/endpoint');
 });
-

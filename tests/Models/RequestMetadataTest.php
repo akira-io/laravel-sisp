@@ -25,4 +25,3 @@ it('honors table config and relation casts', function (): void {
         ->and($meta->is_vpn)->toBeTrue()
         ->and($meta->custom_metadata)->toBe(['k' => 'v']);
 });
-

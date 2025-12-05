@@ -25,7 +25,7 @@ parameters:
 			path: src/Actions/CheckRateLimitAction.php
 
 		-
-			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 1
 			path: src/Actions/CreateAndStorePaymentTransactionAction.php
@@ -53,36 +53,6 @@ parameters:
 			identifier: property.notFound
 			count: 2
 			path: src/Actions/Generators/InvoiceNumberGeneratorAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RefundTransactionAction.php
-
-		-
-			message: '#^Call to function in_array\(\) with Akira\\Sisp\\Enums\\TransactionStatus and array\{''completed'', ''partially_refunded''\} will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: src/Actions/RefundTransactionAction.php
-
-		-
-			message: '#^Part \$transaction\-\>status \(Akira\\Sisp\\Enums\\TransactionStatus\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 1
-			path: src/Actions/RefundTransactionAction.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between float and 0 will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: src/Actions/RefundTransactionAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
 
 		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
@@ -113,12 +83,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RetryPaymentAction.php
 
 		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$created_at\.$#'
@@ -157,12 +121,6 @@ parameters:
 			path: src/Actions/UpdateInvoiceStatusAction.php
 
 		-
-			message: '#^Expression on left side of \?\? is not nullable\.$#'
-			identifier: nullCoalesce.expr
-			count: 1
-			path: src/Commands/LaravelSispInstallCommand.php
-
-		-
 			message: '#^Trait Akira\\Sisp\\Concerns\\HasSispTransactions is used zero times and is not analysed\.$#'
 			identifier: trait.unused
 			count: 1
@@ -199,7 +157,7 @@ parameters:
 			path: src/Models/Blacklist.php
 
 		-
-			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 5
 			path: src/Models/Blacklist.php
@@ -235,19 +193,13 @@ parameters:
 			path: src/Models/RateLimit.php
 
 		-
-			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 4
 			path: src/Models/RateLimit.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Models/Transaction.php
-
-		-
-			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 3
 			path: src/Models/Transaction.php
@@ -265,7 +217,7 @@ parameters:
 			path: src/Models/TransactionItem.php
 
 		-
-			message: '#^Out of 288 possible param types, only 274 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
+			message: '#^Out of 290 possible param types, only 276 \- 95\.1 %% actually have it\. Add more param types to get over 99 %%$#'
 			identifier: typeCoverage.paramTypeCoverage
 			count: 1
 			path: src/SispServiceProvider.php

@@ -84,4 +84,3 @@ it('reads boolean flags for features and security', function (): void {
         ->and($this->cfg->getRateLimitWindowSeconds())->toBe(60)
         ->and($this->cfg->getGeolocationProvider())->toBe('ip2location');
 });
-

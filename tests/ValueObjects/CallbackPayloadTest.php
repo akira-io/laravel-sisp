@@ -58,4 +58,3 @@ it('withoutFingerprint removes fingerprint key from array', function (): void {
     $arr = $vo->withoutFingerprint();
     expect($arr)->not->toHaveKey('fingerprint');
 });
-

@@ -42,9 +42,8 @@ it('handles POST callback and redirects to GET with ref', function (): void {
         'timeStamp' => '2024-01-01 00:00:00',
         'currency' => '132',
         'transactionCode' => '1',
-    ]), 'success');
+    ]));
 
     $this->post(route('sisp.callback'), $payload->toArray())
         ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G2']));
 });
-

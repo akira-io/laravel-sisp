@@ -6,6 +6,7 @@ namespace Akira\Sisp\Tests;
 
 use Akira\Debugger\DebuggerServiceProvider;
 use Akira\Sisp\SispServiceProvider;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -42,14 +43,14 @@ abstract class TestCase extends Orchestra
         config()->set('sisp.url_merchant_response', 'https://localhost/sisp/callback');
 
         // App key for encryption
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app->make(Repository::class)->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
 
         // Ensure a base layout exists for package Blade views extending 'layouts.app'
-        $paths = $app['config']->get('view.paths', []);
+        $paths = $app->make(Repository::class)->get('view.paths', []);
         $testViews = __DIR__.'/resources/views';
         if (! in_array($testViews, $paths, true)) {
             $paths[] = $testViews;
-            $app['config']->set('view.paths', $paths);
+            $app->make(Repository::class)->set('view.paths', $paths);
         }
     }
 

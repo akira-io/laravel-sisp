@@ -17,7 +17,7 @@ it('blocks blacklisted IPs with json error', function (): void {
     $middleware = resolve(EnforceSispRateLimits::class);
     $request = Request::create('/any', 'GET', server: ['REMOTE_ADDR' => '127.0.0.1']);
 
-    $response = $middleware->handle($request, fn () => response('ok'));
+    $response = $middleware->handle($request, fn (): Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response => response('ok'));
 
     expect($response->getStatusCode())->toBe(403)
         ->and($response->headers->get('Content-Type'))->toContain('application/json');
@@ -27,8 +27,7 @@ it('allows non-blacklisted requests to proceed', function (): void {
     $middleware = resolve(EnforceSispRateLimits::class);
     $request = Request::create('/any', 'GET', server: ['REMOTE_ADDR' => '127.0.0.2']);
 
-    $response = $middleware->handle($request, fn () => response('ok'));
+    $response = $middleware->handle($request, fn (): Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response => response('ok'));
 
     expect($response->getContent())->toBe('ok');
 });
-

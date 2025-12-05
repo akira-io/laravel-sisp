@@ -19,4 +19,3 @@ it('instantiates custom exceptions with default codes', function (): void {
         ->and($e3->getMessage())->not->toBe('')
         ->and($e4->getMessage())->toBe('Blocked');
 });
-

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 final class TmpEncrypted extends Model
 {
     use EncryptsAttributes;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
 
     public $timestamps = false;
 
@@ -30,7 +31,7 @@ it('encrypts and decrypts string attributes via trait', function (): void {
     });
 
     $m = TmpEncrypted::query()->create(['secret' => 'hello-world']);
-    $raw = DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
+    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
     expect($raw)->not->toBe('hello-world');
 
     $found = TmpEncrypted::query()->find($m->id);
@@ -44,7 +45,7 @@ it('encrypts and decrypts array attributes via trait', function (): void {
     });
 
     $m = TmpEncrypted::query()->create(['secret' => ['hello-world', 'goodbye-world', 'secret' => 'secret-value']]);
-    $raw = DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
+    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
     expect($raw)->not->toBe('hello-world');
 
     $found = TmpEncrypted::query()->find($m->id);
@@ -54,6 +55,7 @@ it('encrypts and decrypts array attributes via trait', function (): void {
 final class TmpEncryptAll extends Model
 {
     use EncryptsAttributes;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
 
     public $timestamps = false;
 
@@ -69,7 +71,7 @@ it('encrypts all attributes when encryptable list is empty', function (): void {
     });
 
     $m = TmpEncryptAll::query()->create(['notes' => 'secret-note']);
-    $raw = DB::table('tmp_encrypts_all')->where('id', $m->id)->value('notes');
+    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts_all')->where('id', $m->id)->value('notes');
     expect($raw)->not->toBe('secret-note');
 
     $found = TmpEncryptAll::query()->find($m->id);
@@ -90,4 +92,24 @@ it('does not encrypt non-string values', function (): void {
 
     $found = new TmpEncrypted()->setTable('tmp_encrypts_non_str')->find($m->id);
     expect($found->secret)->toBeNull();
+});
+
+it('does not double-encrypt values already encrypted', function (): void {
+    Schema::create('tmp_encrypts2', function (Blueprint $table): void {
+        $table->id();
+        $table->text('secret')->nullable();
+    });
+
+    $already = Illuminate\Support\Facades\Crypt::encryptString('already');
+
+    $m = new TmpEncrypted();
+    $m->setTable('tmp_encrypts2');
+    $m->secret = $already;
+    $m->save();
+
+    $raw = DB::table('tmp_encrypts2')->where('id', $m->id)->value('secret');
+    expect($raw)->toBe($already);
+
+    $found = new TmpEncrypted()->setTable('tmp_encrypts2')->find($m->id);
+    expect($found->secret)->toBe('already');
 });

@@ -25,7 +25,7 @@ it('creates transaction and renders payment form', function (): void {
 
 it('blocks duplicate transactions via middleware', function (): void {
     // Existing processed transaction
-    $existing = \Akira\Sisp\Models\Transaction::factory()->create([
+    Akira\Sisp\Models\Transaction::factory()->create([
         'merchant_ref' => 'MR-DUP',
         'merchant_session' => 'MS-DUP',
         'status' => 'completed',
