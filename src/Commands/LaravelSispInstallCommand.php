@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Commands;
 
 use Illuminate\Console\Command;
+use Throwable;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -27,76 +28,26 @@ final class LaravelSispInstallCommand extends Command
         $stackType = $this->detectStack();
         info("Detected stack: $stackType");
 
-        // Step 1: Publish config
         if (confirm('Do you want to publish the configuration file?')) {
-            $forcePublish = confirm('Force overwrite if file already exists?', false);
-
-            $options = [
-                '--tag' => 'sisp-config',
-            ];
-
-            if ($forcePublish) {
-                $options['--force'] = true;
-            }
-
-            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing configuration file...');
-
-            info('Configuration file published.');
+            $this->publishConfig(confirm('Force overwrite if file already exists?', false));
         }
 
-        // Step 2: Publish migrations
         if (confirm('Do you want to publish the migration files?')) {
-            $forceMigrations = confirm('Force overwrite if files already exist?', false);
-
-            $options = [
-                '--tag' => 'sisp-migrations',
-            ];
-
-            if ($forceMigrations) {
-                $options['--force'] = true;
-            }
-
-            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing migration files...');
-
-            info('Migration files published.');
+            $this->publishMigrations(confirm('Force overwrite if files already exist?', false));
         }
 
-        // Step 3: Publish stack-specific views
         if ($stackType === 'inertia') {
             if (confirm('Do you want to publish the Inertia React components for customization?')) {
-                $forceInertia = confirm('Force overwrite if files already exist?', false);
-
-                $options = [
-                    '--tag' => 'sisp-inertia-components',
-                ];
-
-                if ($forceInertia) {
-                    $options['--force'] = true;
-                }
-
-                spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
-
-                info('Inertia components published.');
+                $this->publishInertiaComponents(confirm('Force overwrite if files already exist?', false));
             }
         } elseif (confirm('Do you want to publish the Blade views?')) {
-            $forceBlade = confirm('Force overwrite if files already exist?', false);
-            $options = [
-                '--tag' => 'sisp-views',
-            ];
-            if ($forceBlade) {
-                $options['--force'] = true;
-            }
-            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Blade views...');
-            info('Blade views published.');
+            $this->publishBladeViews(confirm('Force overwrite if files already exist?', false));
         }
 
-        // Step 4: Run migration
         if (confirm('Do you want to run database migrations now?')) {
-            spin(fn () => $this->call('migrate'), 'Running database migrations...');
-            info('Database migration completed.');
+            $this->runMigrations();
         }
 
-        // Finish
         note('Laravel SISP installation completed successfully!');
 
         if (confirm('Would you like to support the project by giving a star on GitHub?')) {
@@ -108,18 +59,104 @@ final class LaravelSispInstallCommand extends Command
         return self::SUCCESS;
     }
 
-    /**
-     * Detect if the application is using Inertia or Blade stack.
-     */
+    protected function publishConfig(bool $force = false): void
+    {
+        $options = ['--tag' => 'sisp-config'];
+        if ($force) {
+            $options['--force'] = true;
+        }
+        try {
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing configuration file...');
+            info('Configuration file published.');
+        } catch (Throwable) {
+            info('Skipping config publish (vendor:publish not available).');
+        }
+    }
+
+    protected function publishMigrations(bool $force = false): void
+    {
+        $options = ['--tag' => 'sisp-migrations'];
+        if ($force) {
+            $options['--force'] = true;
+        }
+        try {
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing migration files...');
+            info('Migration files published.');
+        } catch (Throwable) {
+            info('Skipping migration publish (vendor:publish not available).');
+        }
+    }
+
+    protected function publishInertiaComponents(bool $force = false): void
+    {
+        $options = ['--tag' => 'sisp-inertia-components'];
+        if ($force) {
+            $options['--force'] = true;
+        }
+        try {
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Inertia components...');
+            info('Inertia components published.');
+        } catch (Throwable) {
+            info('Skipping Inertia components publish (vendor:publish not available).');
+        }
+    }
+
+    protected function publishBladeViews(bool $force = false): void
+    {
+        $options = ['--tag' => 'sisp-views'];
+        if ($force) {
+            $options['--force'] = true;
+        }
+        try {
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Blade views...');
+            info('Blade views published.');
+        } catch (Throwable) {
+            info('Skipping Blade views publish (vendor:publish not available).');
+        }
+    }
+
+    protected function publishVueComponents(bool $force = false): void
+    {
+        $options = ['--tag' => 'sisp-vue-components'];
+        if ($force) {
+            $options['--force'] = true;
+        }
+        try {
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing Vue components...');
+            info('Vue components published.');
+        } catch (Throwable) {
+            info('Skipping Vue components publish (vendor:publish not available).');
+        }
+    }
+
+    protected function publishAssets(bool $force = false): void
+    {
+        $options = ['--tag' => 'sisp-assets'];
+        if ($force) {
+            $options['--force'] = true;
+        }
+        try {
+            spin(fn () => $this->callSilent('vendor:publish', $options), 'Publishing assets...');
+            info('Assets published.');
+        } catch (Throwable) {
+            info('Skipping assets publish (vendor:publish not available).');
+        }
+    }
+
+    protected function runMigrations(): void
+    {
+        spin(fn () => $this->call('migrate'), 'Running database migrations...');
+        info('Database migration completed.');
+    }
+
     private function detectStack(): string
     {
-        // Check for Inertia configuration
+
         $inertiaConfigPath = base_path('config/inertia.php');
         if (file_exists($inertiaConfigPath)) {
             return 'inertia';
         }
 
-        // Check for Inertia in composer.json
         $composerPath = base_path('composer.json');
         if (file_exists($composerPath)) {
             $composer = json_decode(file_get_contents($composerPath), true);
@@ -128,7 +165,6 @@ final class LaravelSispInstallCommand extends Command
             }
         }
 
-        // Check for Vite with React (Inertia indicator)
         if (file_exists(base_path('vite.config.ts')) || file_exists(base_path('vite.config.js'))) {
             $path = file_exists(base_path('vite.config.ts'))
                 ? base_path('vite.config.ts')
@@ -139,7 +175,6 @@ final class LaravelSispInstallCommand extends Command
             }
         }
 
-        // Default to blade if no Inertia found
         return 'blade';
     }
 }
