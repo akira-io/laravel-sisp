@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+# [0.2.0](https://github.com/akira-io/laravel-sisp/compare/0.1.0...0.2.0) (2025-12-05)
+
+
+### Features
+
+* add French localization for error messages and payment responses ([245e687](https://github.com/akira-io/laravel-sisp/commit/245e68700ff703b41c51edd0fc829a099a19e3ee))
+* add locale field to transaction model and database schema ([016c1ff](https://github.com/akira-io/laravel-sisp/commit/016c1ffcb179384f8734b9f11e954e700cdb8189))
+* add locale property to Transaction model and update GenerateInvoicePdfAction to use it ([abfb9e0](https://github.com/akira-io/laravel-sisp/commit/abfb9e036509662af0b1b4a6c0dc783b062bf2bb))
+* add locale support to transaction processing and related actions ([1ef4212](https://github.com/akira-io/laravel-sisp/commit/1ef4212b59d75b1420cd1853f30e9f7c2f67d285))
+* add localization support for payment messages in French and Portuguese ([8dbe68b](https://github.com/akira-io/laravel-sisp/commit/8dbe68b401cb3094784f6e8ca4345ac86e98d23d))
+* add translation support for payment form and response components ([aaa1b9f](https://github.com/akira-io/laravel-sisp/commit/aaa1b9fcbc88a284a6f41bda9eee9b71953e51a3))
+* enhance attribute encryption and decryption handling for arrays ([5250608](https://github.com/akira-io/laravel-sisp/commit/5250608f1f746c9591bbdca28b39b8b07bbf739b))
+* enhance Laravel SISP installation command with additional publishing options and error handling ([15f3809](https://github.com/akira-io/laravel-sisp/commit/15f38094b30e9401002c9bf2943b35241581a661))
+* enhance payment form localization by passing locale to render methods ([76bbd52](https://github.com/akira-io/laravel-sisp/commit/76bbd5288440cc33578296587a14569631d1604c))
+* enhance transaction cancellation process and improve installation command prompts ([7a95936](https://github.com/akira-io/laravel-sisp/commit/7a959366944b09cc65baad712830895a462940b0))
+* improve transaction cancellation logic and streamline rate limit identifier assignment ([850bd0b](https://github.com/akira-io/laravel-sisp/commit/850bd0bd6a7b9317d30af0401f70bda34b2d8dd3))
+
 # 0.1.0 (2025-12-02)
 
 
