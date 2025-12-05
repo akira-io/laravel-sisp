@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+use Akira\Sisp\ValueObjects\CallbackPayload;
+
+it('creates callback payload from array and converts back', function (): void {
+    $data = [
+        'messageType' => '8',
+        'merchantRespCP' => '01',
+        'merchantRespTid' => 'T123',
+        'merchantRespMerchantRef' => 'R1',
+        'merchantRespMerchantSession' => 'S1',
+        'merchantRespPurchaseAmount' => 99.99,
+        'merchantRespMessageID' => 'MSG-1',
+        'merchantRespPan' => '****-****-****-1234',
+        'merchantResp' => '00',
+        'merchantRespTimeStamp' => '2024-01-01 00:00:00',
+        'merchantRespReferenceNumber' => 'REF-1',
+        'merchantRespEntityCode' => '10010',
+        'merchantRespClientReceipt' => 'REC-1',
+        'merchantRespAdditionalErrorMessage' => '',
+        'reloadCode' => '',
+        'resultFingerPrint' => 'FP',
+        'posID' => 'POS-1',
+        'currency' => '132',
+        'transactionCode' => '1',
+    ];
+
+    $vo = CallbackPayload::from($data);
+
+    expect($vo->merchantRef)->toBe('R1')
+        ->and($vo->transactionID)->toBe('T123')
+        ->and($vo->fingerprint)->toBe('FP');
+
+    $roundTrip = $vo->toArray();
+    expect($roundTrip['merchantRespMerchantRef'])->toBe('R1')
+        ->and($roundTrip['merchantRespTid'])->toBe('T123')
+        ->and($roundTrip['resultFingerPrint'])->toBe('FP');
+});
+
+it('withoutFingerprint removes fingerprint key from array', function (): void {
+    $vo = CallbackPayload::from([
+        'merchantRespMerchantRef' => 'R2',
+        'merchantRespMerchantSession' => 'S2',
+        'merchantRespTimeStamp' => 'ts',
+        'merchantRespPurchaseAmount' => 10.0,
+        'currency' => '132',
+        'transactionCode' => '1',
+        'merchantRespTid' => 'T2',
+        'messageType' => '8',
+        'merchantResp' => '00',
+        'merchantRespCP' => '01',
+        'resultFingerPrint' => 'FP2',
+        'posID' => 'POS-2',
+    ]);
+
+    $arr = $vo->withoutFingerprint();
+    expect($arr)->not->toHaveKey('fingerprint');
+});
+
