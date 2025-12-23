@@ -65,4 +65,11 @@ final class TransactionFactory extends Factory
             'status' => 'refunded',
         ]);
     }
+
+    public function withoutEmail(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'customer_email' => null,
+        ]);
+    }
 }
