@@ -20,6 +20,7 @@ php artisan route:list | grep sisp
 ```
 
 You should see these routes:
+
 - `POST /sisp/payment`
 - `GET|POST /sisp/callback`
 - `POST /sisp/cancel`
@@ -167,14 +168,15 @@ Verify form inputs:
 Example valid form:
 
 ```html
-<form method="POST" action="/sisp/payment">
-    @csrf
-    <input type="hidden" name="amount" value="100.00">
-    <input type="hidden" name="items[0][product_name]" value="Test">
-    <input type="hidden" name="items[0][quantity]" value="1">
-    <input type="hidden" name="items[0][unit_price]" value="100.00">
-    <input type="hidden" name="items[0][total_price]" value="100.00">
-    <button type="submit">Pay</button>
+
+<form method='POST' action='/sisp/payment'>
+ @csrf
+ <input type='hidden' name='amount' value='100.00'>
+ <input type='hidden' name='items[0][product_name]' value='Test'>
+ <input type='hidden' name='items[0][quantity]' value='1'>
+ <input type='hidden' name='items[0][unit_price]' value='100.00'>
+ <input type='hidden' name='items[0][total_price]' value='100.00'>
+ <button type='submit'>Pay</button>
 </form>
 ```
 
@@ -330,7 +332,8 @@ Check `.env`:
 APP_KEY=base64:your_key_here
 ```
 
-If you changed the key, old encrypted data won't decrypt. This is expected - new transactions will encrypt/decrypt correctly.
+If you changed the key, old encrypted data won't decrypt. This is expected - new transactions will encrypt/decrypt
+correctly.
 
 ## Performance Issues
 
@@ -476,7 +479,7 @@ php artisan tinker
 
 Check these resources:
 
-1. **Package Repository**: https://github.com/akira-projects/laravel-sisp
+1. **Package Repository**: https://github.com/kidiatoliny/laravel-sisp
 2. **Issues**: Report bugs on GitHub issues
 3. **Documentation**: Review the full documentation
 4. **Logs**: Always check `storage/logs/laravel.log`
@@ -484,5 +487,7 @@ Check these resources:
 
 ## Next Steps
 
-- Review [API Reference](#) for detailed documentation
+- Review [API Reference](./11-api-reference.md) for detailed documentation
 - Check [Examples](./08-examples.md) for code samples
+
+**Previous:** [Examples](08-examples.md) | **Next:** [FAQ](10-faq.md)

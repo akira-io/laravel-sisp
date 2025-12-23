@@ -4,7 +4,8 @@
 
 ### What is SISP?
 
-SISP (Sistema Integrado de Serviços de Pagamentos) is Cape Verde's integrated payment services system. This package integrates Laravel applications with SISP's payment gateway.
+SISP (Sistema Integrado de Serviços de Pagamentos) is Cape Verde's integrated payment services system. This package
+integrates Laravel applications with SISP's payment gateway.
 
 ### What countries does SISP support?
 
@@ -17,6 +18,7 @@ Yes, you must register as a merchant with SISP to get credentials (POS ID, autho
 ### How do I get SISP credentials?
 
 Contact SISP directly. They will provide:
+
 - SISP_URL
 - SISP_POS_ID
 - SISP_POS_AUT_CODE
@@ -37,6 +39,7 @@ This routes payments through a fake gateway for testing.
 ### Do I need to create custom routes?
 
 No, the package registers all routes automatically:
+
 - `POST /sisp/payment` - Payment submission
 - `GET|POST /sisp/callback` - SISP callback
 - `POST /sisp/cancel` - Cancel transaction
@@ -55,6 +58,7 @@ You can use a simple HTML form or build your own payment page that submits to th
 ### How do I handle the payment response?
 
 The package automatically handles callbacks from SISP and dispatches events:
+
 - `PaymentCompleted` - Payment successful
 - `PaymentFailed` - Payment rejected
 - `PaymentPending` - Still processing
@@ -76,10 +80,10 @@ The minimum is 0.01 ECV. Amounts are stored in cents in the database.
 Yes, add a fee line item to your payment:
 
 ```html
-<input type="hidden" name="items[1][product_name]" value="Processing Fee">
-<input type="hidden" name="items[1][quantity]" value="1">
-<input type="hidden" name="items[1][unit_price]" value="5.00">
-<input type="hidden" name="items[1][total_price]" value="5.00">
+<input type='hidden' name='items[1][product_name]' value='Processing Fee'>
+<input type='hidden' name='items[1][quantity]' value='1'>
+<input type='hidden' name='items[1][unit_price]' value='5.00'>
+<input type='hidden' name='items[1][total_price]' value='5.00'>
 ```
 
 ### Can I accept partial payments?
@@ -91,6 +95,7 @@ You can create multiple transactions for partial payments and track them separat
 ### How long is a transaction valid?
 
 Transactions submitted to SISP remain pending until:
+
 1. Customer completes payment (moves to completed/failed)
 2. You manually cancel it
 3. Default: 24 hours (check with SISP)
@@ -98,6 +103,7 @@ Transactions submitted to SISP remain pending until:
 ### What if the customer closes the payment window?
 
 The transaction remains in `pending` status. You can:
+
 1. Send a reminder email with a payment link
 2. Cancel it and create a new one
 3. Let it auto-expire
@@ -195,6 +201,7 @@ The package provides several tools:
 ### What data is collected?
 
 Request metadata includes:
+
 - IP address, user agent, browser, OS
 - Device type and fingerprint
 - Geolocation (country, city, coordinates)
@@ -221,6 +228,7 @@ When enabled, VPN/proxy requests return HTTP 403.
 ### How are callbacks verified?
 
 SISP signs every callback with a cryptographic signature. The package:
+
 1. Validates the signature on every callback
 2. Rejects unsigned/tampered requests
 3. Prevents status spoofing
@@ -266,6 +274,7 @@ Yes, the package is optimized for high-volume payments:
 4. Queue support for background jobs
 
 For peak load, ensure:
+
 - Adequate database connections
 - Queue worker running
 - Cache backend configured (Redis recommended)
@@ -321,6 +330,7 @@ SISP_TABLE_INVOICES=my_invoices
 ### How do I backup transaction data?
 
 Use Laravel's backup tools or database backups. Include these tables:
+
 - `sisp_transactions`
 - `sisp_transaction_items`
 - `sisp_invoices`
@@ -349,7 +359,7 @@ Check the LICENSE file in the repository for terms.
 
 ### How do I report a bug?
 
-Open an issue on GitHub: https://github.com/akira-projects/laravel-sisp/issues
+Open an issue on GitHub: https://github.com/kidiatoliny/laravel-sisp/issues
 
 ### Can I contribute?
 
@@ -357,7 +367,7 @@ Yes, pull requests are welcome. Follow the contribution guidelines in the reposi
 
 ### Where's the source code?
 
-Available on GitHub: https://github.com/akira-projects/laravel-sisp
+Available on GitHub: https://github.com/kidiatoliny/laravel-sisp
 
 ### Can I use this in production?
 
@@ -376,3 +386,5 @@ PHP 8.4+
 - Check the [Troubleshooting](./09-troubleshooting.md) guide
 - Review [Examples](./08-examples.md) for code samples
 - Read the full [Documentation](./README.md)
+
+**Previous:** [Troubleshooting](09-troubleshooting.md) | **Next:** [API Reference](11-api-reference.md)

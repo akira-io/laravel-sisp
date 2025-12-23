@@ -271,3 +271,5 @@ Event::listen(TransactionRefunded::class, function (TransactionRefunded $event) 
 
 - [Invoice Generation](./06-invoice-generation.md) - Work with invoices
 - [Security](./07-security.md) - Rate limiting and security
+
+**Previous:** [Payment Flow](04-payment-flow.md) | **Next:** [Invoice Generation](06-invoice-generation.md)

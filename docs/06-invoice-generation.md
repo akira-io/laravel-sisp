@@ -229,3 +229,5 @@ $invoice->update([
 ## Next Steps
 
 - [Security](./07-security.md) - Rate limiting and security features
+
+**Previous:** [Transaction Management](05-transaction-management.md) | **Next:** [Security](07-security.md)

@@ -183,3 +183,5 @@ composer require stevebauman/location
 1. Read [Configuration Guide](./02-configuration.md)
 2. Try [Quick Start Guide](./03-quick-start.md)
 3. Understand [Payment Flow](./04-payment-flow.md)
+
+**Next:** [Configuration](02-configuration.md)
