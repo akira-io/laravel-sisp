@@ -33,12 +33,12 @@ Create a form that POSTs to `POST /sisp/payment`:
 
 ## Required Fields
 
-- `amount` - Total amount (numeric, min 0.01)
+- `amount` - Total amount (numeric, min 1)
 - `items` - Array of items (at least 1)
-  - `items[*][product_name]` - Item name
-  - `items[*][quantity]` - Quantity (integer)
-  - `items[*][unit_price]` - Unit price
-  - `items[*][total_price]` - Total price
+- `items[*][product_name]` - Item name
+- `items[*][quantity]` - Quantity (integer)
+- `items[*][unit_price]` - Unit price
+- `items[*][total_price]` - Total price
 
 ## Optional Fields
 
@@ -83,3 +83,5 @@ php artisan tinker
 - [Payment Flow](./04-payment-flow.md) - Complete flow diagram
 - [Transaction Management](./05-transaction-management.md) - Advanced features
 - [Invoice Generation](./06-invoice-generation.md) - Auto-generate PDFs
+
+**Previous:** [Configuration](02-configuration.md) | **Next:** [Payment Flow](04-payment-flow.md)

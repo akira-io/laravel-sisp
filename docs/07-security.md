@@ -247,3 +247,5 @@ echo $transaction->customer_phone;  // Automatically decrypted
 ## Next Steps
 
 - [Examples](./08-examples.md) - Code examples and use cases
+
+**Previous:** [Invoice Generation](06-invoice-generation.md) | **Next:** [Examples](08-examples.md)

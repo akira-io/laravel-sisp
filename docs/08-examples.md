@@ -520,5 +520,7 @@ $byCountry = RequestMetadata::selectRaw('country_name, COUNT(*) as count')
 
 ## Next Steps
 
-- Check [API Reference](#) for detailed method documentation
-- Join the community on [GitHub](https://github.com/akira-projects/laravel-sisp)
+- Check [API Reference](./11-api-reference.md) for detailed method documentation
+- Join the community on [GitHub](https://github.com/akira-io/laravel-sisp)
+
+**Previous:** [Security](07-security.md) | **Next:** [Troubleshooting](09-troubleshooting.md)

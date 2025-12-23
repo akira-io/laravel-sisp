@@ -240,3 +240,5 @@ SISP_GEOLOCATION_CACHE_TTL=1440
 
 - Read [Quick Start Guide](./03-quick-start.md)
 - Learn [Payment Flow](./04-payment-flow.md)
+
+**Previous:** [Installation](01-installation.md) | **Next:** [Quick Start Guide](03-quick-start.md)
