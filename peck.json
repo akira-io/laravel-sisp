@@ -16,7 +16,8 @@
             "vue",
             "js",
             "pnpm",
-            "getters"
+            "getters",
+            "roadmap"
         ],
         "paths": []
     }
