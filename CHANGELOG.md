@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+# [0.3.0](https://github.com/akira-io/laravel-sisp/compare/0.2.0...0.3.0) (2026-01-07)
+
+
+### Bug Fixes
+
+* fixed invoice loading to use type hints for query builder ([74de11c](https://github.com/akira-io/laravel-sisp/commit/74de11c04e3f813a9f30b0d784b56802fac13b0d))
+
+
+### Features
+
+* add 'roadmap' to the list of technologies in peck.json ([6df9371](https://github.com/akira-io/laravel-sisp/commit/6df9371f65f5bfaad1e087c7739b90b17846da17))
+* add withoutEmail method to TransactionFactory for optional customer email ([052b272](https://github.com/akira-io/laravel-sisp/commit/052b2720a0a1b8a688f0df0d6dedbb5a8890aaf8))
+
 # [0.2.0](https://github.com/akira-io/laravel-sisp/compare/0.1.0...0.2.0) (2025-12-05)
 
 ### Features
