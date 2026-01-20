@@ -13,6 +13,7 @@ final readonly class CustomerData
         public ?string $country = null,
         public ?string $city = null,
         public ?string $address = null,
+        public ?string $postalCode = null,
     ) {}
 
     public static function from(array $data): self
@@ -25,6 +26,7 @@ final readonly class CustomerData
             country: $data['customer_country'] ?? null,
             city: $data['customer_city'] ?? null,
             address: $data['customer_address'] ?? null,
+            postalCode: $data['customer_postal_code'] ?? null,
         );
     }
 
@@ -37,6 +39,7 @@ final readonly class CustomerData
             'customer_country' => $this->country,
             'customer_city' => $this->city,
             'customer_address' => $this->address,
+            'customer_postal_code' => $this->postalCode,
         ];
     }
 }

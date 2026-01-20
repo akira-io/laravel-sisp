@@ -169,12 +169,6 @@ parameters:
 			path: src/Models/RateLimit.php
 
 		-
-			message: '#^Out of 299 possible param types, only 296 \- 98\.9 %% actually have it\. Add more param types to get over 99 %%$#'
-			identifier: typeCoverage.paramTypeCoverage
-			count: 3
-			path: src/Models/Transaction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$total_price_cents\.$#'
 			identifier: property.notFound
 			count: 1
