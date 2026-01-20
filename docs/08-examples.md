@@ -119,6 +119,28 @@ config()->set('sisp.tests.publish_blade', false);
 Artisan::call('sisp:install', ['--no-interaction' => true]);
 ```
 
+## Populate Country Select
+
+Use the countries helper to render a dropdown with flags and numeric codes.
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$countries = Sisp::countries();
+
+foreach ($countries as $country) {
+    echo "{$country['name']} ({$country['alpha2']})";
+}
+```
+
+## Countries API Endpoint
+
+```http
+GET /sisp/countries
+```
+
+Returns cached country data as JSON.
+
 ## Custom Payment Form
 
 Create a branded payment form in your application.

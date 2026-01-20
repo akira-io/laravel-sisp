@@ -284,6 +284,55 @@ Blacklist::byType('ip')
 Blacklist::bySeverity('high')
 ```
 
+## Value Objects
+
+### PaymentRequestData
+
+Container for payment request fields and 3D Secure customer data.
+
+```php
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+
+$data = new PaymentRequestData(
+    amount: 100.50,
+    merchantRef: 'REF123',
+    merchantSession: 'SESSION456',
+    timeStamp: '20240101000000',
+    currency: '132',
+    transactionCode: '1',
+    customerEmail: 'customer@example.com',
+    customerCountry: 'PT',
+    customerCity: 'Lisbon',
+    customerAddress: 'Rua Augusta',
+    customerPostalCode: '1100-048',
+    customerPhone: '123456789',
+);
+
+$data->hasThreeDSecureData();          // bool
+$data->getMissingThreeDSecureFields(); // array
+```
+
+`PaymentRequestData::from()` accepts array keys in snake_case for customer fields
+(`customer_email`, `customer_country`, `customer_city`, `customer_address`,
+`customer_postal_code`, `customer_phone`).
+
+### ThreeDSecureData
+
+Builds the 3D Secure purchaseRequest payload.
+
+```php
+use Akira\Sisp\ValueObjects\ThreeDSecureData;
+
+$threeDS = ThreeDSecureData::fromCustomerData(
+    email: 'customer@example.com',
+    country: 'PT',
+    city: 'Lisbon',
+    address: 'Rua Augusta',
+    postalCode: '1100-048',
+    phone: '123456789',
+);
+```
+
 ## Events
 
 ### PaymentCompleted
@@ -411,6 +460,28 @@ $action->add(
 
 // Remove from blacklist
 $action->remove(string $type, string $value): bool
+```
+
+### BuildRequestPayloadAction
+
+Build the full SISP request payload, including 3D Secure purchaseRequest when enabled.
+
+```php
+app(BuildRequestPayloadAction::class)->handle(
+    PaymentRequestData $data
+): PaymentRequest
+
+// Throws MissingThreeDSecureDataException when required 3DS fields are missing
+```
+
+### BuildPurchaseRequestAction
+
+Build the 3D Secure `purchaseRequest` payload for SISP.
+
+```php
+app(BuildPurchaseRequestAction::class)->handle(
+    ThreeDSecureData $data
+): string // base64-encoded JSON
 ```
 
 ### CancelTransactionAction
@@ -568,6 +639,26 @@ $callbackPayload = app(BuildSandboxPayloadAction::class)->handle(
 // Useful for testing payment response handling
 ```
 
+## Middleware
+
+### ProtectPaymentRoute
+
+Protects the payment route from duplicate submissions.
+
+```php
+// Applied to POST /sisp/payment
+// Blocks duplicate merchantRef + merchantSession combinations
+```
+
+### PreventDuplicateCallback
+
+Prevents double-processing of callback requests.
+
+```php
+// Applied to GET|POST /sisp/callback
+// Redirects already-processed callbacks to response page
+```
+
 ## Enums
 
 ### ErrorMessageType
@@ -644,6 +735,48 @@ catch (BlacklistedIdentifierException $e) {
 }
 ```
 
+### MissingThreeDSecureDataException
+
+Thrown when 3D Secure is enabled but required customer data is missing.
+
+```php
+catch (MissingThreeDSecureDataException $e) {
+    // Provide the missing fields and retry
+}
+```
+
+## Utilities
+
+### Countries
+
+```php
+use Akira\Sisp\Support\Countries;
+
+$all = Countries::all();                 // array keyed by alpha2 (lowercase)
+Countries::getNumericCode('PT');         // "620"
+Countries::getFlag('PT');                // "https://flagcdn.com/pt.svg"
+Countries::getName('PT');                // "Portugal"
+```
+
+### CountryCodeMapper
+
+```php
+use Akira\Sisp\Support\CountryCodeMapper;
+
+CountryCodeMapper::toNumeric('PT');      // "620"
+```
+
+### Sisp Facade Helpers
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+Sisp::countries();                       // Countries::all()
+Sisp::getCountryNumericCode('PT');       // "620"
+Sisp::getCountryFlag('PT');              // "https://flagcdn.com/pt.svg"
+Sisp::getCountryName('PT');              // "Portugal"
+```
+
 ## Routes
 
 All routes are registered automatically with `/sisp` prefix.
@@ -653,10 +786,11 @@ POST   /sisp/payment           -> PaymentController
 GET    /sisp/callback          -> CallbackController
 POST   /sisp/callback          -> CallbackController
 POST   /sisp/retry-payment     -> RetryPaymentController
-POST   /sisp/cancel            -> CancelTransactionController
+GET    /sisp/cancel            -> CancelTransactionController
 POST   /sisp/refund            -> RefundTransactionController
 GET    /sisp/sandbox           -> SandboxController
 POST   /sisp/sandbox           -> SandboxController
+GET    /sisp/countries         -> CountriesController
 ```
 
 Route names:
@@ -664,9 +798,11 @@ Route names:
 ```php
 route('sisp.payment')
 route('sisp.callback')
+route('sisp.retry-payment')
 route('sisp.cancel')
 route('sisp.refund')
 route('sisp.sandbox')
+route('sisp.countries')
 ```
 
 ## Configuration

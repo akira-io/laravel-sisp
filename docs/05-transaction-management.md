@@ -115,14 +115,11 @@ Cannot be cancelled:
 
 ### Cancel via Route
 
-POST to `/sisp/cancel`:
+GET `/sisp/cancel`:
 
 ```php
 // From your application
-POST /sisp/cancel
-{
-    "transaction_id": "uuid-here"
-}
+GET /sisp/cancel?transaction_id=uuid-here&reason=user_cancelled
 ```
 
 Dispatches `TransactionCancelled` event.
@@ -175,7 +172,7 @@ POST to `/sisp/refund`:
 POST /sisp/refund
 {
     "transaction_id": "uuid-here",
-    "refund_amount": 500.00
+    "amount": 500.00
 }
 ```
 

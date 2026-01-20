@@ -23,9 +23,11 @@ You should see these routes:
 
 - `POST /sisp/payment`
 - `GET|POST /sisp/callback`
-- `POST /sisp/cancel`
+- `POST /sisp/retry-payment`
+- `GET /sisp/cancel`
 - `POST /sisp/refund`
 - `GET|POST /sisp/sandbox`
+- `GET /sisp/countries`
 
 ### Migration errors
 
@@ -158,6 +160,17 @@ Check logs:
 ```bash
 tail -f storage/logs/laravel.log
 ```
+
+### 3D Secure enabled but customer fields missing
+
+Error: `MissingThreeDSecureDataException`
+
+Solution: When `SISP_IS_3D_SEC=1`, include these fields in the request:
+- `customer_email`
+- `customer_country` (ISO alpha-2)
+- `customer_city`
+- `customer_address`
+- `customer_postal_code`
 
 Verify form inputs:
 

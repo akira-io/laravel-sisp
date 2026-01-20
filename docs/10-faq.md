@@ -42,8 +42,10 @@ No, the package registers all routes automatically:
 
 - `POST /sisp/payment` - Payment submission
 - `GET|POST /sisp/callback` - SISP callback
-- `POST /sisp/cancel` - Cancel transaction
+- `POST /sisp/retry-payment` - Retry payment
+- `GET /sisp/cancel` - Cancel transaction
 - `POST /sisp/refund` - Refund transaction
+- `GET /sisp/countries` - Countries list
 
 ### Can I customize the routes?
 
@@ -107,6 +109,17 @@ The transaction remains in `pending` status. You can:
 1. Send a reminder email with a payment link
 2. Cancel it and create a new one
 3. Let it auto-expire
+
+### What happens if 3D Secure is enabled but customer data is missing?
+
+The payment request throws `MissingThreeDSecureDataException`. When `SISP_IS_3D_SEC=1`,
+you must provide:
+
+- `customer_email`
+- `customer_country`
+- `customer_city`
+- `customer_address`
+- `customer_postal_code`
 
 ## Transactions
 

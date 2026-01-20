@@ -54,6 +54,13 @@ User submits payment form with:
 - `locale` - Optional customer language (pt, en) - defaults to 'pt'
 - Other customer details (optional)
 
+## Step 1.5: Duplicate Transaction Protection
+
+`ProtectPaymentRoute` middleware prevents replaying a payment request:
+- Checks for existing transactions with same `merchantRef` + `merchantSession`
+- Blocks reprocessing when status is `completed`, `failed`, or `pending`
+- Redirects to `/` with an error message if a duplicate is detected
+
 ## Step 2: Request Validation
 
 `PaymentController` validates using `StorePaymentRequest`:
@@ -91,6 +98,18 @@ Package creates transaction with:
 - Customer information
 
 Stored in `sisp_transactions` table.
+
+### 4.1 3D Secure Purchase Request (when enabled)
+
+If `SISP_IS_3D_SEC=1`, the package builds a `purchaseRequest` payload using:
+- `customer_email`
+- `customer_country` (alpha-2)
+- `customer_city`
+- `customer_address`
+- `customer_postal_code`
+- `customer_phone` (optional)
+
+If any required field is missing, `MissingThreeDSecureDataException` is thrown.
 
 ## Step 5: Payment Form Rendering
 
