@@ -11,6 +11,7 @@ use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\Countries;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
@@ -116,5 +117,28 @@ final readonly class Sisp
     public function getUri(): string
     {
         return $this->loadConfig->getUri();
+    }
+
+    /**
+     * @return array<string, array{alpha2: string, numeric: string, name: string, flag: string}>
+     */
+    public function countries(): array
+    {
+        return Countries::all();
+    }
+
+    public function getCountryNumericCode(string $alpha2): string
+    {
+        return Countries::getNumericCode($alpha2);
+    }
+
+    public function getCountryFlag(string $alpha2): string
+    {
+        return Countries::getFlag($alpha2);
+    }
+
+    public function getCountryName(string $alpha2): ?string
+    {
+        return Countries::getName($alpha2);
     }
 }
