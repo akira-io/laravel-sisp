@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.4.2](https://github.com/akira-io/laravel-sisp/compare/0.4.1...0.4.2) (2026-01-20)
+
+
+### Bug Fixes
+
+* fixed initial migration for sisp tables and update migration registration in service provider ([8fc053f](https://github.com/akira-io/laravel-sisp/commit/8fc053f9af64c185aa5ad68d19779bbeccb657a5))
+* register additional migration for missing customer fields in sisp transactions ([f2ec6ce](https://github.com/akira-io/laravel-sisp/commit/f2ec6ce537c623032dab34bce5fd76b1653a9e91))
+
 ## [0.4.1](https://github.com/akira-io/laravel-sisp/compare/0.4.0...0.4.1) (2026-01-20)
 
 
