@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Http\Controllers\CallbackController;
 use Akira\Sisp\Http\Controllers\CancelTransactionController;
+use Akira\Sisp\Http\Controllers\CountriesController;
 use Akira\Sisp\Http\Controllers\PaymentController;
 use Akira\Sisp\Http\Controllers\RefundTransactionController;
 use Akira\Sisp\Http\Controllers\RetryPaymentController;
@@ -30,3 +31,6 @@ Route::post('sisp/refund', RefundTransactionController::class)
 
 Route::match(['get', 'post'], 'sisp/sandbox', SandboxController::class)
     ->name('sisp.sandbox');
+
+Route::get('sisp/countries', CountriesController::class)
+    ->name('sisp.countries');
