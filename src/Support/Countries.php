@@ -7,6 +7,8 @@ namespace Akira\Sisp\Support;
 final class Countries
 {
     /**
+     * Get all countries with their ISO codes, numeric codes, names, and flag URLs.
+     *
      * @return array<string, array{alpha2: string, numeric: string, name: string, flag: string}>
      */
     public static function all(): array
@@ -286,6 +288,12 @@ final class Countries
 
     public static function findByNumeric(string $numericCode): ?array
     {
-        return array_find(self::all(), fn ($country) => $country['numeric'] === $numericCode);
+        foreach (self::all() as $country) {
+            if ($country['numeric'] === $numericCode) {
+                return $country;
+            }
+        }
+
+        return null;
     }
 }
