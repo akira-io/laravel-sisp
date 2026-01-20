@@ -24,10 +24,7 @@ final class SispServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-sisp')
             ->hasConfigFile()
-            ->hasMigrations([
-                'create_laravel_sisp_table',
-                'add_missing_customer_fields_to_sisp_transactions',
-            ])
+            ->hasMigration('create_laravel_sisp_table')
             ->hasTranslations()
             ->hasRoutes('web')
             ->hasCommand(LaravelSispInstallCommand::class);
