@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.4.1](https://github.com/akira-io/laravel-sisp/compare/0.4.0...0.4.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* add customer_postal_code attribute to Transaction fillable fields ([1e10c0d](https://github.com/akira-io/laravel-sisp/commit/1e10c0d8afea12cb3424bf1995ecef181735d40a))
+* move locale and customer_postal_code fields to new migration for sisp transactions ([143342e](https://github.com/akira-io/laravel-sisp/commit/143342ea4eb9e684499675c1919d322a721635de))
+
 # [0.4.0](https://github.com/akira-io/laravel-sisp/compare/0.3.0...0.4.0) (2026-01-20)
 
 
