@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 
 final readonly class CountriesController
 {
-    public function index(): JsonResponse
+    public function __invoke(): JsonResponse
     {
         $countries = Cache::rememberForever('sisp.countries', fn (): array => Countries::all());
 

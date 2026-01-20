@@ -18,3 +18,13 @@ it('exposes simple getters through facade', function (): void {
         ->and(Sisp::getDefaultTransactionCode())->toBeString()
         ->and(Sisp::getUri())->toBeString();
 });
+
+it('exposes country helpers through facade', function (): void {
+    $countries = Sisp::countries();
+
+    expect($countries)->toHaveKey('pt')
+        ->and($countries['pt']['numeric'])->toBe('620')
+        ->and(Sisp::getCountryNumericCode('PT'))->toBe('620')
+        ->and(Sisp::getCountryFlag('PT'))->toBe('https://flagcdn.com/pt.svg')
+        ->and(Sisp::getCountryName('PT'))->toBe('Portugal');
+});
