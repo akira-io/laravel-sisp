@@ -119,11 +119,11 @@ it('maintains data integrity on array conversion', function (): void {
         'customer_country' => 'PT',
         'customer_city' => 'Lisboa',
         'customer_address' => '456 Side St',
+        'customer_postal_code' => '1234-567',
     ];
 
     $customer = CustomerData::from($data);
     $converted = $customer->toArray();
-
     expect($converted)->toBe($data);
 });
 

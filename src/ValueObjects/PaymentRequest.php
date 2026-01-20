@@ -23,6 +23,7 @@ final readonly class PaymentRequest
         public string $entityCode = '',
         public string $referenceNumber = '',
         public string $locale = 'pt',
+        public string $purchaseRequest = '',
     ) {}
 
     public static function from(array $data): self
@@ -44,12 +45,13 @@ final readonly class PaymentRequest
             entityCode: $data['entityCode'] ?? '',
             referenceNumber: $data['referenceNumber'] ?? '',
             locale: $data['locale'] ?? 'pt',
+            purchaseRequest: $data['purchaseRequest'] ?? '',
         );
     }
 
     public function toArray(): array
     {
-        return [
+        $array = [
             'posID' => $this->posID,
             'merchantRef' => $this->merchantRef,
             'merchantSession' => $this->merchantSession,
@@ -67,5 +69,11 @@ final readonly class PaymentRequest
             'referenceNumber' => $this->referenceNumber,
             'locale' => $this->locale,
         ];
+
+        if ($this->purchaseRequest !== '') {
+            $array['purchaseRequest'] = $this->purchaseRequest;
+        }
+
+        return $array;
     }
 }

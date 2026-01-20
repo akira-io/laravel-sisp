@@ -17,7 +17,8 @@
             "js",
             "pnpm",
             "getters",
-            "roadmap"
+            "roadmap",
+            "addr"
         ],
         "paths": []
     }

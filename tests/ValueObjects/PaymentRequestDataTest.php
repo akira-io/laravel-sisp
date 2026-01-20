@@ -129,3 +129,73 @@ it('is readonly and immutable', function (): void {
     expect($data->amount)->toBe(100.50)
         ->and($data->merchantRef)->toBe('REF123');
 });
+
+it('hydrates customer fields from array', function (): void {
+    $array = [
+        'amount' => 75,
+        'customer_email' => 'customer@example.com',
+        'customer_country' => 'PT',
+        'customer_city' => 'Lisbon',
+        'customer_address' => 'Rua Augusta',
+        'customer_postal_code' => '1100-048',
+        'customer_phone' => '123456789',
+    ];
+
+    $data = PaymentRequestData::from($array);
+
+    expect($data->customerEmail)->toBe('customer@example.com')
+        ->and($data->customerCountry)->toBe('PT')
+        ->and($data->customerCity)->toBe('Lisbon')
+        ->and($data->customerAddress)->toBe('Rua Augusta')
+        ->and($data->customerPostalCode)->toBe('1100-048')
+        ->and($data->customerPhone)->toBe('123456789');
+});
+
+it('checks three d secure data completeness', function (): void {
+    $data = new PaymentRequestData(
+        amount: 120.00,
+        customerEmail: 'customer@example.com',
+        customerCountry: 'PT',
+        customerCity: 'Lisbon',
+        customerAddress: 'Rua Augusta',
+        customerPostalCode: '1100-048',
+    );
+
+    expect($data->hasThreeDSecureData())->toBeTrue()
+        ->and($data->getMissingThreeDSecureFields())->toBe([]);
+});
+
+it('reports missing three d secure fields', function (): void {
+    $data = new PaymentRequestData(
+        amount: 120.00,
+        customerEmail: 'customer@example.com',
+        customerCountry: null,
+        customerCity: 'Lisbon',
+        customerAddress: null,
+        customerPostalCode: null,
+    );
+
+    expect($data->hasThreeDSecureData())->toBeFalse()
+        ->and($data->getMissingThreeDSecureFields())->toBe([
+            'customer_country',
+            'customer_address',
+            'customer_postal_code',
+        ]);
+});
+
+it('reports missing email and city for three d secure data', function (): void {
+    $data = new PaymentRequestData(
+        amount: 120.00,
+        customerEmail: null,
+        customerCountry: 'PT',
+        customerCity: null,
+        customerAddress: 'Rua Augusta',
+        customerPostalCode: '1100-048',
+    );
+
+    expect($data->hasThreeDSecureData())->toBeFalse()
+        ->and($data->getMissingThreeDSecureFields())->toBe([
+            'customer_email',
+            'customer_city',
+        ]);
+});

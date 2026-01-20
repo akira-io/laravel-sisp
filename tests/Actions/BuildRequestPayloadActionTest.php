@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\BuildRequestPayloadAction;
 use Akira\Sisp\Actions\GenerateFingerprintAction;
+use Akira\Sisp\Exceptions\MissingThreeDSecureDataException;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 
 it('builds payment request payload using defaults and generated fingerprint', function (): void {
@@ -60,4 +61,87 @@ it('builds payment request payload using defaults and generated fingerprint', fu
         ->and($arr['referenceNumber'])->toBe('REF')
         ->and($arr['locale'])->toBe('pt_PT')
         ->and($arr['fingerprint'])->toBe($expectedFingerprint);
+});
+
+it('does not include purchaseRequest when 3DS is disabled', function (): void {
+    config(['sisp.is_3dsec' => '0']);
+
+    $action = resolve(BuildRequestPayloadAction::class);
+
+    $data = PaymentRequestData::from([
+        'amount' => 100.0,
+    ]);
+
+    $request = $action->handle($data);
+    $arr = $request->toArray();
+
+    expect($arr)->not->toHaveKey('purchaseRequest');
+});
+
+it('generates purchaseRequest when 3DS enabled and customer data complete', function (): void {
+    config(['sisp.is_3dsec' => '1']);
+
+    $action = resolve(BuildRequestPayloadAction::class);
+
+    $data = PaymentRequestData::from([
+        'amount' => 100.0,
+        'customer_email' => 'test@example.com',
+        'customer_country' => 'cv',
+        'customer_city' => 'Praia',
+        'customer_address' => 'Rua Principal',
+        'customer_postal_code' => '7600',
+        'customer_phone' => '9123456',
+    ]);
+
+    $request = $action->handle($data);
+    $arr = $request->toArray();
+
+    expect($arr)->toHaveKey('purchaseRequest')
+        ->and($arr['purchaseRequest'])->not->toBeEmpty()
+        ->and(base64_decode((string) $arr['purchaseRequest'], true))->not->toBeFalse();
+
+    $decoded = json_decode(base64_decode((string) $arr['purchaseRequest']), true);
+
+    expect($decoded['email'])->toBe('test@example.com')
+        ->and($decoded['billAddrCountry'])->toBe('132')
+        ->and($decoded['billAddrCity'])->toBe('Praia');
+});
+
+it('throws exception when 3DS enabled but customer data incomplete', function (): void {
+    config(['sisp.is_3dsec' => '1']);
+
+    $action = resolve(BuildRequestPayloadAction::class);
+
+    $data = PaymentRequestData::from([
+        'amount' => 100.0,
+        'customer_email' => 'test@example.com',
+        // Missing: country, city, address, postal_code
+    ]);
+
+    expect(fn () => $action->handle($data))
+        ->toThrow(MissingThreeDSecureDataException::class, '3D Secure is enabled but required customer data is missing');
+});
+
+it('exception message lists missing fields', function (): void {
+    config(['sisp.is_3dsec' => '1']);
+
+    $action = resolve(BuildRequestPayloadAction::class);
+
+    $data = PaymentRequestData::from([
+        'amount' => 100.0,
+        'customer_email' => 'test@example.com',
+        'customer_city' => 'Praia',
+        // Missing: country, address, postal_code
+    ]);
+
+    try {
+        $action->handle($data);
+        expect(false)->toBeTrue('Exception should have been thrown');
+    } catch (MissingThreeDSecureDataException $e) {
+        expect($e->getMessage())->toContain('customer_country')
+            ->and($e->getMessage())->toContain('customer_address')
+            ->and($e->getMessage())->toContain('customer_postal_code')
+            ->and($e->getMessage())->not->toContain('customer_email')
+            ->and($e->getMessage())->not->toContain('customer_city');
+    }
 });
