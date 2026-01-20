@@ -6,9 +6,11 @@ The package registers these routes automatically:
 
 - `POST /sisp/payment` - Submit payment
 - `GET|POST /sisp/callback` - SISP callback handler
-- `POST /sisp/cancel` - Cancel transaction
+- `POST /sisp/retry-payment` - Retry a failed payment
+- `GET /sisp/cancel` - Cancel transaction
 - `POST /sisp/refund` - Refund transaction
 - `GET|POST /sisp/sandbox` - Sandbox testing
+- `GET /sisp/countries` - List countries (ISO codes + flags)
 
 ## Payment Form
 
@@ -48,10 +50,18 @@ Create a form that POSTs to `POST /sisp/payment`:
 - `customer_country`
 - `customer_city`
 - `customer_address`
+- `customer_postal_code`
 - `locale` - Customer's language preference (pt, en) - defaults to 'pt'
 - `items[*][product_id]`
 - `items[*][description]`
 - `items[*][metadata]`
+
+If `SISP_IS_3D_SEC=1`, these fields become required:
+- `customer_email`
+- `customer_country`
+- `customer_city`
+- `customer_address`
+- `customer_postal_code`
 
 ## What Happens
 
@@ -77,6 +87,14 @@ php artisan tinker
 >>> use Akira\Sisp\Models\Transaction;
 >>> Transaction::latest()->first();
 ```
+
+## Countries List
+
+```bash
+GET /sisp/countries
+```
+
+Returns a JSON list of countries with alpha-2 code, numeric code, name, and flag URL.
 
 ## Next Steps
 

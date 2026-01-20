@@ -33,6 +33,20 @@ SISP_IS_3D_SEC=1               # 1 = enabled, 0 = disabled
 SISP_TRANSACTION_CODE=1        # Transaction type
 ```
 
+When 3D Secure is enabled, the payment request requires customer data to build
+the `purchaseRequest` payload. If any required field is missing, the request
+throws `MissingThreeDSecureDataException`.
+
+Required fields when `SISP_IS_3D_SEC=1`:
+- `customer_email`
+- `customer_country` (ISO alpha-2, e.g., PT)
+- `customer_city`
+- `customer_address`
+- `customer_postal_code`
+
+Optional:
+- `customer_phone`
+
 ### Sandbox Mode
 
 ```env

@@ -135,6 +135,17 @@ $action = app(CheckBlacklistAction::class);
 $action->remove(type: 'ip', value: '192.168.1.1');
 ```
 
+## Transaction Replay Protection
+
+The `ProtectPaymentRoute` middleware prevents duplicate payment submissions.
+
+How it works:
+- Looks for existing transactions with the same `merchantRef` and `merchantSession`
+- Blocks requests when a transaction already exists in `completed`, `failed`, or `pending`
+- Redirects to `/` with an error message when blocked
+
+This middleware is applied to `POST /sisp/payment` by default.
+
 ## Request Metadata Collection
 
 Automatically collect security and fraud detection data on every payment request.
