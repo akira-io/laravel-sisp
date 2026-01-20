@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+# [0.4.0](https://github.com/akira-io/laravel-sisp/compare/0.3.0...0.4.0) (2026-01-20)
+
+
+### Features
+
+* add 3D Secure purchaseRequest support with customer data validation ([2498acc](https://github.com/akira-io/laravel-sisp/commit/2498acc0864bfcf1a0838d2c1bfb526a684771cd))
+* add Countries utility with ISO codes, names, and flag support ([90b4d5b](https://github.com/akira-io/laravel-sisp/commit/90b4d5b12435f433dc264ebc24f44c5b9f17f00a))
+* add CountriesController and route to provide country data via API ([eeebbf9](https://github.com/akira-io/laravel-sisp/commit/eeebbf906d2380c86f7a355193541b7aa5db8a62))
+
 # [0.3.0](https://github.com/akira-io/laravel-sisp/compare/0.2.0...0.3.0) (2026-01-07)
 
 
