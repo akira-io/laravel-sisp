@@ -58,6 +58,7 @@ final class Transaction extends Model
         'locale',
         'cancelled_at',
         'refunded_at',
+        'customer_postal_code',
     ];
 
     public function getTable(): string
