@@ -63,8 +63,6 @@ return new class extends Migration
             $table->string('customer_country')->nullable();
             $table->string('customer_city')->nullable();
             $table->string('customer_address')->nullable();
-            $table->string('locale', 5)->default('pt');
-
             $table->timestamp('cancelled_at')->nullable();
             $table->timestamp('refunded_at')->nullable();
             $table->timestamps();
