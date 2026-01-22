@@ -133,7 +133,7 @@ final class DoctorCommand extends Command
             }
 
             $this->newLine();
-            $this->line('  💡 Run <info>php artisan sisp:regenerate-missing-pdfs</info> to generate missing PDFs');
+            $this->line('  💡 Run <info>php artisan sisp:regenerate-pdfs</info> to generate missing PDFs');
         } else {
             $this->line('  ✅ All paid invoices have PDFs');
         }
