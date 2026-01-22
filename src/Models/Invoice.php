@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * @property-read  string|null $pdf_url
+ * @property-read  string|null $pdf_path
  * @property-read  InvoiceStatus $status
  * @property-read  Transaction $transaction
  * @property-read  array $items
