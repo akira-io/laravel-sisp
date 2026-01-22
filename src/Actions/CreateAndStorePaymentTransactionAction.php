@@ -21,7 +21,6 @@ final readonly class CreateAndStorePaymentTransactionAction
         private StoreTransactionItemsAction $storeItems,
         private StoreCustomerDataAction $storeCustomerData,
         private GenerateInvoiceAction $generateInvoice,
-        private GenerateInvoicePdfAction $generateInvoicePdf,
     ) {}
 
     /**
@@ -54,14 +53,9 @@ final readonly class CreateAndStorePaymentTransactionAction
         $invoice = $this->generateInvoice->handle($transaction); // @codeCoverageIgnore
         $invoice->load(['transaction' => function (Builder|BelongsTo $query): void { // @codeCoverageIgnore
             $query->with('items'); // @codeCoverageIgnore
-        }]);
-
-        $this->generateInvoicePdf->handle($invoice); // @codeCoverageIgnore
+        }]); // @codeCoverageIgnore
     }
 
-    /**
-     * Extract and convert items from request to ValueObjects.
-     */
     private function getItemsData(Request $request): array
     {
         return TransactionItemData::collection(

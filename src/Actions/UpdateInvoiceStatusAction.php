@@ -10,6 +10,10 @@ use Akira\Sisp\Models\Transaction;
 
 final readonly class UpdateInvoiceStatusAction
 {
+    public function __construct(
+        private GenerateInvoicePdfAction $generateInvoicePdf,
+    ) {}
+
     public function handle(Transaction $transaction, TransactionStatus $status): void
     {
         $invoice = $transaction->invoice;
@@ -25,5 +29,9 @@ final readonly class UpdateInvoiceStatusAction
         };
 
         $invoice->update(['status' => $invoiceStatus->value]);
+
+        if ($status === TransactionStatus::completed && ! $invoice->pdf_path) {
+            $this->generateInvoicePdf->handle($invoice);
+        }
     }
 }
