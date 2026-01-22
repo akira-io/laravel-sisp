@@ -9,7 +9,9 @@ use Akira\Sisp\Actions\BuildSandboxPayloadAction;
 use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
+use Akira\Sisp\Commands\DoctorCommand;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
+use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
 use Akira\Sisp\Configuration\LoadConfig;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -27,7 +29,11 @@ final class SispServiceProvider extends PackageServiceProvider
             ->hasMigration('create_laravel_sisp_table')
             ->hasTranslations()
             ->hasRoutes('web')
-            ->hasCommand(LaravelSispInstallCommand::class);
+            ->hasCommands([
+                LaravelSispInstallCommand::class,
+                RegenerateMissingInvoicePdfsCommand::class,
+                DoctorCommand::class,
+            ]);
     }
 
     public function register(): void
