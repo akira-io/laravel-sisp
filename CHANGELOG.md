@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.4.3](https://github.com/akira-io/laravel-sisp/compare/0.4.2...0.4.3) (2026-01-22)
+
+
+### Bug Fixes
+
+* move invoice PDF generation to UpdateInvoiceStatusAction on transaction completion ([95383ca](https://github.com/akira-io/laravel-sisp/commit/95383ca5abcf9d374e1e5ad9e5a3f2aff679149e))
+* update Invoice property annotation and remove obsolete phpstan baseline entry for pdf_path ([f6074ca](https://github.com/akira-io/laravel-sisp/commit/f6074ca1c422b16eb42209a25aabf656f31c8855))
+
 ## [0.4.2](https://github.com/akira-io/laravel-sisp/compare/0.4.1...0.4.2) (2026-01-20)
 
 
