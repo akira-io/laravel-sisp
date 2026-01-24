@@ -9,6 +9,7 @@ use Akira\Sisp\Http\Controllers\PaymentController;
 use Akira\Sisp\Http\Controllers\RefundTransactionController;
 use Akira\Sisp\Http\Controllers\RetryPaymentController;
 use Akira\Sisp\Http\Controllers\SandboxController;
+use Akira\Sisp\Http\Controllers\TransactionStatusController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('sisp/payment', PaymentController::class)
@@ -28,6 +29,9 @@ Route::get('sisp/cancel', CancelTransactionController::class)
 
 Route::post('sisp/refund', RefundTransactionController::class)
     ->name('sisp.refund');
+
+Route::post('sisp/transaction-status', TransactionStatusController::class)
+    ->name('sisp.transaction-status');
 
 Route::match(['get', 'post'], 'sisp/sandbox', SandboxController::class)
     ->name('sisp.sandbox');
