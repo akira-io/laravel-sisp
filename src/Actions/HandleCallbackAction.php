@@ -25,6 +25,12 @@ final readonly class HandleCallbackAction
     {
         $transaction = $this->findOrCreateTransaction->handle($payload);
 
+        if (! Sisp::validateCallback($payload)) {
+            event(new PaymentFailed($transaction, $payload));
+
+            return $transaction;
+        }
+
         $this->updateTransaction->handle($transaction, $payload);
 
         $this->dispatchEvent($transaction, $payload);
@@ -34,13 +40,6 @@ final readonly class HandleCallbackAction
 
     private function dispatchEvent(Transaction $transaction, CallbackPayload $payload): void
     {
-
-        if (! Sisp::validateCallback($payload)) {
-            event(new PaymentFailed($transaction, $payload));
-
-            return;
-        }
-
         match ($transaction->status) {
             TransactionStatus::completed => event(new PaymentCompleted($transaction, $payload)),
             TransactionStatus::failed => event(new PaymentFailed($transaction, $payload)),
