@@ -11,4 +11,6 @@ return [
     'data_protected' => 'Os seus dados estão protegidos',
     'redirecting_in' => 'Redirecionando em :count segundo|Redirecionando em :count segundos',
     'connecting' => 'Conectando ao SISP...',
+    'manual_redirect_button' => 'Clique aqui se não for redirecionado automaticamente',
+    'continue_button' => 'Continuar para o Pagamento',
 ];
