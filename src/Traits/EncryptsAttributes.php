@@ -80,6 +80,10 @@ trait EncryptsAttributes
             return false;
         }
 
+        if (str_starts_with($value, '{') || str_starts_with($value, '[')) {
+            return false;
+        }
+
         try {
             Crypt::decryptString($value);
 
