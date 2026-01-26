@@ -11,3 +11,7 @@
 
 **Learning:** The development environment runs PHP 8.3, but the project dependencies (specifically `akira/laravel-debugger`) use PHP 8.4 syntax (`new Class()->method()`). This prevents running tests locally without upgrading PHP.
 **Action:** Be aware of environment limitations and rely on static analysis/linting when running tests is not possible due to platform constraints.
+
+## 2024-05-23 - Security as Performance
+**Learning:** `HandleCallbackAction` was performing database lookups (creating/finding transactions) before validating the request signature. This not only violated security principles (processing untrusted input) but also wasted resources on invalid requests.
+**Action:** Always validate input signatures/integrity as the very first step in a pipeline, throwing exceptions early to short-circuit expensive logic (DB calls, Event dispatching).

@@ -10,6 +10,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
+use Akira\Sisp\Exceptions\InvalidSignatureException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -23,13 +24,12 @@ final readonly class HandleCallbackAction
 
     public function handle(CallbackPayload $payload): Transaction
     {
-        $transaction = $this->findOrCreateTransaction->handle($payload);
-
+        // Validate signature before DB interaction to save resources and improve security
         if (! Sisp::validateCallback($payload)) {
-            event(new PaymentFailed($transaction, $payload));
-
-            return $transaction;
+            throw new InvalidSignatureException();
         }
+
+        $transaction = $this->findOrCreateTransaction->handle($payload);
 
         $this->updateTransaction->handle($transaction, $payload);
 
