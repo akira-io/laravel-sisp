@@ -5,59 +5,58 @@ declare(strict_types=1);
 namespace Akira\Sisp\Configuration;
 
 use Illuminate\Contracts\Config\Repository;
-use Illuminate\Contracts\Foundation\Application;
 
 final readonly class LoadConfig
 {
     public function __construct(
-        private Application $app,
+        private Repository $config,
     ) {}
 
     public function shouldUseInertia(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.use_inertia.enabled', false) && class_exists(\Inertia\Inertia::class);
+        return $this->config->get('sisp.use_inertia.enabled', false) && class_exists(\Inertia\Inertia::class);
     }
 
     public function shouldUseBlade(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.use_blade.enabled', true);
+        return $this->config->get('sisp.use_blade.enabled', true);
     }
 
     public function getPaymentFormComponent(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.use_inertia.payment_form_component', 'sisp/payment-form');
+        return $this->config->get('sisp.use_inertia.payment_form_component', 'sisp/payment-form');
     }
 
     public function getPaymentResponseComponent(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.use_inertia.payment_response_component', 'sisp/payment-response');
+        return $this->config->get('sisp.use_inertia.payment_response_component', 'sisp/payment-response');
     }
 
     public function getPaymentFormView(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.use_blade.payment_form', 'sisp::payment-form');
+        return $this->config->get('sisp.use_blade.payment_form', 'sisp::payment-form');
     }
 
     public function getPaymentResponseView(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.use_blade.payment_response', 'sisp::payment-response');
+        return $this->config->get('sisp.use_blade.payment_response', 'sisp::payment-response');
     }
 
     public function isSandboxEnabled(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.sandbox', false);
+        return $this->config->get('sisp.sandbox', false);
     }
 
     public function getMerchantReference(): string
     {
-        $configured = $this->app->make(Repository::class)->get('sisp.merchant_ref');
+        $configured = $this->config->get('sisp.merchant_ref');
 
         return $configured ?? 'R'.date('YmdHis');
     }
 
     public function getMerchantSession(): string
     {
-        $configured = $this->app->make(Repository::class)->get('sisp.merchant_session');
+        $configured = $this->config->get('sisp.merchant_session');
 
         return $configured ?? 'S'.date('YmdHis');
     }
@@ -69,163 +68,163 @@ final readonly class LoadConfig
 
     public function getCurrency(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.currency', '132');
+        return $this->config->get('sisp.currency', '132');
     }
 
     public function getPosId(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.posID', '');
+        return $this->config->get('sisp.posID', '');
     }
 
     public function getPosAutCode(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.posAutCode', '');
+        return $this->config->get('sisp.posAutCode', '');
     }
 
     public function getIs3Dsec(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.is_3dsec', '0');
+        return $this->config->get('sisp.is_3dsec', '0');
     }
 
     public function getUrlMerchantResponse(): string
     {
-        $configured = $this->app->make(Repository::class)->get('sisp.url_merchant_response');
+        $configured = $this->config->get('sisp.url_merchant_response');
 
         return $configured ?? route('sisp.callback');
     }
 
     public function getLanguageMessages(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.language_messages', 'EN');
+        return $this->config->get('sisp.language_messages', 'EN');
     }
 
     public function getFingerprintVersion(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.fingerprint_version', '1');
+        return $this->config->get('sisp.fingerprint_version', '1');
     }
 
     public function getDefaultTransactionCode(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.transaction_code', '1');
+        return $this->config->get('sisp.transaction_code', '1');
     }
 
     public function getUri(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.url', '');
+        return $this->config->get('sisp.url', '');
     }
 
     public function getInvoiceNumberFormat(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.number_format', 'date-based');
+        return $this->config->get('sisp.invoice.number_format', 'date-based');
     }
 
     public function getInvoiceNumberPrefix(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.prefix', 'INV');
+        return $this->config->get('sisp.invoice.prefix', 'INV');
     }
 
     public function getInvoiceStorageDisk(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.disk', 'public');
+        return $this->config->get('sisp.invoice.disk', 'public');
     }
 
     public function getInvoiceTemplate(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.template', 'branded');
+        return $this->config->get('sisp.invoice.template', 'branded');
     }
 
     public function getInvoiceCompanyName(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_name', '');
+        return $this->config->get('sisp.invoice.company_name', '');
     }
 
     public function getInvoiceCompanyAddress(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_address', '');
+        return $this->config->get('sisp.invoice.company_address', '');
     }
 
     public function getInvoiceCompanyCode(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_code', '');
+        return $this->config->get('sisp.invoice.company_code', '');
     }
 
     public function getInvoiceCompanyCountry(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_country', '');
+        return $this->config->get('sisp.invoice.company_country', '');
     }
 
     public function getInvoiceCompanyPhone(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_phone', '');
+        return $this->config->get('sisp.invoice.company_phone', '');
     }
 
     public function getInvoiceCompanyEmail(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_email', '');
+        return $this->config->get('sisp.invoice.company_email', '');
     }
 
     public function getInvoiceCompanyWebsite(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.invoice.company_website', '');
+        return $this->config->get('sisp.invoice.company_website', '');
     }
 
     public function isRateLimitingEnabled(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.rate_limiting.enabled', true);
+        return $this->config->get('sisp.rate_limiting.enabled', true);
     }
 
     public function isMetadataCollectionEnabled(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.security.collect_metadata', true);
+        return $this->config->get('sisp.security.collect_metadata', true);
     }
 
     public function shouldBlockVpnProxy(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.security.block_vpn_proxy', true);
+        return $this->config->get('sisp.security.block_vpn_proxy', true);
     }
 
     public function shouldBlockNewCountryPayments(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.security.block_new_country_payments', false);
+        return $this->config->get('sisp.security.block_new_country_payments', false);
     }
 
     public function isVpnDetectionEnabled(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.security.detect_vpn', true);
+        return $this->config->get('sisp.security.detect_vpn', true);
     }
 
     public function isProxyDetectionEnabled(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.security.detect_proxy', true);
+        return $this->config->get('sisp.security.detect_proxy', true);
     }
 
     public function isRiskScoringEnabled(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.security.calculate_risk_score', true);
+        return $this->config->get('sisp.security.calculate_risk_score', true);
     }
 
     public function getRateLimitPerIp(): int
     {
-        return (int) $this->app->make(Repository::class)->get('sisp.rate_limiting.per_ip.limit', 100);
+        return (int) $this->config->get('sisp.rate_limiting.per_ip.limit', 100);
     }
 
     public function getRateLimitWindowSeconds(): int
     {
-        return (int) $this->app->make(Repository::class)->get('sisp.rate_limiting.per_ip.window_seconds', 3600);
+        return (int) $this->config->get('sisp.rate_limiting.per_ip.window_seconds', 3600);
     }
 
     public function getGeolocationProvider(): string
     {
-        return $this->app->make(Repository::class)->get('sisp.geolocation.provider', 'maxmind');
+        return $this->config->get('sisp.geolocation.provider', 'maxmind');
     }
 
     public function isRetryAllowed(): bool
     {
-        return $this->app->make(Repository::class)->get('sisp.allow_retry', true);
+        return $this->config->get('sisp.allow_retry', true);
     }
 
     public function getInvoiceTemporaryUrlExpirationHours(): int
     {
-        return (int) $this->app->make(Repository::class)->get('sisp.invoice.temporary_url_expiration_hours', 24);
+        return (int) $this->config->get('sisp.invoice.temporary_url_expiration_hours', 24);
     }
 }
