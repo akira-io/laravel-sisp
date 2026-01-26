@@ -36,7 +36,7 @@ beforeEach(function (): void {
     Facade::clearResolvedInstances();
 });
 
-it('dispatches PaymentFailed when callback validation fails', function (): void {
+it('dispatches PaymentFailed and prevents status update when callback validation fails', function (): void {
     // Override Sisp facade binding to control validation
     app()->instance(Akira\Sisp\Sisp::class, new class
     {
@@ -47,10 +47,14 @@ it('dispatches PaymentFailed when callback validation fails', function (): void 
     });
 
     Event::fake();
-    Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);
+    $transaction = Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);
 
     $action = resolve(HandleCallbackAction::class);
-    $action->handle(cb_payload('X'));
+    // Use a success message type to verify that validation failure prevents status update
+    $action->handle(cb_payload(SuccessMessageType::purchase->value));
+
+    $transaction->refresh();
+    expect($transaction->status->value)->toBe('pending');
 
     Event::assertDispatched(PaymentFailed::class);
 });
