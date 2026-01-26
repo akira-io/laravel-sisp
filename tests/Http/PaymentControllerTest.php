@@ -21,6 +21,7 @@ it('creates transaction and renders payment form', function (): void {
 
     $response->assertOk();
     $response->assertSee('sisp-payment-form');
+    $response->assertSee(trans('sisp::payment.manual_redirect_button'));
 });
 
 it('blocks duplicate transactions via middleware', function (): void {
