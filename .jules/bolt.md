@@ -11,3 +11,7 @@
 
 **Learning:** The development environment runs PHP 8.3, but the project dependencies (specifically `akira/laravel-debugger`) use PHP 8.4 syntax (`new Class()->method()`). This prevents running tests locally without upgrading PHP.
 **Action:** Be aware of environment limitations and rely on static analysis/linting when running tests is not possible due to platform constraints.
+
+## 2026-01-27 - Database Lookup on Invalid Signature
+**Learning:** `HandleCallbackAction` was performing a database lookup to find/create a transaction *before* validating the webhook signature. This allowed invalid/malicious requests to trigger expensive DB operations and emit events, creating a DoS vector.
+**Action:** Always validate input signatures/security tokens as the very first step in an action, before any database interaction or event dispatching. Fail fast with an exception (403) rather than processing partially.
