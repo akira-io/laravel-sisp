@@ -49,7 +49,12 @@
           display: flex;
           justify-content: center;
           margin-bottom: 1.2rem;
-          animation: pulse 1.5s infinite;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+          .sisp-icon-wrapper {
+              animation: pulse 1.5s infinite;
+          }
       }
 
       .sisp-icon {

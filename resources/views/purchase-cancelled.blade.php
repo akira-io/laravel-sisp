@@ -9,7 +9,7 @@
 				{{ __('Dear customer, your purchase has been cancelled. For more information, do not hesitate to contact us.') }}
 			</p>
 			<div class="sisp-button-wrapper">
-				<x-sisp::redirect-button :name="__('Return Home')"/>
+				<x-sisp::redirect-button :name="__('Return Home')" variant="primary"/>
 			</div>
 		</div>
 	</div>
@@ -49,7 +49,12 @@
           display: flex;
           justify-content: center;
           margin-bottom: 1.2rem;
-          animation: pulse 1.5s infinite;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+          .sisp-icon-wrapper {
+              animation: pulse 1.5s infinite;
+          }
       }
 
       .sisp-icon {
