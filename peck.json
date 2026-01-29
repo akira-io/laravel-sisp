@@ -18,7 +18,8 @@
             "pnpm",
             "getters",
             "roadmap",
-            "addr"
+            "addr",
+            "pdfs"
         ],
         "paths": []
     }
