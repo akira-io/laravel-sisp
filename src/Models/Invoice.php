@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Storage;
  * @property-read  CarbonInterface $invoice_date
  * @property-read  CarbonInterface|null $due_date
  * @property-read  string $invoice_number
+ * @property-read  string|null $customer_name
+ * @property-read  CarbonInterface|null $created_at
  */
 final class Invoice extends Model
 {
