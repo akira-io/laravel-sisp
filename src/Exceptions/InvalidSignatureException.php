@@ -6,6 +6,4 @@ namespace Akira\Sisp\Exceptions;
 
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
-class InvalidSignatureException extends AccessDeniedHttpException
-{
-}
+final class InvalidSignatureException extends AccessDeniedHttpException {}
