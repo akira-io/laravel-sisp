@@ -84,12 +84,22 @@ trait EncryptsAttributes
             return false;
         }
 
-        try {
-            Crypt::decryptString($value);
-
-            return true;
-        } catch (Throwable) {
+        // Fast check for potentially encrypted values
+        // Laravel encrypted values are base64 encoded JSON objects containing 'iv', 'value', 'mac'
+        if (strlen($value) < 40) {
             return false;
         }
+
+        $decoded = base64_decode($value, true);
+        if ($decoded === false) {
+            return false;
+        }
+
+        $payload = json_decode($decoded, true);
+        if (! is_array($payload)) {
+            return false;
+        }
+
+        return isset($payload['iv'], $payload['value'], $payload['mac']) && count($payload) >= 3;
     }
 }
