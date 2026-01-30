@@ -9,4 +9,4 @@
     $variantClasses = $variants[$variant] ?? $variants['success'];
 @endphp
 
-<a href="{{url(config('sisp.redirect_url'))}}" role="button" class="mt-10 inline-block text-white {{ $variantClasses }} px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 w-full transition-colors duration-200">{{ $name }}</a>
+<a href="{{url(config('sisp.redirect_url'))}}" class="mt-10 inline-block text-white {{ $variantClasses }} px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 w-full transition-colors duration-200">{{ $name }}</a>
