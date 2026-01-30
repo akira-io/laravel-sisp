@@ -61,7 +61,7 @@ it('throws InvalidSignatureException when callback validation fails', function (
     // If logic reached creation, it might create one or try to find one.
     // Given the payload has 'mref', if logic proceeded, it would try to find or create.
     // Checking count is 0 confirms we didn't get that far.
-    expect(Transaction::count())->toBe(0);
+    expect(Transaction::query()->count())->toBe(0);
 });
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
