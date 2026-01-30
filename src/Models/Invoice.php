@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /**
+ * @property-read  int $id
  * @property-read  string|null $pdf_path
  * @property-read  InvoiceStatus $status
  * @property-read  Transaction $transaction
@@ -21,6 +22,13 @@ use Illuminate\Support\Facades\Storage;
  * @property-read  CarbonInterface $invoice_date
  * @property-read  CarbonInterface|null $due_date
  * @property-read  string $invoice_number
+ * @property-read  string $customer_name
+ * @property-read  string $customer_email
+ * @property-read  string $customer_city
+ * @property-read  string $customer_address
+ * @property-read  string $customer_country
+ * @property-read  \Illuminate\Support\Carbon $created_at
+ * @property-read  \Illuminate\Support\Carbon $updated_at
  */
 final class Invoice extends Model
 {
