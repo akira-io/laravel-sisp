@@ -7,6 +7,7 @@ use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
+use Akira\Sisp\Exceptions\InvalidSignatureException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -36,7 +37,7 @@ beforeEach(function (): void {
     Facade::clearResolvedInstances();
 });
 
-it('dispatches PaymentFailed and prevents status update when callback validation fails', function (): void {
+it('throws InvalidSignatureException when callback validation fails', function (): void {
     // Override Sisp facade binding to control validation
     app()->instance(Akira\Sisp\Sisp::class, new class
     {
@@ -47,16 +48,20 @@ it('dispatches PaymentFailed and prevents status update when callback validation
     });
 
     Event::fake();
-    $transaction = Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);
 
     $action = resolve(HandleCallbackAction::class);
-    // Use a success message type to verify that validation failure prevents status update
-    $action->handle(cb_payload(SuccessMessageType::purchase->value));
 
-    $transaction->refresh();
-    expect($transaction->status->value)->toBe('pending');
+    expect(fn () => $action->handle(cb_payload(SuccessMessageType::purchase->value)))
+        ->toThrow(InvalidSignatureException::class);
 
-    Event::assertDispatched(PaymentFailed::class);
+    Event::assertNothingDispatched();
+
+    // Verify no transaction was accessed/created
+    // Since we didn't create one in setup, logic should ideally not reach creation.
+    // If logic reached creation, it might create one or try to find one.
+    // Given the payload has 'mref', if logic proceeded, it would try to find or create.
+    // Checking count is 0 confirms we didn't get that far.
+    expect(Transaction::count())->toBe(0);
 });
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
