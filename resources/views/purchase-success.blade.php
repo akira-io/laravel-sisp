@@ -121,5 +121,11 @@
               transform: scale(1.1);
           }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+          .sisp-icon-wrapper {
+              animation: none !important;
+          }
+      }
 	</style>
 </x-sisp::layouts.app>
