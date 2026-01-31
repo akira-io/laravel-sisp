@@ -117,9 +117,9 @@ final class DoctorCommand extends Command
             $this->warn("  ⚠️  {$paidWithoutPdf} paid invoices are missing PDFs");
 
             // Show sample
-            $sample = Invoice::query()->where('status', InvoiceStatus::paid->value)
+            $sample = Invoice::with('transaction')
+                ->where('status', InvoiceStatus::paid->value)
                 ->whereNull('pdf_path')
-                ->with('transaction')
                 ->first();
 
             if ($sample) {

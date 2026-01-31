@@ -15,12 +15,15 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property-read  string|null $pdf_path
  * @property-read  InvoiceStatus $status
- * @property-read  Transaction $transaction
+ * @property-read  Transaction|null $transaction
  * @property-read  array $items
  * @property-read  int $items_count
  * @property-read  CarbonInterface $invoice_date
  * @property-read  CarbonInterface|null $due_date
  * @property-read  string $invoice_number
+ * @property-read  string $customer_name
+ * @property  \Illuminate\Support\Carbon $created_at
+ * @property  \Illuminate\Support\Carbon $updated_at
  */
 final class Invoice extends Model
 {
