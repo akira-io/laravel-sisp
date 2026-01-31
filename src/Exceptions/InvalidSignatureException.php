@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Exceptions;
 
-use Exception;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
-final class InvalidSignatureException extends Exception
+final class InvalidSignatureException extends AccessDeniedHttpException
 {
-    public function __construct(?string $message = null)
+    public function __construct(string $message = 'Invalid signature')
     {
-        parent::__construct(
-            message: $message ?? __('Invalid callback signature'),
-            code: Response::HTTP_FORBIDDEN,
-        );
+        parent::__construct($message);
     }
 }
