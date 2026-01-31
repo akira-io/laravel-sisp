@@ -84,12 +84,18 @@ trait EncryptsAttributes
             return false;
         }
 
-        try {
-            Crypt::decryptString($value);
+        $decoded = base64_decode($value, true);
 
-            return true;
-        } catch (Throwable) {
+        if ($decoded === false) {
             return false;
         }
+
+        $json = json_decode($decoded, true);
+
+        if (! is_array($json)) {
+            return false;
+        }
+
+        return isset($json['iv'], $json['value'], $json['mac']) && count($json) === 3;
     }
 }
