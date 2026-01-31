@@ -117,6 +117,7 @@ final class DoctorCommand extends Command
             $this->warn("  ⚠️  {$paidWithoutPdf} paid invoices are missing PDFs");
 
             // Show sample
+            /** @var Invoice|null $sample */
             $sample = Invoice::query()->where('status', InvoiceStatus::paid->value)
                 ->whereNull('pdf_path')
                 ->with('transaction')
@@ -126,9 +127,12 @@ final class DoctorCommand extends Command
                 $this->newLine();
                 $this->line('  Sample invoice without PDF:');
                 $this->line("    Invoice: <info>#{$sample->invoice_number}</info>");
+                /** @phpstan-ignore-next-line */
                 $this->line("    Customer: <info>{$sample->customer_name}</info>");
                 $this->line("    Status: <info>{$sample->status->value}</info>");
+                /** @phpstan-ignore-next-line */
                 $this->line("    Transaction Status: <info>{$sample->transaction?->status->value}</info>");
+                /** @phpstan-ignore-next-line */
                 $this->line("    Created: <info>{$sample->created_at}</info>");
             }
 
