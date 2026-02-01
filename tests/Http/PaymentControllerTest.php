@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 it('creates transaction and renders payment form', function (): void {
+    $this->withoutVite();
+
     config()->set('sisp.rate_limiting.enabled', false);
 
     $payload = [
