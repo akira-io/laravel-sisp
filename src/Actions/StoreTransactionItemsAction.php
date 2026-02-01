@@ -33,6 +33,6 @@ final readonly class StoreTransactionItemsAction
             $items
         );
 
-        DB::table(new TransactionItem()->getTable())->insert($records);
+        DB::table((new TransactionItem())->getTable())->insert($records);
     }
 }

@@ -28,7 +28,7 @@ trait EncryptsAttributes
             // Prefer decrypting from raw attribute to bypass casts when necessary
             $raw = $this->attributes[$key] ?? null;
 
-            if (is_string($raw)) {
+            if (is_string($raw) && $this->isEncrypted($raw)) {
                 try {
                     $decrypted = Crypt::decryptString($raw);
                     $decoded = json_decode($decrypted, true);
@@ -42,9 +42,15 @@ trait EncryptsAttributes
                 }
             }
 
-            if (is_string($value)) {
+            if (is_string($value) && $this->isEncrypted($value)) {
                 try {
-                    return Crypt::decryptString($value);
+                    $decrypted = Crypt::decryptString($value);
+                    $decoded = json_decode($decrypted, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        return $decoded;
+                    }
+
+                    return $decrypted;
                 } catch (Throwable) {
                     return $value;
                 }
@@ -84,12 +90,18 @@ trait EncryptsAttributes
             return false;
         }
 
-        try {
-            Crypt::decryptString($value);
+        $decoded = base64_decode($value, true);
 
-            return true;
-        } catch (Throwable) {
+        if ($decoded === false) {
             return false;
         }
+
+        $json = json_decode($decoded, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return false;
+        }
+
+        return isset($json['iv'], $json['value'], $json['mac']);
     }
 }
