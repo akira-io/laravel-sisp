@@ -374,4 +374,18 @@ return [
         'cache_ttl_minutes' => env('SISP_GEOLOCATION_CACHE_TTL', 1440),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Route Middleware
+    |--------------------------------------------------------------------------
+    |
+    | These middleware will be assigned to the various routes of the package.
+    | You can customize the middleware to add authentication, authorization,
+    | or custom checks.
+    |
+    */
+    'middleware' => [
+        'refund' => ['web', 'auth'],
+    ],
+
 ];

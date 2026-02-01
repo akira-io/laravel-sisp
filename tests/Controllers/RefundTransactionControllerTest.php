@@ -14,7 +14,7 @@ it('refunds a completed transaction and returns json', function (): void {
     ]);
 
     $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund'), 'POST', ['amount' => 50.0, 'reason' => 'test']);
+    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 50.0, 'reason' => 'test']);
 
     $response = $controller($t, $request);
 
@@ -30,7 +30,7 @@ it('returns 400 when refund amount exceeds transaction', function (): void {
     ]);
 
     $controller = resolve(RefundTransactionController::class);
-    $request = Request::create('/sisp/refund', 'POST', ['amount' => 150.0]);
+    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 150.0]);
 
     $response = $controller($t, $request);
     expect($response->getStatusCode())->toBe(400);
