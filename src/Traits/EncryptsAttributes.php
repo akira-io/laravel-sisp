@@ -86,7 +86,7 @@ trait EncryptsAttributes
 
         // Fast check for potentially encrypted values
         // Laravel encrypted values are base64 encoded JSON objects containing 'iv', 'value', 'mac'
-        if (mb_strlen($value) < 40) {
+        if (mb_strlen($value) < 100) {
             return false;
         }
 
@@ -100,6 +100,6 @@ trait EncryptsAttributes
             return false;
         }
 
-        return isset($payload['iv'], $payload['value'], $payload['mac']) && count($payload) >= 3;
+        return isset($payload['iv'], $payload['value'], $payload['mac']);
     }
 }
