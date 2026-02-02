@@ -8,12 +8,17 @@ use Akira\Sisp\Configuration\LoadConfig;
 
 final readonly class PostAutCode
 {
-    public function __construct(private LoadConfig $config) {}
+    private string $hashedCode;
+
+    public function __construct(private LoadConfig $config)
+    {
+        // Optimization: Calculate hash once at construction time
+        // since posAutCode is static configuration.
+        $this->hashedCode = base64_encode(hash('sha512', $this->config->getPosAutCode(), true));
+    }
 
     public function handle(): string
     {
-        $posAutCode = $this->config->getPosAutCode();
-
-        return base64_encode(hash('sha512', $posAutCode, true));
+        return $this->hashedCode;
     }
 }
