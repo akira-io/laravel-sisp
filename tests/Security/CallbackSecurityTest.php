@@ -15,7 +15,7 @@ beforeEach(function (): void {
     Facade::clearResolvedInstances();
 });
 
-test('security: callback processing aborts on invalid signature', function () {
+test('security: callback processing aborts on invalid signature', function (): void {
     // We want to verify that:
     // 1. InvalidSignatureException is thrown.
     // 2. No database queries happen (or at least no transaction creation).
