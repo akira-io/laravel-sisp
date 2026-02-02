@@ -12,7 +12,9 @@ use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Commands\DoctorCommand;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
+use Akira\Sisp\Configuration\EnvSispCredentialsResolver;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\View\Compilers\BladeCompiler;
@@ -41,6 +43,12 @@ final class SispServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->singleton(LoadConfig::class);
+
+        $this->app->singleton(
+            SispCredentialsResolver::class,
+            EnvSispCredentialsResolver::class
+        );
+
         $this->app->singleton(Sisp::class, fn (Application $app): Sisp => new Sisp(
             buildRequestPayload: $app->make(BuildRequestPayloadAction::class),
             buildSandboxPayload: $app->make(BuildSandboxPayloadAction::class),

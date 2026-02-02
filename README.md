@@ -46,6 +46,7 @@ SISP_MERCHANT_ID=your_merchant_id
 
 ## Key Features
 
+- Multi-merchant/SaaS support with runtime credential injection
 - Payment form rendering (Blade or Inertia.js)
 - Automatic PDF invoice generation
 - Multi-item transaction support

@@ -45,6 +45,9 @@ abstract class TestCase extends Orchestra
         // App key for encryption
         $app->make(Repository::class)->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
 
+        // Set application namespace for Blade component compilation
+        $app->singleton('namespace', fn (): string => 'App\\');
+
         // Ensure a base layout exists for package Blade views extending 'layouts.app'
         $paths = $app->make(Repository::class)->get('view.paths', []);
         $testViews = __DIR__.'/resources/views';
