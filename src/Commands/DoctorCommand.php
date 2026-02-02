@@ -128,7 +128,7 @@ final class DoctorCommand extends Command
                 $this->line("    Invoice: <info>#{$sample->invoice_number}</info>");
                 $this->line("    Customer: <info>{$sample->customer_name}</info>");
                 $this->line("    Status: <info>{$sample->status->value}</info>");
-                $this->line("    Transaction Status: <info>{$sample->transaction?->status->value}</info>");
+                $this->line("    Transaction Status: <info>{$sample->transaction->status->value}</info>");
                 $this->line("    Created: <info>{$sample->created_at}</info>");
             }
 
