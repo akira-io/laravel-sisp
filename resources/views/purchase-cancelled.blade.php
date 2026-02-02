@@ -9,7 +9,7 @@
 				{{ __('Dear customer, your purchase has been cancelled. For more information, do not hesitate to contact us.') }}
 			</p>
 			<div class="sisp-button-wrapper">
-				<x-sisp::redirect-button :name="__('Return Home')"/>
+				<x-sisp::redirect-button variant="neutral" :name="__('Return Home')"/>
 			</div>
 		</div>
 	</div>
@@ -21,7 +21,6 @@
           height: 100vh;
           padding: 1rem;
           background-color: #f9fafb;
-          animation: fadeInPage 0.6s ease-out forwards;
       }
 
       .dark .sisp-fullpage-container {
@@ -37,7 +36,6 @@
           max-width: 400px;
           width: 100%;
           text-align: center;
-          animation: fadeInUp 0.8s ease-out forwards;
       }
 
       .dark .sisp-fullpage-card {
@@ -49,7 +47,6 @@
           display: flex;
           justify-content: center;
           margin-bottom: 1.2rem;
-          animation: pulse 1.5s infinite;
       }
 
       .sisp-icon {
@@ -63,19 +60,42 @@
           font-weight: 800;
           color: #dc2626;
           margin-top: 0.5rem;
-          animation: fadeIn 0.9s ease-out;
       }
 
       .sisp-description {
           margin-top: 1rem;
           font-size: 1rem;
           line-height: 1.5;
-          animation: fadeIn 1.1s ease-out;
       }
 
       .sisp-button-wrapper {
           margin-top: 2rem;
-          animation: fadeIn 1.3s ease-out;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+          .sisp-fullpage-container {
+              animation: fadeInPage 0.6s ease-out forwards;
+          }
+
+          .sisp-fullpage-card {
+              animation: fadeInUp 0.8s ease-out forwards;
+          }
+
+          .sisp-icon-wrapper {
+              animation: pulse 1.5s infinite;
+          }
+
+          .sisp-title {
+              animation: fadeIn 0.9s ease-out;
+          }
+
+          .sisp-description {
+              animation: fadeIn 1.1s ease-out;
+          }
+
+          .sisp-button-wrapper {
+              animation: fadeIn 1.3s ease-out;
+          }
       }
 
       @keyframes fadeInPage {
