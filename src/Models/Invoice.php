@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /**
+ * @property string $customer_name
+ * @property CarbonInterface $created_at
  * @property-read  string|null $pdf_path
  * @property-read  InvoiceStatus $status
- * @property-read  Transaction $transaction
+ * @property-read  Transaction|null $transaction
  * @property-read  array $items
  * @property-read  int $items_count
  * @property-read  CarbonInterface $invoice_date
