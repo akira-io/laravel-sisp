@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+# [0.5.0](https://github.com/kidiatoliny/laravel-sisp/compare/0.4.3...0.5.0) (2026-02-02)
+
+
+### Bug Fixes
+
+* correct transaction status output in doctor command and add missing properties to Invoice model ([1c23702](https://github.com/kidiatoliny/laravel-sisp/commit/1c23702d8fd5d858d60b32039c099ebef95546eb))
+* fixed callback validation race condition ([5a7081a](https://github.com/kidiatoliny/laravel-sisp/commit/5a7081a2e5c55112e078c1bb6ec263bcb0f57306))
+* fixed callback validation race condition by validating signature before database access. ([#21](https://github.com/kidiatoliny/laravel-sisp/issues/21)) ([b5ad57b](https://github.com/kidiatoliny/laravel-sisp/commit/b5ad57b4ec1044301397272894dd5c2632a0a761))
+* **security:** secure refund endpoint with configurable middleware ([#40](https://github.com/kidiatoliny/laravel-sisp/issues/40)) ([83c8920](https://github.com/kidiatoliny/laravel-sisp/commit/83c892061619024f886bfef8948f322bb3119353))
+* update doctor command output to reference correct regenerate-pdfs artisan command ([5ac069a](https://github.com/kidiatoliny/laravel-sisp/commit/5ac069aed9c307b3f6cf905735cf837dd883b376))
+
+
+### Features
+
+* add doctor and regenerate-missing-pdfs artisan commands for invoice PDF diagnostics and recovery ([3105e88](https://github.com/kidiatoliny/laravel-sisp/commit/3105e8845aeae3bf029e2a81186b92d1a12861e3))
+* add keyboard focus to redirect button ([#18](https://github.com/kidiatoliny/laravel-sisp/issues/18)) ([226eb13](https://github.com/kidiatoliny/laravel-sisp/commit/226eb13df232dc2b1024716014d6859d32f7fa0c))
+* add multi-merchant configuration and runtime credential support ([f17546a](https://github.com/kidiatoliny/laravel-sisp/commit/f17546a0d2de86df41739ed53f1678e16344b60f))
+* improve payment redirection UX and accessibility ([#16](https://github.com/kidiatoliny/laravel-sisp/issues/16)) ([253485e](https://github.com/kidiatoliny/laravel-sisp/commit/253485ea12165c8711d756dbf404449fcdc39560))
+* **ui:** add button variants and improve accessibility in payment views ([#44](https://github.com/kidiatoliny/laravel-sisp/issues/44)) ([0b3fac8](https://github.com/kidiatoliny/laravel-sisp/commit/0b3fac84fddec1f713c2a298b828a635574489b5))
+* **ui:** improve payment request form accessibility and fallback ([03465b0](https://github.com/kidiatoliny/laravel-sisp/commit/03465b044fc369c17d984ff67b4f6266ae0c518a))
+
+
+### Performance Improvements
+
+* increase threshold for encrypted value check in EncryptsAttributes ([68d1a6d](https://github.com/kidiatoliny/laravel-sisp/commit/68d1a6d9d29925ad00d8407205d1e075fd3fa99c))
+* optimize isEncrypted check in EncryptsAttributes ([f240129](https://github.com/kidiatoliny/laravel-sisp/commit/f240129f277ebd943d6e44dadb76085a4e9b0639))
+* optimize isEncrypted check in EncryptsAttributes ([c3bf7d0](https://github.com/kidiatoliny/laravel-sisp/commit/c3bf7d0db811ee609bd31feedce3cdb1fd91f7dc))
+* optimize isEncrypted check in EncryptsAttributes ([76849f1](https://github.com/kidiatoliny/laravel-sisp/commit/76849f14d4c8130e81059b8d1e78a55407759e51))
+* optimize isEncrypted check in EncryptsAttributes ([3f632de](https://github.com/kidiatoliny/laravel-sisp/commit/3f632de3b5ed926821bf50fe5a3d14cf8f15b01f))
+* optimize isEncrypted check to avoid exceptions ([#19](https://github.com/kidiatoliny/laravel-sisp/issues/19)) ([c76ef41](https://github.com/kidiatoliny/laravel-sisp/commit/c76ef41b2886f1192813d4206820f9c1c76f10b4))
+
 ## [0.4.3](https://github.com/akira-io/laravel-sisp/compare/0.4.2...0.4.3) (2026-01-22)
 
 
