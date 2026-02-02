@@ -1,25 +1,5 @@
 {
-    "preset": "laravel",
-    "ignore": {
-        "words": [
-            "php",
-            "postcss",
-            "sisp",
-            "pos",
-            "decrypt",
-            "dsec",
-            "fingerprintversion",
-            "cp",
-            "encryptable",
-            "geolocation",
-            "vpn",
-            "vue",
-            "js",
-            "pnpm",
-            "getters",
-            "roadmap",
-            "addr"
-        ],
-        "paths": []
-    }
+    "allow": [
+        "pdfs"
+    ]
 }
