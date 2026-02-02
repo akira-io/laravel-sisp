@@ -27,7 +27,7 @@ Route::get('sisp/cancel', CancelTransactionController::class)
     ->name('sisp.cancel');
 
 Route::post('sisp/refund/{transaction}', RefundTransactionController::class)
-    ->middleware(config('sisp.middleware.refund', ['web', 'auth']))
+    ->middleware(config()->string('sisp.middleware.refund', ['web', 'auth']))
     ->name('sisp.refund');
 
 Route::match(['get', 'post'], 'sisp/sandbox', SandboxController::class)
