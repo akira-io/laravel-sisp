@@ -123,6 +123,7 @@ final class DoctorCommand extends Command
                 ->first();
 
             if ($sample) {
+                /** @var Invoice $sample */
                 $this->newLine();
                 $this->line('  Sample invoice without PDF:');
                 $this->line("    Invoice: <info>#{$sample->invoice_number}</info>");
