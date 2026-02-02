@@ -71,6 +71,11 @@ final readonly class LoadConfig
         return $this->config->get('sisp.currency', '132');
     }
 
+    public function getMerchantId(): string
+    {
+        return $this->config->get('sisp.merchantId', '');
+    }
+
     public function getPosId(): string
     {
         return $this->config->get('sisp.posID', '');

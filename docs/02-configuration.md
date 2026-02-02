@@ -182,6 +182,103 @@ config([
 ]);
 ```
 
+## Multi-Merchant Configuration
+
+### Overview
+
+The package supports both single-tenant and multi-tenant (SaaS) architectures. Credentials can be injected at runtime for each merchant without affecting the global configuration.
+
+### Single Tenant (Default)
+
+The default behavior uses credentials from your `.env` file or `config/sisp.php`:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+
+$request = Sisp::buildRequestPayload(
+    PaymentRequestData::from(['amount' => 100.00])
+);
+```
+
+### Runtime Credentials (Multi-Tenant)
+
+Override credentials at runtime for specific merchants:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+
+$credentials = SispCredentials::from([
+    'pos_id' => 'MERCHANT_POS_123',
+    'pos_aut_code' => 'secret_key',
+    'currency' => '132',
+    'merchant_id' => 'MERCHANT_123',
+    'url' => 'https://mc.vinti4net.cv/Client_VbV_v2/biz_vbv_clientdata.jsp',
+    'language_messages' => 'EN',
+    'fingerprint_version' => '1',
+    'is_3d_sec' => '0',
+    'sandbox' => false,
+    'url_merchant_response' => 'https://yoursite.com/sisp/callback',
+]);
+
+$request = Sisp::forCredentials($credentials)
+    ->buildRequestPayload(PaymentRequestData::from(['amount' => 100.00]));
+```
+
+### Custom Credential Resolvers
+
+For advanced scenarios (database-backed credentials, encrypted storage, etc.):
+
+```php
+use Akira\Sisp\Contracts\SispCredentialsResolver;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use App\Models\Merchant;
+
+class DatabaseCredentialsResolver implements SispCredentialsResolver
+{
+    public function __construct(private int $merchantId) {}
+
+    public function resolve(): SispCredentials
+    {
+        $merchant = Merchant::find($this->merchantId);
+
+        return SispCredentials::from([
+            'pos_id' => $merchant->sisp_pos_id,
+            'pos_aut_code' => decrypt($merchant->sisp_pos_aut_code),
+            'currency' => $merchant->currency,
+            'merchant_id' => $merchant->sisp_merchant_id,
+            'url' => $merchant->sisp_url,
+            'language_messages' => $merchant->language ?? 'EN',
+            'fingerprint_version' => '1',
+            'is_3d_sec' => $merchant->enable_3d_secure ? '1' : '0',
+            'sandbox' => $merchant->sisp_sandbox_mode,
+            'url_merchant_response' => $merchant->callback_url,
+        ]);
+    }
+}
+```
+
+Register in your `AppServiceProvider`:
+
+```php
+use Akira\Sisp\Contracts\SispCredentialsResolver;
+use App\Services\DatabaseCredentialsResolver;
+
+public function register(): void
+{
+    $this->app->bind(
+        SispCredentialsResolver::class,
+        fn() => new DatabaseCredentialsResolver(
+            auth()->user()->merchant_id
+        )
+    );
+}
+```
+
+With this approach, all Sisp operations automatically use the current user's merchant credentials.
+
 ## Environment Variables Reference
 
 ```env

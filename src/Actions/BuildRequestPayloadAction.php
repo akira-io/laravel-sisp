@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Exceptions\MissingThreeDSecureDataException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\ValueObjects\PaymentRequest;
@@ -15,15 +16,18 @@ final readonly class BuildRequestPayloadAction
     public function __construct(
         private GenerateFingerprintAction $generateFingerprint,
         private BuildPurchaseRequestAction $buildPurchaseRequest,
+        private SispCredentialsResolver $resolver,
     ) {}
 
     public function handle(PaymentRequestData $data): PaymentRequest
     {
+        $credentials = $this->resolver->resolve();
+
         $merchantRef = $data->merchantRef ?? Sisp::getMerchantReference();
         $merchantSession = $data->merchantSession ?? Sisp::getMerchantSession();
         $amount = $data->amount;
         $timestamp = $data->timeStamp ?? Sisp::getTimeStamp();
-        $currency = $data->currency ?? Sisp::getCurrency();
+        $currency = $data->currency ?? $credentials->currency;
         $transactionCode = $data->transactionCode ?? Sisp::getDefaultTransactionCode();
         $token = $data->token ?? '';
         $entityCode = $data->entityCode ?? '';
@@ -31,16 +35,16 @@ final readonly class BuildRequestPayloadAction
         $locale = $data->locale ?? 'pt_PT';
 
         $payload = [
-            'posID' => Sisp::getPosId(),
+            'posID' => $credentials->posId,
             'merchantRef' => $merchantRef,
             'merchantSession' => $merchantSession,
             'amount' => $amount,
             'currency' => $currency,
-            'is3DSec' => Sisp::getIs3Dsec(),
-            'urlMerchantResponse' => Sisp::getUrlMerchantResponse(),
-            'languageMessages' => Sisp::getLanguageMessages(),
+            'is3DSec' => $credentials->is3DSec,
+            'urlMerchantResponse' => $credentials->urlMerchantResponse ?? route('sisp.callback'),
+            'languageMessages' => $credentials->languageMessages,
             'timeStamp' => $timestamp,
-            'fingerprintversion' => Sisp::getFingerprintVersion(),
+            'fingerprintversion' => $credentials->fingerprintVersion,
             'transactionCode' => $transactionCode,
             'token' => $token,
             'entityCode' => $entityCode,
@@ -59,7 +63,9 @@ final readonly class BuildRequestPayloadAction
      */
     private function buildPurchaseRequestIfNeeded(PaymentRequestData $data): string
     {
-        if (Sisp::getIs3Dsec() !== '1') {
+        $credentials = $this->resolver->resolve();
+
+        if ($credentials->is3DSec !== '1') {
             return '';
         }
 

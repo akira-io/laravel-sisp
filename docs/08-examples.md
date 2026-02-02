@@ -540,6 +540,186 @@ $byCountry = RequestMetadata::selectRaw('country_name, COUNT(*) as count')
     ->get();
 ```
 
+## Multi-Merchant Operations
+
+### Basic Multi-Merchant Usage
+
+Process payments for different merchants in the same request:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+
+// Merchant A
+$merchantA = SispCredentials::from([
+    'pos_id' => 'MERCHANT_A_POS',
+    'pos_aut_code' => 'secret_a',
+    'currency' => '132',
+    'merchant_id' => 'MERCHANT_A',
+    'url' => 'https://mc.vinti4net.cv/Client_VbV_v2/biz_vbv_clientdata.jsp',
+]);
+
+$requestA = Sisp::forCredentials($merchantA)
+    ->buildRequestPayload(PaymentRequestData::from([
+        'amount' => 100.00,
+        'merchantRef' => 'ORDER-A-001',
+    ]));
+
+// Merchant B
+$merchantB = SispCredentials::from([
+    'pos_id' => 'MERCHANT_B_POS',
+    'pos_aut_code' => 'secret_b',
+    'currency' => '132',
+    'merchant_id' => 'MERCHANT_B',
+    'url' => 'https://mc.vinti4net.cv/Client_VbV_v2/biz_vbv_clientdata.jsp',
+]);
+
+$requestB = Sisp::forCredentials($merchantB)
+    ->buildRequestPayload(PaymentRequestData::from([
+        'amount' => 200.00,
+        'merchantRef' => 'ORDER-B-002',
+    ]));
+```
+
+### SaaS Platform Implementation
+
+Create a controller for multi-tenant payment processing:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+use App\Models\Tenant;
+
+class TenantPaymentController extends Controller
+{
+    public function create(Request $request)
+    {
+        $tenant = Tenant::findOrFail($request->tenant_id);
+
+        // Load tenant-specific credentials
+        $credentials = SispCredentials::from([
+            'pos_id' => $tenant->sisp_pos_id,
+            'pos_aut_code' => decrypt($tenant->sisp_pos_aut_code),
+            'currency' => $tenant->currency,
+            'merchant_id' => $tenant->sisp_merchant_id,
+            'url' => $tenant->sisp_url,
+            'sandbox' => $tenant->is_sandbox,
+        ]);
+
+        // Create payment with tenant credentials
+        $paymentRequest = Sisp::forCredentials($credentials)
+            ->buildRequestPayload(
+                PaymentRequestData::from([
+                    'amount' => $request->amount,
+                    'merchantRef' => $tenant->generateReference(),
+                ])
+            );
+
+        return view('payment', ['request' => $paymentRequest]);
+    }
+}
+```
+
+### Custom Resolver for Database Credentials
+
+Automatically resolve credentials from the database:
+
+```php
+use Akira\Sisp\Contracts\SispCredentialsResolver;
+use Akira\Sisp\ValueObjects\SispCredentials;
+
+class TenantCredentialsResolver implements SispCredentialsResolver
+{
+    public function __construct(private int $tenantId) {}
+
+    public function resolve(): SispCredentials
+    {
+        $tenant = Tenant::findOrFail($this->tenantId);
+
+        return SispCredentials::from([
+            'pos_id' => $tenant->sisp_pos_id,
+            'pos_aut_code' => decrypt($tenant->sisp_pos_aut_code),
+            'currency' => $tenant->currency,
+            'merchant_id' => $tenant->sisp_merchant_id,
+            'url' => $tenant->sisp_url,
+            'language_messages' => $tenant->default_language,
+            'fingerprint_version' => '1',
+            'is_3d_sec' => $tenant->enable_3d_secure ? '1' : '0',
+            'sandbox' => $tenant->is_sandbox,
+            'url_merchant_response' => route('tenant.sisp.callback', $tenant),
+        ]);
+    }
+}
+```
+
+Register in `AppServiceProvider`:
+
+```php
+use Akira\Sisp\Contracts\SispCredentialsResolver;
+use App\Resolvers\TenantCredentialsResolver;
+
+public function register(): void
+{
+    $this->app->bind(
+        SispCredentialsResolver::class,
+        function ($app) {
+            // Get tenant from authenticated user
+            $tenant = auth()->user()->tenant;
+
+            return new TenantCredentialsResolver($tenant->id);
+        }
+    );
+}
+```
+
+With this setup, all Sisp operations automatically use the authenticated tenant's credentials:
+
+```php
+// No need to specify credentials - automatically resolved
+$request = Sisp::buildRequestPayload(
+    PaymentRequestData::from(['amount' => 100.00])
+);
+```
+
+### Testing Multi-Merchant Scenarios
+
+Test different merchant configurations:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+
+it('processes payments for different merchants', function () {
+    $merchantA = SispCredentials::from([
+        'pos_id' => 'TEST_A',
+        'pos_aut_code' => 'secret_a',
+        'currency' => '132',
+        'merchant_id' => 'MERCHANT_A',
+        'url' => 'https://gateway.test',
+    ]);
+
+    $merchantB = SispCredentials::from([
+        'pos_id' => 'TEST_B',
+        'pos_aut_code' => 'secret_b',
+        'currency' => '132',
+        'merchant_id' => 'MERCHANT_B',
+        'url' => 'https://gateway.test',
+    ]);
+
+    $requestA = Sisp::forCredentials($merchantA)
+        ->buildRequestPayload(PaymentRequestData::from(['amount' => 100]));
+
+    $requestB = Sisp::forCredentials($merchantB)
+        ->buildRequestPayload(PaymentRequestData::from(['amount' => 200]));
+
+    expect($requestA->toArray()['posID'])->toBe('TEST_A')
+        ->and($requestB->toArray()['posID'])->toBe('TEST_B');
+});
+```
+
 ## Next Steps
 
 - Check [API Reference](./11-api-reference.md) for detailed method documentation

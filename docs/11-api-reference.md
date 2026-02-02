@@ -777,6 +777,146 @@ Sisp::getCountryFlag('PT');              // "https://flagcdn.com/pt.svg"
 Sisp::getCountryName('PT');              // "Portugal"
 ```
 
+## Multi-Merchant API
+
+### SispCredentials Value Object
+
+Immutable representation of merchant credentials.
+
+```php
+use Akira\Sisp\ValueObjects\SispCredentials;
+
+// From array with snake_case keys
+$credentials = SispCredentials::from([
+    'pos_id' => 'POS_123',
+    'pos_aut_code' => 'secret_key',
+    'currency' => '132',
+    'merchant_id' => 'MERCHANT_123',
+    'url' => 'https://mc.vinti4net.cv/Client_VbV_v2/biz_vbv_clientdata.jsp',
+    'language_messages' => 'EN',          // optional, default: 'EN'
+    'fingerprint_version' => '1',          // optional, default: '1'
+    'is_3d_sec' => '0',                    // optional, default: '0'
+    'sandbox' => false,                    // optional, default: false
+    'url_merchant_response' => null,       // optional, default: null
+]);
+
+// From LoadConfig instance (backward compatibility)
+$config = app(\Akira\Sisp\Configuration\LoadConfig::class);
+$credentials = SispCredentials::fromConfig($config);
+```
+
+#### Properties
+
+All properties are readonly:
+
+```php
+$credentials->posId                  // string
+$credentials->posAutCode             // string
+$credentials->currency               // string
+$credentials->merchantId             // string
+$credentials->url                    // string
+$credentials->languageMessages       // string
+$credentials->fingerprintVersion     // string
+$credentials->is3DSec                // string ('0' or '1')
+$credentials->sandbox                // bool
+$credentials->urlMerchantResponse    // ?string
+```
+
+### Sisp::forCredentials()
+
+Create a scoped Sisp instance with custom credentials.
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\SispCredentials;
+
+$credentials = SispCredentials::from([...]);
+
+$scoped = Sisp::forCredentials($credentials);
+```
+
+Returns a `ScopedSisp` instance with all the same methods as the main `Sisp` service.
+
+### ScopedSisp
+
+Scoped service instance that uses specific credentials without mutating global state.
+
+#### Methods
+
+All methods from `Sisp` are available:
+
+```php
+$scoped->buildRequestPayload($data)         // PaymentRequest
+$scoped->validateCallback($payload)          // bool
+$scoped->handlePaymentCallback($payload)     // Transaction
+$scoped->generateSandboxPayload($data)       // CallbackPayload
+$scoped->storeTransaction($data)             // Transaction
+$scoped->getMerchantReference()              // string
+$scoped->getMerchantSession()                // string
+$scoped->getTimeStamp()                      // string
+$scoped->getCurrency()                       // string
+$scoped->getPosId()                          // string
+$scoped->getPosAutCode()                     // string
+$scoped->getIs3Dsec()                        // string
+$scoped->getUrlMerchantResponse()            // string
+$scoped->getLanguageMessages()               // string
+$scoped->getFingerprintVersion()             // string
+$scoped->getDefaultTransactionCode()         // string
+$scoped->getUri()                            // string
+```
+
+### SispCredentialsResolver Interface
+
+Implement custom credential resolution strategies.
+
+```php
+use Akira\Sisp\Contracts\SispCredentialsResolver;
+use Akira\Sisp\ValueObjects\SispCredentials;
+
+class CustomResolver implements SispCredentialsResolver
+{
+    public function resolve(): SispCredentials
+    {
+        // Your custom logic here
+        return SispCredentials::from([...]);
+    }
+}
+```
+
+#### Built-in Implementations
+
+**EnvSispCredentialsResolver** (default):
+- Reads credentials from config/env via `LoadConfig`
+- Maintains 100% backward compatibility
+
+**ScopedSispCredentialsResolver**:
+- Used internally by `ScopedSisp`
+- Returns pre-configured credentials
+
+#### Custom Resolver Registration
+
+Register in your service provider:
+
+```php
+use Akira\Sisp\Contracts\SispCredentialsResolver;
+use App\Services\DatabaseCredentialsResolver;
+
+public function register(): void
+{
+    $this->app->bind(
+        SispCredentialsResolver::class,
+        DatabaseCredentialsResolver::class
+    );
+}
+```
+
+Once registered, all Sisp operations automatically use the custom resolver:
+
+```php
+// No explicit credentials needed - resolver handles it
+$request = Sisp::buildRequestPayload($data);
+```
+
 ## Routes
 
 All routes are registered automatically with `/sisp` prefix.

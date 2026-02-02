@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
+use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Facades\Sisp;
@@ -16,15 +17,18 @@ final readonly class BuildSandboxPayloadAction
 {
     public function __construct(
         private PaymentResponseFingerPrintAction $generateFingerprint,
+        private SispCredentialsResolver $resolver,
     ) {}
 
     public function handle(PaymentRequestData $data, string $status = 'success'): CallbackPayload
     {
+        $credentials = $this->resolver->resolve();
+
         $merchantRef = $data->merchantRef ?? Sisp::getMerchantReference();
         $merchantSession = $data->merchantSession ?? Sisp::getMerchantSession();
         $amount = $data->amount;
         $timestamp = $data->timeStamp ?? Sisp::getTimeStamp();
-        $currency = $data->currency ?? Sisp::getCurrency();
+        $currency = $data->currency ?? $credentials->currency;
         $transactionCode = $data->transactionCode ?? Sisp::getDefaultTransactionCode();
 
         $messageType = match ($status) {
@@ -50,7 +54,7 @@ final readonly class BuildSandboxPayloadAction
             'merchantRespAdditionalErrorMessage' => $status === 'failed' ? 'Sandbox transaction failed' : '',
             'merchantRespReloadCode' => '',
             'fingerPrintVersion' => '1',
-            'posID' => Sisp::getPosId(),
+            'posID' => $credentials->posId,
             'currency' => $currency,
             'transactionCode' => $transactionCode,
         ];

@@ -10,33 +10,27 @@ use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Configuration\ScopedSispCredentialsResolver;
+use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Models\Transaction;
-use Akira\Sisp\Support\Countries;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Collection;
 
-final readonly class Sisp
+final readonly class ScopedSisp
 {
-    public function __construct(
-        private BuildRequestPayloadAction $buildRequestPayload,
-        private BuildSandboxPayloadAction $buildSandboxPayload,
-        private ValidatePaymentResponseFingerprintAction $validateFingerprint,
-        private CreateTransactionAction $createTransaction,
-        private HandleCallbackAction $handleCallback,
-        private LoadConfig $loadConfig,
-    ) {}
+    private SispCredentialsResolver $resolver;
 
-    public function forCredentials(SispCredentials $credentials): ScopedSisp
-    {
-        return new ScopedSisp(
-            loadConfig: $this->loadConfig,
-            container: app(),
-            credentials: $credentials,
-        );
+    public function __construct(
+        private LoadConfig $loadConfig,
+        private Container $container,
+        SispCredentials $credentials,
+    ) {
+        $this->resolver = new ScopedSispCredentialsResolver($credentials);
     }
 
     public function getTransactions(): Collection
@@ -46,27 +40,27 @@ final readonly class Sisp
 
     public function buildRequestPayload(PaymentRequestData $data): PaymentRequest
     {
-        return $this->buildRequestPayload->handle($data);
+        return $this->withResolver(fn (): PaymentRequest => $this->container->make(BuildRequestPayloadAction::class)->handle($data));
     }
 
     public function validateCallback(CallbackPayload $payload): bool
     {
-        return $this->validateFingerprint->handle($payload);
+        return $this->withResolver(fn (): bool => $this->container->make(ValidatePaymentResponseFingerprintAction::class)->handle($payload));
     }
 
     public function handlePaymentCallback(CallbackPayload $payload): Transaction
     {
-        return $this->handleCallback->handle($payload);
+        return $this->withResolver(fn (): Transaction => $this->container->make(HandleCallbackAction::class)->handle($payload));
     }
 
     public function generateSandboxPayload(PaymentRequestData $data, string $status = 'success'): CallbackPayload
     {
-        return $this->buildSandboxPayload->handle($data, $status);
+        return $this->withResolver(fn (): CallbackPayload => $this->container->make(BuildSandboxPayloadAction::class)->handle($data, $status));
     }
 
     public function storeTransaction(TransactionData $data): Transaction
     {
-        return $this->createTransaction->handle($data);
+        return $this->withResolver(fn (): Transaction => $this->container->make(CreateTransactionAction::class)->handle($data));
     }
 
     public function getMerchantReference(): string
@@ -86,37 +80,37 @@ final readonly class Sisp
 
     public function getCurrency(): string
     {
-        return $this->loadConfig->getCurrency();
+        return $this->resolver->resolve()->currency;
     }
 
     public function getPosId(): string
     {
-        return $this->loadConfig->getPosId();
+        return $this->resolver->resolve()->posId;
     }
 
     public function getPosAutCode(): string
     {
-        return $this->loadConfig->getPosAutCode();
+        return $this->resolver->resolve()->posAutCode;
     }
 
     public function getIs3Dsec(): string
     {
-        return $this->loadConfig->getIs3Dsec();
+        return $this->resolver->resolve()->is3DSec;
     }
 
     public function getUrlMerchantResponse(): string
     {
-        return $this->loadConfig->getUrlMerchantResponse();
+        return $this->resolver->resolve()->urlMerchantResponse ?? route('sisp.callback');
     }
 
     public function getLanguageMessages(): string
     {
-        return $this->loadConfig->getLanguageMessages();
+        return $this->resolver->resolve()->languageMessages;
     }
 
     public function getFingerprintVersion(): string
     {
-        return $this->loadConfig->getFingerprintVersion();
+        return $this->resolver->resolve()->fingerprintVersion;
     }
 
     public function getDefaultTransactionCode(): string
@@ -126,29 +120,18 @@ final readonly class Sisp
 
     public function getUri(): string
     {
-        return $this->loadConfig->getUri();
+        return $this->resolver->resolve()->url;
     }
 
-    /**
-     * @return array<string, array{alpha2: string, numeric: string, name: string, flag: string}>
-     */
-    public function countries(): array
+    private function withResolver(callable $callback): mixed
     {
-        return Countries::all();
-    }
+        $original = $this->container->make(SispCredentialsResolver::class);
+        $this->container->instance(SispCredentialsResolver::class, $this->resolver);
 
-    public function getCountryNumericCode(string $alpha2): string
-    {
-        return Countries::getNumericCode($alpha2);
-    }
-
-    public function getCountryFlag(string $alpha2): string
-    {
-        return Countries::getFlag($alpha2);
-    }
-
-    public function getCountryName(string $alpha2): ?string
-    {
-        return Countries::getName($alpha2);
+        try {
+            return $callback();
+        } finally {
+            $this->container->instance(SispCredentialsResolver::class, $original);
+        }
     }
 }
