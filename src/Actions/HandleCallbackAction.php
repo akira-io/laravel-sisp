@@ -24,9 +24,7 @@ final readonly class HandleCallbackAction
 
     public function handle(CallbackPayload $payload): Transaction
     {
-        if (! Sisp::validateCallback($payload)) {
-            throw new InvalidSignatureException();
-        }
+        throw_unless(Sisp::validateCallback($payload), InvalidSignatureException::class);
 
         $transaction = $this->findOrCreateTransaction->handle($payload);
 

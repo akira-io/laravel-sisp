@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Storage;
  * @property-read  string|null $pdf_url
  * @property-read  array $metadata
  * @property-read  string $customer_name
+ * @property-read  CarbonInterface $updated_at
  */
 final class Invoice extends Model
 {

@@ -66,7 +66,10 @@
       "@composer run build",
       "@php vendor/bin/testbench serve"
     ],
-    "lint": "pint",
+    "lint": [
+      "rector",
+      "pint"
+    ],
     "refactor": "rector",
     "test:lint": "pint --test",
     "test:refactor": "rector --dry-run",
