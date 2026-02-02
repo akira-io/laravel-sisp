@@ -11,3 +11,7 @@
 
 **Learning:** The development environment runs PHP 8.3, but the project dependencies (specifically `akira/laravel-debugger`) use PHP 8.4 syntax (`new Class()->method()`). This prevents running tests locally without upgrading PHP.
 **Action:** Be aware of environment limitations and rely on static analysis/linting when running tests is not possible due to platform constraints.
+
+## 2026-01-29 - Expensive Decryption Check
+**Learning:** Checking if a string is encrypted by attempting to decrypt it (`Crypt::decryptString`) is expensive even when successful (~12us). A structural check (Base64 + JSON + keys) is significantly faster (~4us) and avoids crypto overhead.
+**Action:** Validate encryption status using lightweight structural checks (Base64 + JSON keys) instead of full decryption when security verification is not immediately required (e.g. state checks).

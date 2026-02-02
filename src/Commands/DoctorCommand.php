@@ -100,16 +100,16 @@ final class DoctorCommand extends Command
     {
         $this->info('📄 Invoice Status:');
 
-        $totalInvoices = Invoice::count();
+        $totalInvoices = Invoice::query()->count();
         $this->line("  Total invoices: <info>{$totalInvoices}</info>");
 
-        $paidInvoices = Invoice::where('status', InvoiceStatus::paid->value)->count();
+        $paidInvoices = Invoice::query()->where('status', InvoiceStatus::paid->value)->count();
         $this->line("  Paid invoices: <info>{$paidInvoices}</info>");
 
-        $invoicesWithPdf = Invoice::whereNotNull('pdf_path')->count();
+        $invoicesWithPdf = Invoice::query()->whereNotNull('pdf_path')->count();
         $this->line("  Invoices with PDF: <info>{$invoicesWithPdf}</info>");
 
-        $paidWithoutPdf = Invoice::where('status', InvoiceStatus::paid->value)
+        $paidWithoutPdf = Invoice::query()->where('status', InvoiceStatus::paid->value)
             ->whereNull('pdf_path')
             ->count();
 
@@ -117,7 +117,7 @@ final class DoctorCommand extends Command
             $this->warn("  ⚠️  {$paidWithoutPdf} paid invoices are missing PDFs");
 
             // Show sample
-            $sample = Invoice::where('status', InvoiceStatus::paid->value)
+            $sample = Invoice::query()->where('status', InvoiceStatus::paid->value)
                 ->whereNull('pdf_path')
                 ->with('transaction')
                 ->first();
@@ -128,7 +128,7 @@ final class DoctorCommand extends Command
                 $this->line("    Invoice: <info>#{$sample->invoice_number}</info>");
                 $this->line("    Customer: <info>{$sample->customer_name}</info>");
                 $this->line("    Status: <info>{$sample->status->value}</info>");
-                $this->line("    Transaction Status: <info>{$sample->transaction?->status->value}</info>");
+                $this->line("    Transaction Status: <info>{$sample->transaction->status->value}</info>");
                 $this->line("    Created: <info>{$sample->created_at}</info>");
             }
 
