@@ -37,6 +37,25 @@ config()->set('sisp.tests.fake_migrate', true);
 Artisan::call('sisp:install', ['--no-interaction' => true]);
 ```
 
+### sisp:doctor
+
+Diagnoses invoice PDF generation issues (configuration, storage, and invoice status).
+
+Outputs:
+- Active invoice disk/path/driver
+- Storage read/write checks
+- Paid invoices missing PDFs (with sample)
+
+### sisp:regenerate-pdfs
+
+Regenerates PDFs for paid invoices missing `pdf_path`.
+
+Options:
+
+```
+--limit=5     # Limit number of invoices processed
+```
+
 ## Models
 
 ### Transaction
@@ -745,6 +764,16 @@ catch (MissingThreeDSecureDataException $e) {
 }
 ```
 
+### InvalidSignatureException
+
+Thrown when a callback fingerprint/signature is invalid.
+
+```php
+catch (InvalidSignatureException $e) {
+    // Reject callback and log attempt
+}
+```
+
 ## Utilities
 
 ### Countries
@@ -775,6 +804,37 @@ Sisp::countries();                       // Countries::all()
 Sisp::getCountryNumericCode('PT');       // "620"
 Sisp::getCountryFlag('PT');              // "https://flagcdn.com/pt.svg"
 Sisp::getCountryName('PT');              // "Portugal"
+```
+
+### Sisp Facade Methods
+
+All `Sisp` service methods are available statically via the facade (with IDE/static analysis support).
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\ValueObjects\CallbackPayload;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Akira\Sisp\ValueObjects\TransactionData;
+
+Sisp::getTransactions();                               // Collection
+Sisp::buildRequestPayload(PaymentRequestData::from([])); // PaymentRequest
+Sisp::validateCallback(CallbackPayload::from([]));     // bool
+Sisp::handlePaymentCallback(CallbackPayload::from([])); // Transaction
+Sisp::generateSandboxPayload(PaymentRequestData::from([]), 'success'); // CallbackPayload
+Sisp::storeTransaction(TransactionData::from([]));     // Transaction
+
+Sisp::getMerchantReference();                          // string
+Sisp::getMerchantSession();                            // string
+Sisp::getTimeStamp();                                  // string
+Sisp::getCurrency();                                   // string
+Sisp::getPosId();                                      // string
+Sisp::getPosAutCode();                                 // string
+Sisp::getIs3Dsec();                                    // string
+Sisp::getUrlMerchantResponse();                        // string
+Sisp::getLanguageMessages();                           // string
+Sisp::getFingerprintVersion();                         // string
+Sisp::getDefaultTransactionCode();                     // string
+Sisp::getUri();                                        // string
 ```
 
 ## Multi-Merchant API
@@ -927,11 +987,13 @@ GET    /sisp/callback          -> CallbackController
 POST   /sisp/callback          -> CallbackController
 POST   /sisp/retry-payment     -> RetryPaymentController
 GET    /sisp/cancel            -> CancelTransactionController
-POST   /sisp/refund            -> RefundTransactionController
+POST   /sisp/refund/{transaction} -> RefundTransactionController
 GET    /sisp/sandbox           -> SandboxController
 POST   /sisp/sandbox           -> SandboxController
 GET    /sisp/countries         -> CountriesController
 ```
+
+Refund route middleware is configurable via `config('sisp.middleware.refund')`.
 
 Route names:
 

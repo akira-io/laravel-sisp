@@ -8,7 +8,7 @@ The package registers these routes automatically:
 - `GET|POST /sisp/callback` - SISP callback handler
 - `POST /sisp/retry-payment` - Retry a failed payment
 - `GET /sisp/cancel` - Cancel transaction
-- `POST /sisp/refund` - Refund transaction
+- `POST /sisp/refund/{transaction}` - Refund transaction
 - `GET|POST /sisp/sandbox` - Sandbox testing
 - `GET /sisp/countries` - List countries (ISO codes + flags)
 

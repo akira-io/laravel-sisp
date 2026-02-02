@@ -4,16 +4,24 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Facades;
 
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ScopedSisp;
+use Akira\Sisp\ValueObjects\CallbackPayload;
+use Akira\Sisp\ValueObjects\PaymentRequest;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use Akira\Sisp\ValueObjects\TransactionData;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static \Akira\Sisp\ScopedSisp forCredentials(\Akira\Sisp\ValueObjects\SispCredentials $credentials)
- * @method static \Illuminate\Database\Eloquent\Collection getTransactions()
- * @method static \Akira\Sisp\ValueObjects\PaymentRequest buildRequestPayload(\Akira\Sisp\ValueObjects\PaymentRequestData $data)
- * @method static bool validateCallback(\Akira\Sisp\ValueObjects\CallbackPayload $payload)
- * @method static \Akira\Sisp\Models\Transaction handlePaymentCallback(\Akira\Sisp\ValueObjects\CallbackPayload $payload)
- * @method static \Akira\Sisp\ValueObjects\CallbackPayload generateSandboxPayload(\Akira\Sisp\ValueObjects\PaymentRequestData $data, string $status = 'success')
- * @method static \Akira\Sisp\Models\Transaction storeTransaction(\Akira\Sisp\ValueObjects\TransactionData $data)
+ * @method static ScopedSisp forCredentials(SispCredentials $credentials)
+ * @method static Collection getTransactions()
+ * @method static PaymentRequest buildRequestPayload(PaymentRequestData $data)
+ * @method static bool validateCallback(CallbackPayload $payload)
+ * @method static Transaction handlePaymentCallback(CallbackPayload $payload)
+ * @method static CallbackPayload generateSandboxPayload(PaymentRequestData $data, string $status = 'success')
+ * @method static Transaction storeTransaction(TransactionData $data)
  * @method static string getMerchantReference()
  * @method static string getMerchantSession()
  * @method static string getTimeStamp()

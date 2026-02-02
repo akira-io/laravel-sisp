@@ -25,7 +25,7 @@ You should see these routes:
 - `GET|POST /sisp/callback`
 - `POST /sisp/retry-payment`
 - `GET /sisp/cancel`
-- `POST /sisp/refund`
+- `POST /sisp/refund/{transaction}`
 - `GET|POST /sisp/sandbox`
 - `GET /sisp/countries`
 
@@ -148,6 +148,18 @@ Publish config if needed:
 ```bash
 php artisan vendor:publish --tag=sisp-config --force
 ```
+
+### Paid invoices missing PDFs
+
+If paid invoices lack `pdf_path`, run:
+
+```bash
+php artisan sisp:doctor
+php artisan sisp:regenerate-pdfs --limit=50
+```
+
+`sisp:doctor` reports storage/config issues and sample invoices.  
+`sisp:regenerate-pdfs` generates PDFs only for paid invoices without PDFs.
 
 ## Payment Issues
 

@@ -44,7 +44,7 @@ No, the package registers all routes automatically:
 - `GET|POST /sisp/callback` - SISP callback
 - `POST /sisp/retry-payment` - Retry payment
 - `GET /sisp/cancel` - Cancel transaction
-- `POST /sisp/refund` - Refund transaction
+- `POST /sisp/refund/{transaction}` - Refund transaction
 - `GET /sisp/countries` - Countries list
 
 ### Can I customize the routes?

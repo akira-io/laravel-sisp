@@ -240,6 +240,8 @@ The package:
 
 No manual configuration needed.
 
+Invalid signatures raise `InvalidSignatureException` inside the callback handler.
+
 ## Data Encryption
 
 Sensitive customer fields are automatically encrypted:

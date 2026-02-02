@@ -166,17 +166,24 @@ Cannot be refunded:
 
 ### Refund via Route
 
-POST to `/sisp/refund`:
+POST to `/sisp/refund/{transaction}`:
 
 ```php
-POST /sisp/refund
+POST /sisp/refund/{transaction}
 {
-    "transaction_id": "uuid-here",
     "amount": 500.00
 }
 ```
 
 Dispatches `TransactionRefunded` event.
+
+The refund route middleware is configurable via `config/sisp.php`:
+
+```php
+'middleware' => [
+    'refund' => ['web', 'auth'],
+],
+```
 
 ## Check Transaction Status
 

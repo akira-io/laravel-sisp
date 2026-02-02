@@ -226,6 +226,18 @@ $invoice->update([
 ]);
 ```
 
+## Diagnostics and Repair
+
+If paid invoices are missing PDFs, use the built-in commands:
+
+```bash
+php artisan sisp:doctor
+php artisan sisp:regenerate-pdfs --limit=25
+```
+
+`sisp:doctor` checks configuration, storage access, and reports missing PDFs.
+`sisp:regenerate-pdfs` generates PDFs only for paid invoices with a null `pdf_path`.
+
 ## Next Steps
 
 - [Security](./07-security.md) - Rate limiting and security features

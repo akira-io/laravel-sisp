@@ -213,7 +213,7 @@ TransactionCancelled::dispatch($transaction, $reason);
 ```
 
 ### TransactionRefunded
-Fired when transaction is refunded via `POST /sisp/refund`:
+Fired when transaction is refunded via `POST /sisp/refund/{transaction}`:
 ```php
 TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 ```

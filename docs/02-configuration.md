@@ -129,6 +129,19 @@ SISP_RATE_LIMIT_PER_USER_WINDOW=3600
 
 Window is in seconds. Limit is number of requests per window.
 
+## Route Middleware
+
+Customize middleware assigned to package routes in `config/sisp.php`:
+
+```php
+'middleware' => [
+    // Applied to POST /sisp/refund/{transaction}
+    'refund' => ['web', 'auth'],
+],
+```
+
+Use this to enforce authentication/authorization for refunds.
+
 ## Security Configuration
 
 ```env
