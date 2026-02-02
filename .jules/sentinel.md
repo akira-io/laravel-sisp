@@ -12,3 +12,8 @@
 **Vulnerability:** The `HandleCallbackAction` performed a database lookup/creation (`findOrCreateTransaction`) using the payload data *before* validating the callback signature. This exposed the database to potential DoS attacks and timing attacks from unauthenticated sources.
 **Learning:** Even read-only database operations (or find-or-create) should be protected by signature validation when handling external callbacks. Processing untrusted input against the database is a security risk.
 **Prevention:** Strictly enforce "Validate First" policy. The very first line of code in a callback handler should be the signature validation. Do not touch the database or filesystem until the request is proven authentic.
+
+## 2025-01-30 - [Unprotected Package Routes]
+**Vulnerability:** The package exposed sensitive administrative routes (e.g., `sisp/refund`) via `routes/web.php` without any authentication or authorization middleware configured by default. This allowed any user to trigger refunds if they could guess the transaction ID, bypassing application-level security controls.
+**Learning:** Package routes are automatically registered in the host application. If they perform sensitive actions, they MUST use configurable middleware (defaulting to secure options like `web` and `auth`) to ensure they are protected according to the host application's security context. Hardcoding unprotected routes in a package assumes a level of trust that does not exist for public endpoints.
+**Prevention:** Always expose middleware configuration for package routes in the config file. Set secure defaults (e.g., `['web', 'auth']`) for any route that modifies state or exposes sensitive data.
