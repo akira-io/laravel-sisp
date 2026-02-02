@@ -97,7 +97,7 @@ final class SispServiceProvider extends PackageServiceProvider
 
         // Register Blade anonymous component namespace
         $this->callAfterResolving('blade.compiler', function (BladeCompiler $blade): void {
-            $blade->anonymousComponentNamespace('akira-sisp', __DIR__.'/../resources/views/components');
+            $blade->anonymousComponentNamespace('sisp', __DIR__.'/../resources/views/components');
         });
     }
 }

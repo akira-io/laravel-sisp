@@ -3,7 +3,10 @@
 @section('content')
 <div class="sisp-payment-container flex flex-col items-center justify-center min-h-[50vh] py-12 text-center">
 
-    <x-sisp::loader class="mb-6" />
+    <div class='flex items-center justify-center flex-col mb-6'>
+        <div class='w-16 h-16 border-8 border-t-8 border-slate-800 border-t-violet-500 rounded-full animate-spin mb-4'></div>
+        <p class="dark:text-white text-lg font-semibold animate-pulse">{{ __('Loading...') }}</p>
+    </div>
 
     <h1 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
         {{ __('sisp::payment.redirect_title') }}

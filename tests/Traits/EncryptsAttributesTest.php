@@ -24,6 +24,23 @@ final class TmpEncrypted extends Model
     }
 }
 
+final class TmpEncryptedSelective extends Model
+{
+    use EncryptsAttributes;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+    public $timestamps = false;
+
+    protected $table = 'tmp_encrypts_selective';
+
+    protected $fillable = ['secret', 'note'];
+
+    protected function encryptable(): array
+    {
+        return ['secret'];
+    }
+}
+
 it('encrypts and decrypts string attributes via trait', function (): void {
     Schema::create('tmp_encrypts', function (Blueprint $table): void {
         $table->id();
@@ -64,6 +81,28 @@ final class TmpEncryptAll extends Model
     protected $fillable = ['notes'];
 }
 
+final class TmpEncryptedAccessor extends Model
+{
+    use EncryptsAttributes;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+    public $timestamps = false;
+
+    protected $table = 'tmp_encrypts_accessor';
+
+    protected $fillable = ['secret'];
+
+    protected function encryptable(): array
+    {
+        return ['secret'];
+    }
+
+    protected function getSecretAttribute($value): string
+    {
+        return Illuminate\Support\Facades\Crypt::encryptString('accessor-secret');
+    }
+}
+
 it('encrypts all attributes when encryptable list is empty', function (): void {
     Schema::create('tmp_encrypts_all', function (Blueprint $table): void {
         $table->id();
@@ -76,6 +115,17 @@ it('encrypts all attributes when encryptable list is empty', function (): void {
 
     $found = TmpEncryptAll::query()->find($m->id);
     expect($found->notes)->toBe('secret-note');
+});
+
+it('decrypts when accessor returns encrypted value and raw attribute is null', function (): void {
+    Schema::create('tmp_encrypts_accessor', function (Blueprint $table): void {
+        $table->id();
+        $table->text('secret')->nullable();
+    });
+
+    $m = TmpEncryptedAccessor::query()->create(['secret' => null]);
+    $found = TmpEncryptedAccessor::query()->find($m->id);
+    expect($found->secret)->toBe('accessor-secret');
 });
 
 it('does not encrypt non-string values', function (): void {
@@ -112,6 +162,27 @@ it('does not double-encrypt values already encrypted', function (): void {
 
     $found = new TmpEncrypted()->setTable('tmp_encrypts2')->find($m->id);
     expect($found->secret)->toBe('already');
+});
+
+it('does not encrypt attributes not in encryptable list', function (): void {
+    Schema::create('tmp_encrypts_selective', function (Blueprint $table): void {
+        $table->id();
+        $table->text('secret')->nullable();
+        $table->text('note')->nullable();
+    });
+
+    $m = TmpEncryptedSelective::query()->create([
+        'secret' => 'top-secret',
+        'note' => 'plain-note',
+    ]);
+
+    $row = Illuminate\Support\Facades\DB::table('tmp_encrypts_selective')->where('id', $m->id)->first();
+    expect($row->secret)->not->toBe('top-secret')
+        ->and($row->note)->toBe('plain-note');
+
+    $found = TmpEncryptedSelective::query()->find($m->id);
+    expect($found->secret)->toBe('top-secret')
+        ->and($found->note)->toBe('plain-note');
 });
 
 it('falls back when raw attribute decryption fails and returns original', function (): void {

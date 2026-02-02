@@ -1,6 +1,9 @@
 <x-sisp::layouts.app>
     <div class="min-h-screen flex flex-col justify-center items-center bg-gray-900 text-center p-4">
-        <x-sisp::loader/>
+        <div class='flex items-center justify-center flex-col'>
+            <div class='w-16 h-16 border-8 border-t-8 border-slate-800 border-t-violet-500 rounded-full animate-spin mb-4'></div>
+            <p class="dark:text-white text-lg font-semibold animate-pulse">{{ __('Loading...') }}</p>
+        </div>
 
         <p class="mt-4 text-white text-lg font-medium animate-pulse">
             {{ __('sisp::payment.redirect_title') }}...
