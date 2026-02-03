@@ -14,7 +14,7 @@ it('allows refund when auth callback returns true', function (): void {
         'amount' => 100.0,
     ]);
 
-    Sisp::auth(fn () => true);
+    Sisp::auth(fn (): true => true);
 
     $controller = resolve(RefundTransactionController::class);
     $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 50.0]);
@@ -30,7 +30,7 @@ it('denies refund when auth callback returns false', function (): void {
         'amount' => 100.0,
     ]);
 
-    Sisp::auth(fn () => false);
+    Sisp::auth(fn (): false => false);
 
     $controller = resolve(RefundTransactionController::class);
     $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 50.0]);
@@ -44,7 +44,6 @@ it('allows refund in testing environment by default', function (): void {
     // Reset callback using reflection since there is no public unset method
     $reflection = new ReflectionClass(Sisp::class);
     $property = $reflection->getProperty('authCallback');
-    $property->setAccessible(true);
     $property->setValue(null);
 
     $t = Transaction::factory()->create([

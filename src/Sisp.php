@@ -163,7 +163,7 @@ final class Sisp
 
     public function checkRefundAuthorization(Request $request, Transaction $transaction): bool
     {
-        if (self::$authCallback) {
+        if (self::$authCallback instanceof Closure) {
             return (bool) call_user_func(self::$authCallback, $request, $transaction);
         }
 
