@@ -219,7 +219,7 @@ it('falls back when raw attribute appears encrypted but decryption fails', funct
     $fakeEncrypted = base64_encode($json);
 
     // Ensure our fake setup passes the "isEncrypted" checks roughly
-    expect(strlen($fakeEncrypted))->toBeGreaterThan(100);
+    expect(mb_strlen($fakeEncrypted))->toBeGreaterThan(100);
 
     $id = Illuminate\Support\Facades\DB::table('tmp_encrypts_fail_fake')->insertGetId(['secret' => $fakeEncrypted]);
 
