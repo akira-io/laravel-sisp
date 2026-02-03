@@ -17,17 +17,21 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
+use Closure;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 
-final readonly class Sisp
+final class Sisp
 {
+    private static ?Closure $authCallback = null;
+
     public function __construct(
-        private BuildRequestPayloadAction $buildRequestPayload,
-        private BuildSandboxPayloadAction $buildSandboxPayload,
-        private ValidatePaymentResponseFingerprintAction $validateFingerprint,
-        private CreateTransactionAction $createTransaction,
-        private HandleCallbackAction $handleCallback,
-        private LoadConfig $loadConfig,
+        private readonly BuildRequestPayloadAction $buildRequestPayload,
+        private readonly BuildSandboxPayloadAction $buildSandboxPayload,
+        private readonly ValidatePaymentResponseFingerprintAction $validateFingerprint,
+        private readonly CreateTransactionAction $createTransaction,
+        private readonly HandleCallbackAction $handleCallback,
+        private readonly LoadConfig $loadConfig,
     ) {}
 
     public function forCredentials(SispCredentials $credentials): ScopedSisp
@@ -150,5 +154,19 @@ final readonly class Sisp
     public function getCountryName(string $alpha2): ?string
     {
         return Countries::getName($alpha2);
+    }
+
+    public static function auth(Closure $callback): void
+    {
+        self::$authCallback = $callback;
+    }
+
+    public function checkRefundAuthorization(Request $request, Transaction $transaction): bool
+    {
+        if (self::$authCallback) {
+            return (bool) call_user_func(self::$authCallback, $request, $transaction);
+        }
+
+        return app()->environment('local', 'testing');
     }
 }
