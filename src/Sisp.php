@@ -34,6 +34,11 @@ final class Sisp
         private readonly LoadConfig $loadConfig,
     ) {}
 
+    public static function auth(Closure $callback): void
+    {
+        self::$authCallback = $callback;
+    }
+
     public function forCredentials(SispCredentials $credentials): ScopedSisp
     {
         return new ScopedSisp(
@@ -154,11 +159,6 @@ final class Sisp
     public function getCountryName(string $alpha2): ?string
     {
         return Countries::getName($alpha2);
-    }
-
-    public static function auth(Closure $callback): void
-    {
-        self::$authCallback = $callback;
     }
 
     public function checkRefundAuthorization(Request $request, Transaction $transaction): bool
