@@ -199,3 +199,34 @@ it('falls back when raw attribute decryption fails and returns original', functi
 
     expect($found->secret)->toBe('bogus');
 });
+
+it('falls back when raw attribute appears encrypted but decryption fails', function (): void {
+    Schema::create('tmp_encrypts_fail_fake', function (Blueprint $table): void {
+        $table->id();
+        $table->text('secret')->nullable();
+    });
+
+    // Create a payload that mimics Laravel's encryption structure (Base64 encoded JSON with iv, value, mac)
+    // but contains invalid data that will cause Crypt::decryptString to throw.
+    // Length must be >= 100 to pass length check.
+    $fakePayload = [
+        'iv' => base64_encode('random_iv_string_that_is_16_bytes_long'),
+        'value' => base64_encode('random_value_string_that_is_long_enough_to_be_interesting_and_pass_length_checks'),
+        'mac' => 'invalid_mac_signature',
+    ];
+    $json = json_encode($fakePayload);
+    // Pad it to ensure >100 chars if needed (though the content above should be enough)
+    $fakeEncrypted = base64_encode($json);
+
+    // Ensure our fake setup passes the "isEncrypted" checks roughly
+    expect(strlen($fakeEncrypted))->toBeGreaterThan(100);
+
+    $id = Illuminate\Support\Facades\DB::table('tmp_encrypts_fail_fake')->insertGetId(['secret' => $fakeEncrypted]);
+
+    $model = new TmpEncrypted();
+    $model->setTable('tmp_encrypts_fail_fake');
+    $found = $model->find($id);
+
+    // Should return the original fake encrypted string because decryption failed
+    expect($found->secret)->toBe($fakeEncrypted);
+});
