@@ -13,7 +13,7 @@ use Akira\Sisp\Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-class RegenerateMissingInvoicePdfsCommandPerformanceTest extends TestCase
+final class RegenerateMissingInvoicePdfsCommandPerformanceTest extends TestCase
 {
     public function test_it_optimizes_queries_for_pdf_regeneration(): void
     {
@@ -71,7 +71,7 @@ class RegenerateMissingInvoicePdfsCommandPerformanceTest extends TestCase
 
         // Check if PDF generation succeeded
         $invoice = Invoice::first();
-        $this->assertNotNull($invoice->pdf_path, "Invoice PDF path is null. Generation failed.");
+        $this->assertNotNull($invoice->pdf_path, 'Invoice PDF path is null. Generation failed.');
 
         // Assert we have reduced queries
         $this->assertLessThan(10, $queryCount, "Expected optimized queries (< 10), got {$queryCount}");
