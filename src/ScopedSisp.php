@@ -19,7 +19,6 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Database\Eloquent\Collection;
 
 final readonly class ScopedSisp
 {
