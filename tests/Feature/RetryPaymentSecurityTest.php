@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\URL;
 
-it('forbids retry requests with missing signature', function () {
+it('forbids retry requests with missing signature', function (): void {
     $transaction = Transaction::factory()->failed()->create();
 
     $url = route('sisp.retry-payment', ['transaction' => $transaction->id]);
@@ -15,7 +15,7 @@ it('forbids retry requests with missing signature', function () {
     $response->assertStatus(403);
 });
 
-it('forbids retry requests with invalid signature', function () {
+it('forbids retry requests with invalid signature', function (): void {
     $transaction = Transaction::factory()->failed()->create();
 
     $url = URL::signedRoute('sisp.retry-payment', ['transaction' => $transaction->id]);
@@ -28,7 +28,7 @@ it('forbids retry requests with invalid signature', function () {
     $response->assertStatus(403);
 });
 
-it('forbids retry requests when tampering with transaction id', function () {
+it('forbids retry requests when tampering with transaction id', function (): void {
     $transaction = Transaction::factory()->failed()->create();
     $otherTransaction = Transaction::factory()->failed()->create();
 
@@ -48,7 +48,7 @@ it('forbids retry requests when tampering with transaction id', function () {
     $response->assertStatus(403);
 });
 
-it('allows valid signed retry requests', function () {
+it('allows valid signed retry requests', function (): void {
     $transaction = Transaction::factory()->failed()->create();
 
     $url = URL::signedRoute('sisp.retry-payment', ['transaction' => $transaction->id]);
