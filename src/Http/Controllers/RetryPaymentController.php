@@ -6,7 +6,6 @@ namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\RenderPaymentFormBasedOnConfigAction;
 use Akira\Sisp\Actions\RetryPaymentAction;
-use Akira\Sisp\Http\Requests\RetryPaymentRequest;
 use Akira\Sisp\Models\Transaction;
 
 final readonly class RetryPaymentController
@@ -16,10 +15,8 @@ final readonly class RetryPaymentController
         private RenderPaymentFormBasedOnConfigAction $renderForm,
     ) {}
 
-    public function __invoke(RetryPaymentRequest $request): mixed
+    public function __invoke(Transaction $transaction): mixed
     {
-        $transaction = Transaction::query()->findOrFail($request->integer('transaction_id'));
-
         $paymentRequest = $this->retryPayment->handle($transaction);
 
         return $this->renderForm->handle($paymentRequest, $transaction->locale);

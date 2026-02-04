@@ -66,7 +66,6 @@ abstract class TestCase extends Orchestra
     {
         return [
             SispServiceProvider::class,
-            DebuggerServiceProvider::class,
         ];
     }
 }

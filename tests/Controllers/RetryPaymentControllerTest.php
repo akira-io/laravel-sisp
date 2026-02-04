@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\URL;
 
 it('retries payment and renders form', function (): void {
     $t = Transaction::factory()->create([
@@ -13,6 +14,6 @@ it('retries payment and renders form', function (): void {
         'currency' => '132',
     ]);
 
-    $response = $this->post(route('sisp.retry-payment'), ['transaction_id' => $t->id]);
+    $response = $this->post(URL::signedRoute('sisp.retry-payment', $t));
     $response->assertStatus(200);
 });

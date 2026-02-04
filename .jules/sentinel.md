@@ -17,3 +17,8 @@
 **Vulnerability:** The package exposed sensitive administrative routes (e.g., `sisp/refund`) via `routes/web.php` without any authentication or authorization middleware configured by default. This allowed any user to trigger refunds if they could guess the transaction ID, bypassing application-level security controls.
 **Learning:** Package routes are automatically registered in the host application. If they perform sensitive actions, they MUST use configurable middleware (defaulting to secure options like `web` and `auth`) to ensure they are protected according to the host application's security context. Hardcoding unprotected routes in a package assumes a level of trust that does not exist for public endpoints.
 **Prevention:** Always expose middleware configuration for package routes in the config file. Set secure defaults (e.g., `['web', 'auth']`) for any route that modifies state or exposes sensitive data.
+
+## 2025-01-31 - [Unsecured Retry Payment IDOR]
+**Vulnerability:** The `sisp/retry-payment` endpoint was vulnerable to Insecure Direct Object Reference (IDOR). It accepted a `transaction_id` via POST body without any authentication or signature verification, allowing anyone to retry (and potentially view details of) any transaction by guessing its ID.
+**Learning:** "Stateless" actions that need to be accessible to guest users (like retrying a payment after a callback) cannot rely on `auth` middleware but must be secured against manipulation.
+**Prevention:** Use Laravel's Signed Routes (`URL::signedRoute` and `middleware('signed')`) for any action link that grants capabilities to a guest user. This ensures the request parameters (like transaction ID) have not been tampered with since the link was generated.

@@ -140,7 +140,7 @@ it('does not encrypt non-string values', function (): void {
     $m->secret = null; // not string, should pass through
     $m->save();
 
-    $found = new TmpEncrypted()->setTable('tmp_encrypts_non_str')->find($m->id);
+    $found = (new TmpEncrypted())->setTable('tmp_encrypts_non_str')->find($m->id);
     expect($found->secret)->toBeNull();
 });
 
@@ -160,7 +160,7 @@ it('does not double-encrypt values already encrypted', function (): void {
     $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts2')->where('id', $m->id)->value('secret');
     expect($raw)->toBe($already);
 
-    $found = new TmpEncrypted()->setTable('tmp_encrypts2')->find($m->id);
+    $found = (new TmpEncrypted())->setTable('tmp_encrypts2')->find($m->id);
     expect($found->secret)->toBe('already');
 });
 
