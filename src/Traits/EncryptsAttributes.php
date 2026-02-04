@@ -44,7 +44,14 @@ trait EncryptsAttributes
 
             if (is_string($value) && $this->isEncrypted($value)) {
                 try {
-                    return Crypt::decryptString($value);
+                    $decrypted = Crypt::decryptString($value);
+                    // Attempt to decode JSON as the original value might have been an array/object
+                    $decoded = json_decode($decrypted, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        return $decoded;
+                    }
+
+                    return $decrypted;
                 } catch (Throwable) {
                     return $value;
                 }
@@ -93,7 +100,7 @@ trait EncryptsAttributes
         // Try strict decoding first for performance/correctness
         $decoded = base64_decode($value, true);
 
-        // Fallback to loose decoding if strict fails (e.g. whitespace)
+        // Fallback to loose decoding if strict fails
         if ($decoded === false) {
             $decoded = base64_decode($value);
             if ($decoded === false) {
