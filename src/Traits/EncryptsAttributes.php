@@ -103,9 +103,6 @@ trait EncryptsAttributes
         // Fallback to loose decoding if strict fails
         if ($decoded === false) {
             $decoded = base64_decode($value);
-            if ($decoded === false) {
-                return false;
-            }
         }
 
         $payload = json_decode($decoded, true);
