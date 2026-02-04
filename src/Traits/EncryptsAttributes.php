@@ -90,9 +90,15 @@ trait EncryptsAttributes
             return false;
         }
 
+        // Try strict decoding first for performance/correctness
         $decoded = base64_decode($value, true);
+
+        // Fallback to loose decoding if strict fails (e.g. whitespace)
         if ($decoded === false) {
-            return false;
+            $decoded = base64_decode($value);
+            if ($decoded === false) {
+                return false;
+            }
         }
 
         $payload = json_decode($decoded, true);
