@@ -66,7 +66,7 @@ it('stores a transaction and lists it via facade', function (): void {
     expect($t)->toBeInstanceOf(Transaction::class)
         ->and($t->exists)->toBeTrue();
 
-    $all = Sisp::getTransactions();
+    $all = Sisp::getTransactions()->get();
     expect($all->contains(fn ($tr): bool => $tr->id === $t->id))->toBeTrue();
 });
 

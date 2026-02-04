@@ -33,9 +33,9 @@ final readonly class ScopedSisp
         $this->resolver = new ScopedSispCredentialsResolver($credentials);
     }
 
-    public function getTransactions(): Collection
+    public function getTransactions(): \Illuminate\Database\Eloquent\Builder
     {
-        return Transaction::query()->get();
+        return Transaction::query();
     }
 
     public function buildRequestPayload(PaymentRequestData $data): PaymentRequest

@@ -39,9 +39,9 @@ final readonly class Sisp
         );
     }
 
-    public function getTransactions(): Collection
+    public function getTransactions(): \Illuminate\Database\Eloquent\Builder
     {
-        return Transaction::query()->get();
+        return Transaction::query();
     }
 
     public function buildRequestPayload(PaymentRequestData $data): PaymentRequest

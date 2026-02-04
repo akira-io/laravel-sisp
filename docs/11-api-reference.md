@@ -816,7 +816,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\TransactionData;
 
-Sisp::getTransactions();                               // Collection
+Sisp::getTransactions();                               // Builder
 Sisp::buildRequestPayload(PaymentRequestData::from([])); // PaymentRequest
 Sisp::validateCallback(CallbackPayload::from([]));     // bool
 Sisp::handlePaymentCallback(CallbackPayload::from([])); // Transaction
