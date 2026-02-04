@@ -29,7 +29,7 @@ final class RegenerateMissingInvoicePdfsCommandPerformanceTest extends TestCase
             $transaction = Transaction::factory()->create(['locale' => 'pt-CV']);
             TransactionItem::factory()->count(2)->forTransaction($transaction)->create();
 
-            Invoice::create([
+            Invoice::query()->create([
                 'transaction_id' => $transaction->id,
                 'invoice_number' => "INV-$i",
                 'invoice_date' => now(),
@@ -42,7 +42,7 @@ final class RegenerateMissingInvoicePdfsCommandPerformanceTest extends TestCase
         }
 
         // Ensure we have 5 invoices
-        $this->assertEquals(5, Invoice::count());
+        $this->assertEquals(5, Invoice::query()->count());
 
         // Count queries
         DB::enableQueryLog();
@@ -70,7 +70,7 @@ final class RegenerateMissingInvoicePdfsCommandPerformanceTest extends TestCase
         // Optimized: 1 (invoices) + 1 (transactions) + 1 (items) + 5 (updates) = 8
 
         // Check if PDF generation succeeded
-        $invoice = Invoice::first();
+        $invoice = Invoice::query()->first();
         $this->assertNotNull($invoice->pdf_path, 'Invoice PDF path is null. Generation failed.');
 
         // Assert we have reduced queries
