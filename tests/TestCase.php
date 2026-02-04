@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Tests;
 
-use Akira\Debugger\DebuggerServiceProvider;
 use Akira\Sisp\SispServiceProvider;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Factories\Factory;

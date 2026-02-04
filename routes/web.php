@@ -16,7 +16,7 @@ Route::post('sisp/payment', PaymentController::class)
     ->name('sisp.payment');
 
 Route::post('sisp/retry-payment/{transaction}', RetryPaymentController::class)
-    ->middleware(\Illuminate\Routing\Middleware\ValidateSignature::class)
+    ->middleware(Illuminate\Routing\Middleware\ValidateSignature::class)
     ->name('sisp.retry-payment');
 
 Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)

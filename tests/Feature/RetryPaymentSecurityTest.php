@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\URL;
 
