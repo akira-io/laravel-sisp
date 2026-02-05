@@ -28,7 +28,7 @@ trait EncryptsAttributes
             // Prefer decrypting from raw attribute to bypass casts when necessary
             $raw = $this->attributes[$key] ?? null;
 
-            if (is_string($raw)) {
+            if (is_string($raw) && $this->mightBeEncrypted($raw)) {
                 try {
                     $decrypted = Crypt::decryptString($raw);
                     $decoded = json_decode($decrypted, true);
@@ -42,7 +42,7 @@ trait EncryptsAttributes
                 }
             }
 
-            if (is_string($value)) {
+            if (is_string($value) && $this->mightBeEncrypted($value)) {
                 try {
                     return Crypt::decryptString($value);
                 } catch (Throwable) {
@@ -74,12 +74,8 @@ trait EncryptsAttributes
         return [];
     }
 
-    private function isEncrypted(mixed $value): bool
+    private function mightBeEncrypted(string $value): bool
     {
-        if (! is_string($value)) {
-            return false;
-        }
-
         if (str_starts_with($value, '{') || str_starts_with($value, '[')) {
             return false;
         }
@@ -87,6 +83,19 @@ trait EncryptsAttributes
         // Fast check for potentially encrypted values
         // Laravel encrypted values are base64 encoded JSON objects containing 'iv', 'value', 'mac'
         if (mb_strlen($value) < 100) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function isEncrypted(mixed $value): bool
+    {
+        if (! is_string($value)) {
+            return false;
+        }
+
+        if (! $this->mightBeEncrypted($value)) {
             return false;
         }
 

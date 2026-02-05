@@ -15,3 +15,7 @@
 ## 2026-01-29 - Expensive Decryption Check
 **Learning:** Checking if a string is encrypted by attempting to decrypt it (`Crypt::decryptString`) is expensive even when successful (~12us). A structural check (Base64 + JSON + keys) is significantly faster (~4us) and avoids crypto overhead.
 **Action:** Validate encryption status using lightweight structural checks (Base64 + JSON keys) instead of full decryption when security verification is not immediately required (e.g. state checks).
+
+## 2026-05-25 - Optimizing Attribute Retrieval
+**Learning:** `EncryptsAttributes::getAttribute` was incurring exception overhead for unencrypted values by blindly attempting decryption. Implementing the lightweight `mightBeEncrypted` check (from previous learnings) in the read path eliminates this overhead and improves performance for mixed data models.
+**Action:** Ensure expensive operations in hot paths (like attribute accessors) are guarded by cheap pre-checks, especially when they involve exception handling.
