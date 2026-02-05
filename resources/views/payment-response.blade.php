@@ -80,9 +80,8 @@
 
         <div class="mt-8 space-y-2">
             @if($transaction->status === 'failed' && $allowRetry)
-                <form method="POST" action="{{ route('sisp.retry-payment') }}" class="w-full">
+                <form method="POST" action="{{ \Illuminate\Support\Facades\URL::signedRoute('sisp.retry-payment', ['transaction' => $transaction->id]) }}" class="w-full">
                     @csrf
-                    <input type="hidden" name="transaction_id" value="{{ $transaction->id }}">
                     <button type="submit" class="block w-full rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-center font-medium text-white transition">
                         {{ __('sisp::messages.payment.response.retry_payment') }}
                     </button>

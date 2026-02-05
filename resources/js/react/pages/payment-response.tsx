@@ -57,6 +57,7 @@ interface PaymentResponseProps {
     error?: ErrorData | null;
     translations?: Translations;
     allowRetry?: boolean;
+    retryUrl?: string;
     invoice?: InvoiceData | null;
     payload: Record<string, any>;
 }
@@ -100,12 +101,12 @@ export default function PaymentResponse({
     const isPending = transaction.status === 'pending';
     const t = translations.payment;
 
-    const {post, processing} = useForm({
-        transaction_id: transaction.id,
-    });
+    const {post, processing} = useForm({});
 
     const handleRetryPayment = () => {
-        post('/sisp/retry-payment');
+        if (props.retryUrl) {
+            post(props.retryUrl);
+        }
     };
 
     useEffect(() => {

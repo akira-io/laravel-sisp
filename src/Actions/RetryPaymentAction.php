@@ -22,10 +22,10 @@ final readonly class RetryPaymentAction
     private function extractFromTransaction(Transaction $transaction): PaymentRequestData
     {
         return new PaymentRequestData(
-            amount: $transaction->amount,
+            amount: (float) $transaction->amount,
             merchantRef: $transaction->merchant_ref,
             merchantSession: $transaction->merchant_session,
-            timeStamp: $transaction->created_at->format('Y-m-d H:i:s'),
+            timeStamp: ($transaction->created_at ?? now())->format('Y-m-d H:i:s'),
             currency: $transaction->currency,
             transactionCode: $transaction->transaction_code,
             token: '',

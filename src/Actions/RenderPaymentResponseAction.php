@@ -53,6 +53,7 @@ final readonly class RenderPaymentResponseAction
             'error' => $this->getStructuredError($transaction),
             'translations' => $this->getTranslations->handle(),
             'allowRetry' => $this->config->isRetryAllowed(),
+            'retryUrl' => $this->config->isRetryAllowed() ? \Illuminate\Support\Facades\URL::signedRoute('sisp.retry-payment', ['transaction' => $transaction->id]) : null,
             'invoice' => $invoice ? [
                 'invoice_number' => $invoice->invoice_number,
                 'pdf_url' => $invoice->pdf_url,
