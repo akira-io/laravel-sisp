@@ -10,7 +10,7 @@ it('uses Inertia when configured for response rendering', function (): void {
     config()->set('sisp.use_inertia.enabled', true);
 
     $action = resolve(RenderPaymentResponseBasedOnConfigAction::class);
-    $transaction = new Transaction([
+    $transaction = Transaction::factory()->create([
         'amount' => 100.0,
         'currency' => '132',
         'status' => TransactionStatus::pending,
@@ -26,7 +26,7 @@ it('falls back to Blade when Inertia disabled for response rendering', function 
     config()->set('sisp.use_inertia.enabled', false);
 
     $action = resolve(RenderPaymentResponseBasedOnConfigAction::class);
-    $transaction = new Transaction([
+    $transaction = Transaction::factory()->create([
         'amount' => 20.0,
         'currency' => '132',
         'status' => TransactionStatus::pending,
