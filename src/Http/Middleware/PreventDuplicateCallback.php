@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Middleware;
 
+use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +25,16 @@ final class PreventDuplicateCallback
 
     private function isAlreadyProcessed(Request $request): bool
     {
+        try {
+            $payload = CallbackPayload::from($request->all());
+
+            if (! Sisp::validateCallback($payload)) {
+                return false;
+            }
+        } catch (\Throwable) {
+            return false;
+        }
+
         $merchantRef = $request->input('merchantRespMerchantRef');
         $merchantSession = $request->input('merchantRespMerchantSession');
         $request->input('merchantRespTid');

@@ -17,3 +17,8 @@
 **Vulnerability:** The package exposed sensitive administrative routes (e.g., `sisp/refund`) via `routes/web.php` without any authentication or authorization middleware configured by default. This allowed any user to trigger refunds if they could guess the transaction ID, bypassing application-level security controls.
 **Learning:** Package routes are automatically registered in the host application. If they perform sensitive actions, they MUST use configurable middleware (defaulting to secure options like `web` and `auth`) to ensure they are protected according to the host application's security context. Hardcoding unprotected routes in a package assumes a level of trust that does not exist for public endpoints.
 **Prevention:** Always expose middleware configuration for package routes in the config file. Set secure defaults (e.g., `['web', 'auth']`) for any route that modifies state or exposes sensitive data.
+
+## 2025-02-12 - [Duplicate Check before Signature Validation]
+**Vulnerability:** The `PreventDuplicateCallback` middleware checked the database for existing transactions using request parameters *before* validating the request signature. This allowed attackers to perform DB lookups/DoS attacks by sending spoofed requests with valid-looking merchant references but invalid signatures.
+**Learning:** Middleware sequence and internal logic order is critical. Checking "Is this processed?" usually implies checking "Is this a valid request?" first.
+**Prevention:** Always validate the request (signature/auth) before performing any resource-intensive or state-dependent checks, especially those involving database queries.
