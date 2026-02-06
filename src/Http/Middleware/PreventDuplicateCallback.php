@@ -10,6 +10,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 final class PreventDuplicateCallback
 {
@@ -31,7 +32,7 @@ final class PreventDuplicateCallback
             if (! Sisp::validateCallback($payload)) {
                 return false;
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
 

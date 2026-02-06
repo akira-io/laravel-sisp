@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use Akira\Sisp\Models\Transaction;
 
-function generateTestFingerprint(array $data): string {
+function generateTestFingerprint(array $data): string
+{
     // Mimic PostAutCode logic
     $posAutCodeVal = config('sisp.posAutCode');
     $posAutCodeHash = base64_encode(hash('sha512', $posAutCodeVal, true));
