@@ -8,7 +8,7 @@ function generateTestFingerprint(array $data): string
 {
     // Mimic PostAutCode logic
     $posAutCodeVal = config('sisp.posAutCode');
-    $posAutCodeHash = base64_encode(hash('sha512', $posAutCodeVal, true));
+    $posAutCodeHash = base64_encode(hash('sha512', (string) $posAutCodeVal, true));
 
     // Mimic CallbackPayload::from defaults
     $merchantRef = $data['merchantRespMerchantRef'] ?? '';
