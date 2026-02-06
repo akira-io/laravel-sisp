@@ -91,10 +91,12 @@ trait EncryptsAttributes
         }
 
         $decoded = base64_decode($value);
+        /** @phpstan-ignore identical.alwaysFalse */
         if ($decoded === false) {
             return false;
         }
 
+        /** @var string $decoded */
         $payload = json_decode($decoded, true);
         if (! is_array($payload)) {
             return false;
