@@ -19,7 +19,9 @@
             "getters",
             "roadmap",
             "addr",
-            "pdfs"
+            "pdfs",
+            "idor",
+            "docblocks"
         ],
         "paths": []
     }
