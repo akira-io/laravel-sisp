@@ -8,6 +8,7 @@ use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 
 final readonly class RenderPaymentResponseAction
@@ -28,6 +29,7 @@ final readonly class RenderPaymentResponseAction
             'payload' => $payload,
             'error' => $this->getStructuredError($transaction),
             'allowRetry' => $this->config->isRetryAllowed(),
+            'retryUrl' => URL::signedRoute('sisp.retry-payment', ['transaction' => $transaction]),
         ]);
     }
 
@@ -53,6 +55,7 @@ final readonly class RenderPaymentResponseAction
             'error' => $this->getStructuredError($transaction),
             'translations' => $this->getTranslations->handle(),
             'allowRetry' => $this->config->isRetryAllowed(),
+            'retryUrl' => URL::signedRoute('sisp.retry-payment', ['transaction' => $transaction]),
             'invoice' => $invoice ? [
                 'invoice_number' => $invoice->invoice_number,
                 'pdf_url' => $invoice->pdf_url,

@@ -15,8 +15,9 @@ Route::post('sisp/payment', PaymentController::class)
     ->middleware(Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class)
     ->name('sisp.payment');
 
-Route::post('sisp/retry-payment', RetryPaymentController::class)
-    ->name('sisp.retry-payment');
+Route::get('sisp/retry-payment/{transaction}', RetryPaymentController::class)
+    ->name('sisp.retry-payment')
+    ->middleware('signed');
 
 Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->withoutMiddleware('web')
