@@ -61,7 +61,7 @@ it('resets when window elapsed then counts again', function (): void {
     ]);
 
     // Next handle should reset and then record a hit without throwing
-    $action->handle('ip', $identifier, null, 10, 1);
+    $action->handle('ip', $identifier, null, 10, 60);
 
     $fresh = RateLimit::query()->find($rl->id);
     expect($fresh->hits)->toBe(1)
