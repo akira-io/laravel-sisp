@@ -77,7 +77,7 @@ trait EncryptsAttributes
         return parent::setAttribute($key, $value);
     }
 
-    public function setRawAttributes(array $attributes, $sync = false): static
+    public function setRawAttributes(array $attributes, mixed $sync = false): static
     {
         $this->decryptedAttributesCache = [];
 
