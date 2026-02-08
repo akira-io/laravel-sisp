@@ -41,7 +41,7 @@ final class Sisp
 
     public static function checkAuth(Request $request, ?Transaction $transaction = null): bool
     {
-        if (self::$authCallback) {
+        if (self::$authCallback instanceof Closure) {
             return (bool) call_user_func(self::$authCallback, $request, $transaction);
         }
 

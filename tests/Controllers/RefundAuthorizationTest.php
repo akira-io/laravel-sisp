@@ -9,14 +9,13 @@ use Akira\Sisp\Sisp;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-afterEach(function () {
+afterEach(function (): void {
     $reflection = new ReflectionClass(Sisp::class);
     $property = $reflection->getProperty('authCallback');
-    $property->setAccessible(true);
     $property->setValue(null, null);
 });
 
-it('allows refund when auth callback is not set (default)', function () {
+it('allows refund when auth callback is not set (default)', function (): void {
     $t = Transaction::factory()->create([
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
@@ -30,8 +29,8 @@ it('allows refund when auth callback is not set (default)', function () {
     expect($response->getStatusCode())->toBe(200);
 });
 
-it('allows refund when auth callback returns true', function () {
-    Sisp::auth(fn () => true);
+it('allows refund when auth callback returns true', function (): void {
+    Sisp::auth(fn (): true => true);
 
     $t = Transaction::factory()->create([
         'status' => TransactionStatus::completed->value,
@@ -46,8 +45,8 @@ it('allows refund when auth callback returns true', function () {
     expect($response->getStatusCode())->toBe(200);
 });
 
-it('denies refund when auth callback returns false', function () {
-    Sisp::auth(fn () => false);
+it('denies refund when auth callback returns false', function (): void {
+    Sisp::auth(fn (): false => false);
 
     $t = Transaction::factory()->create([
         'status' => TransactionStatus::completed->value,
@@ -61,14 +60,14 @@ it('denies refund when auth callback returns false', function () {
         ->toThrow(HttpException::class, 'Unauthorized action.');
 });
 
-it('passes request and transaction to auth callback', function () {
+it('passes request and transaction to auth callback', function (): void {
     $called = false;
     $t = Transaction::factory()->create([
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
     ]);
 
-    Sisp::auth(function (Request $request, ?Transaction $transaction) use (&$called, $t) {
+    Sisp::auth(function (Request $request, ?Transaction $transaction) use (&$called, $t): true {
         $called = true;
         expect($transaction->id)->toBe($t->id);
         expect($request->input('amount'))->toBe(50.0);
