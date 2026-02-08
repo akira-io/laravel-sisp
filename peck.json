@@ -19,7 +19,10 @@
             "getters",
             "roadmap",
             "addr",
-            "pdfs"
+            "pdfs",
+            "idor",
+            "docblocks",
+            "postautcode"
         ],
         "paths": []
     }
