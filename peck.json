@@ -19,7 +19,8 @@
             "getters",
             "roadmap",
             "addr",
-            "pdfs"
+            "pdfs",
+            "decrypted"
         ],
         "paths": []
     }
