@@ -6,6 +6,7 @@ namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\RefundTransactionAction;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Sisp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use LogicException;
@@ -18,6 +19,8 @@ final readonly class RefundTransactionController
 
     public function __invoke(Transaction $transaction, Request $request): JsonResponse
     {
+        abort_unless(Sisp::checkAuth($request, $transaction), 403, 'Unauthorized action.');
+
         $refundAmount = (float) $request->input('amount');
         $reason = $request->input('reason', 'user_refund');
 
