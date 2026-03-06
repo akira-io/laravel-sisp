@@ -24,13 +24,20 @@ final readonly class RetryPaymentAction
         return new PaymentRequestData(
             amount: $transaction->amount,
             merchantRef: $transaction->merchant_ref,
-            merchantSession: $transaction->merchant_session,
-            timeStamp: $transaction->created_at->format('Y-m-d H:i:s'),
+            merchantSession: null,
+            timeStamp: null,
             currency: $transaction->currency,
             transactionCode: $transaction->transaction_code,
             token: '',
             entityCode: '',
             referenceNumber: '',
+            locale: $transaction->locale,
+            customerEmail: $transaction->customer_email,
+            customerCountry: $transaction->customer_country,
+            customerCity: $transaction->customer_city,
+            customerAddress: $transaction->customer_address,
+            customerPostalCode: $transaction->customer_postal_code ?? '0000',
+            customerPhone: $transaction->customer_phone,
         );
     }
 }
