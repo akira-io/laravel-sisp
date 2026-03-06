@@ -10,6 +10,11 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 
 final readonly class RetryPaymentAction
 {
+    /**
+     * SISP 3DS requires a non-null postal code on retries.
+     */
+    private const FALLBACK_POSTAL_CODE = '0000';
+
     public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
 
     public function handle(Transaction $transaction): PaymentRequest
@@ -36,7 +41,7 @@ final readonly class RetryPaymentAction
             customerCountry: $transaction->customer_country,
             customerCity: $transaction->customer_city,
             customerAddress: $transaction->customer_address,
-            customerPostalCode: $transaction->customer_postal_code ?? '0000',
+            customerPostalCode: $transaction->customer_postal_code ?? self::FALLBACK_POSTAL_CODE,
             customerPhone: $transaction->customer_phone,
         );
     }
