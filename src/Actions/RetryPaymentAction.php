@@ -13,7 +13,7 @@ final readonly class RetryPaymentAction
     /**
      * SISP 3DS requires a non-null postal code on retries.
      */
-    private const FALLBACK_POSTAL_CODE = '0000';
+    private const string FALLBACK_POSTAL_CODE = '0000';
 
     public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
 
