@@ -22,6 +22,8 @@ final readonly class RetryPaymentController
 
         $paymentRequest = $this->retryPayment->handle($transaction);
 
+        $transaction->update(['merchant_session' => $paymentRequest->merchantSession]);
+
         return $this->renderForm->handle($paymentRequest, $transaction->locale);
     }
 }

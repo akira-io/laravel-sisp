@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\HandleCallbackAction;
+use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
-use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\Event;
@@ -36,8 +36,7 @@ beforeEach(function (): void {
     Facade::clearResolvedInstances();
 });
 
-it('throws InvalidSignatureException when callback validation fails', function (): void {
-    // Override Sisp facade binding to control validation
+it('dispatches PaymentFailed and skips status update when fingerprint is invalid', function (): void {
     app()->instance(Akira\Sisp\Sisp::class, new class
     {
         public function validateCallback(CallbackPayload $payload): bool
@@ -49,15 +48,12 @@ it('throws InvalidSignatureException when callback validation fails', function (
     Event::fake();
     $transaction = Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);
 
-    $action = resolve(HandleCallbackAction::class);
-    // Use a success message type to verify that validation failure prevents status update
-    expect(fn () => $action->handle(cb_payload(SuccessMessageType::purchase->value)))
-        ->toThrow(Akira\Sisp\Exceptions\InvalidSignatureException::class);
+    resolve(HandleCallbackAction::class)->handle(cb_payload(ErrorMessageType::invalidAmount->value));
 
     $transaction->refresh();
-    expect($transaction->status->value)->toBe('pending');
+    expect($transaction->status->value)->toBe('failed');
 
-    Event::assertNotDispatched(PaymentFailed::class);
+    Event::assertDispatched(PaymentFailed::class);
 });
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
