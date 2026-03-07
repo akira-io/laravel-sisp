@@ -16,9 +16,9 @@ final readonly class PostAutCode
      */
     private string $hash;
 
-    public function __construct(private SispCredentialsResolver $resolver)
+    public function __construct(SispCredentialsResolver $resolver)
     {
-        $posAutCode = $this->resolver->resolve()->posAutCode;
+        $posAutCode = $resolver->resolve()->posAutCode;
         $this->hash = base64_encode(hash('sha512', $posAutCode, true));
     }
 
