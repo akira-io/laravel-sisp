@@ -52,7 +52,7 @@ trait EncryptsAttributes
                 try {
                     return $this->decryptedAttributesCache[$key] = Crypt::decryptString($value);
                 } catch (Throwable) {
-                    return $value;
+                    return $this->decryptedAttributesCache[$key] = $value;
                 }
             }
         }
