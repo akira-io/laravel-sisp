@@ -8,3 +8,5 @@ testbench.yaml
 vendor
 node_modules
 /workbench/
+/.jules/
+/.Jules/

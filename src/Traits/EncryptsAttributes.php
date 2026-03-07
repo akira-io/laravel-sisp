@@ -9,6 +9,8 @@ use Throwable;
 
 trait EncryptsAttributes
 {
+    protected array $decryptedAttributesCache = [];
+
     public function shouldEncrypt(string $key): bool
     {
         $encryptable = $this->encryptable();
@@ -22,6 +24,10 @@ trait EncryptsAttributes
 
     public function getAttribute($key): mixed
     {
+        if (array_key_exists($key, $this->decryptedAttributesCache)) {
+            return $this->decryptedAttributesCache[$key];
+        }
+
         $value = parent::getAttribute($key);
 
         if ($this->shouldEncrypt($key)) {
@@ -33,10 +39,10 @@ trait EncryptsAttributes
                     $decrypted = Crypt::decryptString($raw);
                     $decoded = json_decode($decrypted, true);
                     if (json_last_error() === JSON_ERROR_NONE) {
-                        return $decoded;
+                        return $this->decryptedAttributesCache[$key] = $decoded;
                     }
 
-                    return $decrypted;
+                    return $this->decryptedAttributesCache[$key] = $decrypted;
                 } catch (Throwable) {
                     // Fall through and return the original casted value
                 }
@@ -44,9 +50,9 @@ trait EncryptsAttributes
 
             if (is_string($value)) {
                 try {
-                    return Crypt::decryptString($value);
+                    return $this->decryptedAttributesCache[$key] = Crypt::decryptString($value);
                 } catch (Throwable) {
-                    return $value;
+                    return $this->decryptedAttributesCache[$key] = $value;
                 }
             }
         }
@@ -56,6 +62,8 @@ trait EncryptsAttributes
 
     public function setAttribute($key, $value): static
     {
+        unset($this->decryptedAttributesCache[$key]);
+
         if ($this->shouldEncrypt($key) && $value !== null) {
             if (! is_string($value)) {
                 $value = json_encode($value);
@@ -67,6 +75,13 @@ trait EncryptsAttributes
         }
 
         return parent::setAttribute($key, $value);
+    }
+
+    public function setRawAttributes(array $attributes, mixed $sync = false): static
+    {
+        $this->decryptedAttributesCache = [];
+
+        return parent::setRawAttributes($attributes, $sync);
     }
 
     protected function encryptable(): array
