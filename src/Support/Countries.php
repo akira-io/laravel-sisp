@@ -7,13 +7,22 @@ namespace Akira\Sisp\Support;
 final class Countries
 {
     /**
+     * @var array<string, array{alpha2: string, numeric: string, name: string, flag: string}>|null
+     */
+    private static ?array $countries = null;
+
+    /**
      * Get all countries with their ISO codes, numeric codes, names, and flag URLs.
      *
      * @return array<string, array{alpha2: string, numeric: string, name: string, flag: string}>
      */
     public static function all(): array
     {
-        return [
+        if (self::$countries !== null) {
+            return self::$countries;
+        }
+
+        self::$countries = [
             'ad' => ['alpha2' => 'AD', 'numeric' => '020', 'name' => 'Andorra', 'flag' => 'https://flagcdn.com/ad.svg'],
             'ae' => ['alpha2' => 'AE', 'numeric' => '784', 'name' => 'United Arab Emirates', 'flag' => 'https://flagcdn.com/ae.svg'],
             'af' => ['alpha2' => 'AF', 'numeric' => '004', 'name' => 'Afghanistan', 'flag' => 'https://flagcdn.com/af.svg'],
@@ -263,6 +272,8 @@ final class Countries
             'zm' => ['alpha2' => 'ZM', 'numeric' => '894', 'name' => 'Zambia', 'flag' => 'https://flagcdn.com/zm.svg'],
             'zw' => ['alpha2' => 'ZW', 'numeric' => '716', 'name' => 'Zimbabwe', 'flag' => 'https://flagcdn.com/zw.svg'],
         ];
+
+        return self::$countries;
     }
 
     public static function getNumericCode(string $alpha2): string
