@@ -22,6 +22,7 @@ final class RegenerateMissingInvoicePdfsCommand extends Command
         $this->info('🔍 Searching for paid invoices without PDFs...');
 
         $query = Invoice::query()
+            ->with(['transaction.items'])
             ->where('status', InvoiceStatus::paid->value)
             ->whereNull('pdf_path');
 
