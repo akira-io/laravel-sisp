@@ -67,19 +67,7 @@ parameters:
 			path: src/Actions/RenderPaymentResponseAction.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RetryPaymentAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RetryPaymentAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$merchant_session\.$#'
 			identifier: property.notFound
 			count: 1
 			path: src/Actions/RetryPaymentAction.php

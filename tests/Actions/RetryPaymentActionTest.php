@@ -37,7 +37,8 @@ it('includes all transaction details', function (): void {
     $paymentRequest = $this->action->handle($transaction);
 
     expect($paymentRequest->merchantRef)->toBe('CUSTOM-REF-123')
-        ->and($paymentRequest->merchantSession)->toBe('CUSTOM-SESS-456')
+        ->and($paymentRequest->merchantSession)->not->toBe('CUSTOM-SESS-456')
+        ->and($paymentRequest->merchantSession)->not->toBe('')
         ->and($paymentRequest->currency)->toBe('CVE');
 });
 
