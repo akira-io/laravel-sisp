@@ -17,7 +17,6 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
-use Illuminate\Database\Eloquent\Collection;
 
 final readonly class Sisp
 {
@@ -39,9 +38,9 @@ final readonly class Sisp
         );
     }
 
-    public function getTransactions(): Collection
+    public function getTransactions(): \Illuminate\Database\Eloquent\Builder
     {
-        return Transaction::query()->get();
+        return Transaction::query();
     }
 
     public function buildRequestPayload(PaymentRequestData $data): PaymentRequest

@@ -11,12 +11,12 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static ScopedSisp forCredentials(SispCredentials $credentials)
- * @method static Collection getTransactions()
+ * @method static Builder getTransactions()
  * @method static PaymentRequest buildRequestPayload(PaymentRequestData $data)
  * @method static bool validateCallback(CallbackPayload $payload)
  * @method static Transaction handlePaymentCallback(CallbackPayload $payload)

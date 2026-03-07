@@ -93,7 +93,7 @@ it('scoped sisp handles sandbox callbacks and transactions', function (): void {
         'payload' => ['foo' => 'bar'],
     ]));
 
-    $all = $scoped->getTransactions();
+    $all = $scoped->getTransactions()->get();
     expect($all->contains(fn (Transaction $t): bool => $t->id === $stored->id))->toBeTrue();
 
     $transaction = Transaction::factory()->create([

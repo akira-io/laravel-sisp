@@ -19,7 +19,6 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Database\Eloquent\Collection;
 
 final readonly class ScopedSisp
 {
@@ -33,9 +32,9 @@ final readonly class ScopedSisp
         $this->resolver = new ScopedSispCredentialsResolver($credentials);
     }
 
-    public function getTransactions(): Collection
+    public function getTransactions(): \Illuminate\Database\Eloquent\Builder
     {
-        return Transaction::query()->get();
+        return Transaction::query();
     }
 
     public function buildRequestPayload(PaymentRequestData $data): PaymentRequest
