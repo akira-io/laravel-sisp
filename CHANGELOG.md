@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+# [0.6.0](https://github.com/kidiatoliny/laravel-sisp/compare/0.5.0...0.6.0) (2026-03-07)
+
+
+### Bug Fixes
+
+* add type hint to setRawAttributes in EncryptsAttributes trait ([42429a1](https://github.com/kidiatoliny/laravel-sisp/commit/42429a1ae58cb04d31073b2336d70c52e9288156))
+* **ci:** add type to retry postal code constant ([3aea0ea](https://github.com/kidiatoliny/laravel-sisp/commit/3aea0eaaa1b9f4aa54cc0894599b49757f79cf73))
+* **ci:** remove stale phpstan baseline ignores ([f4c14fb](https://github.com/kidiatoliny/laravel-sisp/commit/f4c14fbe7189109b5174ce4af9b00729bd69725a))
+* **credentials-resolve:** refactor constructor to use parameter instead of class property for SispCredentialsResolver ([22bff26](https://github.com/kidiatoliny/laravel-sisp/commit/22bff2636957a0b9206dc6a50f4c5d85d1fe584b))
+* **retry:** regenerate merchant session and timestamp ([6b124b3](https://github.com/kidiatoliny/laravel-sisp/commit/6b124b3fdb447105403571164477e62b084654c7))
+
+
+### Features
+
+* **perf:** optimize getTransactions to return Builder for scalability ([ca954dd](https://github.com/kidiatoliny/laravel-sisp/commit/ca954dd30c86288fdbef767e5259dafba21b5f0c))
+
+
+### Performance Improvements
+
+* cache Countries data array in static property ([2f18202](https://github.com/kidiatoliny/laravel-sisp/commit/2f18202374cd345b39ddf498e68759305309cadf))
+* cache decrypted attributes in EncryptsAttributes trait ([e765b46](https://github.com/kidiatoliny/laravel-sisp/commit/e765b4616b2be5c3f30b77b9e639e0b47b9501e7))
+* **commands:** optimize regenerate pdfs command query count ([6ae24da](https://github.com/kidiatoliny/laravel-sisp/commit/6ae24dab54216c4492d076e9d361d814fb52deb3))
+* **encryption:** optimize EncryptsAttributes decryption fallback and clean up unused legacy docs ([7257221](https://github.com/kidiatoliny/laravel-sisp/commit/72572218b7c1e7f32e3d7a7b82c9367a3e8133ef))
+* Optimize PostAutCode hashing ([a32adfd](https://github.com/kidiatoliny/laravel-sisp/commit/a32adfdde95c3b53097ebced9c6482815dc34180))
+
 # [0.5.0](https://github.com/kidiatoliny/laravel-sisp/compare/0.4.3...0.5.0) (2026-02-02)
 
 
