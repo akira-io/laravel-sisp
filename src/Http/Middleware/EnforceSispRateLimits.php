@@ -35,10 +35,12 @@ final readonly class EnforceSispRateLimits
                 );
             }
         } catch (Exception $e) {
+            $statusCode = (int) $e->getCode();
+
             return response()->json([
                 'error' => $e->getMessage(),
-                'status' => $e->getCode(),
-            ], $e->getCode());
+                'status' => $statusCode,
+            ], $statusCode);
         }
 
         return $next($request);

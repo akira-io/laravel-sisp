@@ -79,7 +79,6 @@ final class Transaction extends Model
     protected function casts(): array
     {
         return [
-            'payload' => 'array',
             'amount' => 'float',
             'status' => TransactionStatus::class,
             'created_at' => 'datetime',
