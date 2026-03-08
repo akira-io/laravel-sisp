@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Routing\Router;
+
 it('creates transaction and renders payment form', function (): void {
     config()->set('sisp.rate_limiting.enabled', false);
 
@@ -17,7 +19,10 @@ it('creates transaction and renders payment form', function (): void {
         'customer_email' => 'john@example.test',
     ];
 
-    $response = $this->post(route('sisp.payment'), $payload);
+    $token = 'csrf-token-payment-create';
+    $response = $this
+        ->withSession(['_token' => $token])
+        ->post(route('sisp.payment'), [...$payload, '_token' => $token]);
 
     $response->assertOk();
     $response->assertSee('sisp-payment-form');
@@ -44,7 +49,17 @@ it('blocks duplicate transactions via middleware', function (): void {
         ]],
     ];
 
-    $response = $this->post(route('sisp.payment'), $payload);
+    $token = 'csrf-token-payment-duplicate';
+    $response = $this
+        ->withSession(['_token' => $token])
+        ->post(route('sisp.payment'), [...$payload, '_token' => $token]);
 
     $response->assertRedirect('/');
+});
+
+it('applies web middleware to payment route for csrf protection', function (): void {
+    $route = resolve(Router::class)->getRoutes()->getByName('sisp.payment');
+
+    expect($route)->not->toBeNull()
+        ->and($route->gatherMiddleware())->toContain('web');
 });

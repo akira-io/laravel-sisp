@@ -385,6 +385,7 @@ return [
     |
     */
     'middleware' => [
+        'payment' => ['web'],
         'refund' => ['web', 'auth'],
     ],
 

@@ -181,6 +181,7 @@ The refund route middleware is configurable via `config/sisp.php`:
 
 ```php
 'middleware' => [
+    'payment' => ['web'], // Includes CSRF verification for POST /sisp/payment
     'refund' => ['web', 'auth'],
 ],
 ```

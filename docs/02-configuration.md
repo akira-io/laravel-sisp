@@ -135,12 +135,15 @@ Customize middleware assigned to package routes in `config/sisp.php`:
 
 ```php
 'middleware' => [
+    // Applied to POST /sisp/payment (includes CSRF verification via web group)
+    'payment' => ['web'],
+
     // Applied to POST /sisp/refund/{transaction}
     'refund' => ['web', 'auth'],
 ],
 ```
 
-Use this to enforce authentication/authorization for refunds.
+Use this to enforce CSRF/authentication/authorization behavior per route.
 
 ## Security Configuration
 

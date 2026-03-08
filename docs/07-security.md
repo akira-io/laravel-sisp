@@ -145,6 +145,8 @@ How it works:
 - Redirects to `/` with an error message when blocked
 
 This middleware is applied to `POST /sisp/payment` by default.
+`POST /sisp/payment` also uses the `web` middleware group by default (`config('sisp.middleware.payment')`),
+so Laravel CSRF validation is enforced for browser-authenticated requests.
 
 ## Request Metadata Collection
 

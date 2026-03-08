@@ -12,6 +12,7 @@ use Akira\Sisp\Http\Controllers\SandboxController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('sisp/payment', PaymentController::class)
+    ->middleware(config()->array('sisp.middleware.payment', ['web']))
     ->middleware(Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class)
     ->name('sisp.payment');
 

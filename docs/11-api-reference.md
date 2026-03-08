@@ -993,6 +993,7 @@ POST   /sisp/sandbox           -> SandboxController
 GET    /sisp/countries         -> CountriesController
 ```
 
+Payment route middleware is configurable via `config('sisp.middleware.payment')` (defaults to `['web']` for CSRF protection).
 Refund route middleware is configurable via `config('sisp.middleware.refund')`.
 
 Route names:
