@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\URL;
 
 it('retries payment for an existing transaction', function (): void {
     $t = Transaction::factory()->create([
@@ -11,7 +12,9 @@ it('retries payment for an existing transaction', function (): void {
         'status' => 'failed',
     ]);
 
-    $this->post(route('sisp.retry-payment'), [
-        'transaction_id' => $t->id,
-    ])->assertOk();
+    $this->post(URL::temporarySignedRoute(
+        'sisp.retry-payment',
+        now()->addMinutes(15),
+        ['transaction_id' => $t->id]
+    ))->assertOk();
 });

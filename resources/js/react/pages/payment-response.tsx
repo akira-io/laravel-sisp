@@ -57,6 +57,7 @@ interface PaymentResponseProps {
     error?: ErrorData | null;
     translations?: Translations;
     allowRetry?: boolean;
+    retryPaymentUrl?: string;
     invoice?: InvoiceData | null;
     payload: Record<string, any>;
 }
@@ -92,6 +93,7 @@ export default function PaymentResponse({
                                             error,
                                             translations = DEFAULT_TRANSLATIONS,
                                             allowRetry = true,
+                                            retryPaymentUrl,
                                             invoice,
                                             payload
                                         }: PaymentResponseProps) {
@@ -105,7 +107,7 @@ export default function PaymentResponse({
     });
 
     const handleRetryPayment = () => {
-        post('/sisp/retry-payment');
+        post(retryPaymentUrl ?? '/sisp/retry-payment');
     };
 
     useEffect(() => {
