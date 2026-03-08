@@ -11,4 +11,5 @@ return [
     'data_protected' => 'Vos données sont protégées',
     'redirecting_in' => 'Redirection dans :count seconde|Redirection dans :count secondes',
     'connecting' => 'Connexion à SISP...',
+    'developed_by' => 'Développé par : Kidiatoliny Gonçalves',
 ];

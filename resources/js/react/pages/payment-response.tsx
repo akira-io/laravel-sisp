@@ -1,5 +1,9 @@
-import {useEffect} from 'react';
-import {useForm} from '@inertiajs/react';
+import { AnimatedBackground } from '@/components/landing/animated-background';
+import SmoothScroll from '@/components/landing/smooth-scroll';
+import { useForm } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { AlertCircle, Check, CheckCircle2, ChevronRight, Clock, Copy, Download, FileDown, Home, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface TransactionData {
     id: number;
@@ -49,6 +53,13 @@ interface Translations {
         declined: string;
         retry_payment: string;
         cancel_payment: string;
+        copy_reference: string;
+        download_invoice_alert_title: string;
+        download_invoice_alert_message: string;
+        leave_confirmation_title: string;
+        leave_confirmation_message: string;
+        leave_page: string;
+        stay_on_page: string;
     };
 }
 
@@ -58,185 +69,425 @@ interface PaymentResponseProps {
     translations?: Translations;
     allowRetry?: boolean;
     invoice?: InvoiceData | null;
-    payload: Record<string, any>;
+    payload: Record<string, unknown>;
 }
 
 const DEFAULT_TRANSLATIONS: Translations = {
     payment: {
-        success_title: 'Payment Successfully Completed!',
-        success_message: 'Your transaction has been processed successfully.',
-        success_status: 'Completed',
-        failed_title: 'Payment Declined',
-        failed_message: 'Sorry, your payment was not processed.',
-        failed_status: 'Failed',
-        pending_title: 'Payment Pending',
-        pending_message: 'Your payment is being processed.',
-        pending_status: 'Pending',
-        pending_note: 'You will receive a confirmation shortly. Please do not close this page.',
-        reference: 'Reference',
-        amount: 'Amount',
-        status: 'Status',
-        category: 'Category',
-        reason: 'Reason',
-        action: 'Action',
-        invoice_download: 'Download Invoice',
-        back_home: 'Back to Home',
-        declined: 'Declined',
-        retry_payment: 'Try Again',
-        cancel_payment: 'Cancel',
+        success_title: 'Pagamento Concluído com Sucesso!',
+        success_message: 'A sua transação foi processada com sucesso.',
+        success_status: 'Concluído',
+        failed_title: 'Pagamento Recusado',
+        failed_message: 'Desculpe, o seu pagamento não foi processado.',
+        failed_status: 'Falhou',
+        pending_title: 'Pagamento Pendente',
+        pending_message: 'O seu pagamento está a ser processado.',
+        pending_status: 'Pendente',
+        pending_note: 'Receberá uma confirmação em breve. Por favor, não feche esta página.',
+        reference: 'Referência',
+        amount: 'Montante',
+        status: 'Estado',
+        category: 'Categoria',
+        reason: 'Motivo',
+        action: 'Ação',
+        invoice_download: 'Baixar Fatura',
+        back_home: 'Voltar ao Início',
+        declined: 'Recusado',
+        retry_payment: 'Tentar Novamente',
+        cancel_payment: 'Cancelar',
+        copy_reference: 'Copiar referência',
+        download_invoice_alert_title: 'Faça o download da sua fatura',
+        download_invoice_alert_message: 'Guarde uma cópia da sua fatura para os seus registos.',
+        leave_confirmation_title: 'Tem a certeza que quer sair?',
+        leave_confirmation_message: 'Se sair agora, poderá perder informações sobre o seu pagamento.',
+        leave_page: 'Sair da página',
+        stay_on_page: 'Ficar na página',
     },
 };
 
 export default function PaymentResponse({
-                                            transaction,
-                                            error,
-                                            translations = DEFAULT_TRANSLATIONS,
-                                            allowRetry = true,
-                                            invoice,
-                                            payload
-                                        }: PaymentResponseProps) {
+    transaction,
+    error,
+    translations = DEFAULT_TRANSLATIONS,
+    allowRetry = true,
+    invoice,
+}: PaymentResponseProps) {
     const isSuccess = transaction.status === 'completed';
     const isFailed = transaction.status === 'failed';
     const isPending = transaction.status === 'pending';
     const t = translations.payment;
 
-    const {post, processing} = useForm({
+    const { post, processing } = useForm({
         transaction_id: transaction.id,
     });
+
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [copiedReference, setCopiedReference] = useState(false);
+    const isBackButtonRef = useRef(false);
+    const beforeUnloadHandlerRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
 
     const handleRetryPayment = () => {
         post('/sisp/retry-payment');
     };
 
+    const handleCopyReference = async () => {
+        if (!transaction.merchant_ref) return;
+
+        try {
+            await navigator.clipboard.writeText(transaction.merchant_ref);
+            setCopiedReference(true);
+            setTimeout(() => setCopiedReference(false), 2000);
+        } catch {
+            // silently fail
+        }
+    };
+
+    const handleLeaveConfirm = () => {
+        if (beforeUnloadHandlerRef.current) {
+            window.removeEventListener('beforeunload', beforeUnloadHandlerRef.current);
+            beforeUnloadHandlerRef.current = null;
+        }
+
+        if (isBackButtonRef.current) {
+            isBackButtonRef.current = false;
+            window.history.back();
+        } else {
+            window.location.href = '/';
+        }
+    };
+
+    // Only show beforeunload confirmation for success and pending states
     useEffect(() => {
+        if (isFailed) return;
+
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             e.preventDefault();
             e.returnValue = '';
             return '';
         };
 
+        beforeUnloadHandlerRef.current = handleBeforeUnload;
         window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
+            beforeUnloadHandlerRef.current = null;
         };
-    }, []);
+    }, [isFailed]);
+
+    // Intercept browser back button
+    useEffect(() => {
+        if (isFailed) return;
+
+        window.history.pushState(null, '', window.location.href);
+
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.href);
+            isBackButtonRef.current = true;
+            setShowLeaveConfirm(true);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [isFailed]);
+
+    const getStatusConfig = () => {
+        if (isSuccess) {
+            return {
+                icon: CheckCircle2,
+                iconBg: 'bg-gradient-to-br from-green-600 to-green-500 shadow-green-500/20',
+                titleColor: 'text-green-600 dark:text-green-500',
+                cardBorder: 'border-green-200 dark:border-green-800',
+                cardBg: 'bg-green-50 dark:bg-green-950/50',
+                statusBadge: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+            };
+        }
+        if (isFailed) {
+            return {
+                icon: AlertCircle,
+                iconBg: 'bg-red-600 dark:bg-red-500 shadow-red-500/20',
+                titleColor: 'text-red-600 dark:text-red-500',
+                cardBorder: 'border-red-200 dark:border-red-800',
+                cardBg: 'bg-red-50 dark:bg-red-950/50',
+                statusBadge: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+            };
+        }
+        return {
+            icon: Clock,
+            iconBg: 'bg-gradient-to-br from-yellow-600 to-yellow-500 shadow-yellow-500/20',
+            titleColor: 'text-yellow-600 dark:text-yellow-500',
+            cardBorder: 'border-yellow-200 dark:border-yellow-800',
+            cardBg: 'bg-yellow-50 dark:bg-yellow-950/50',
+            statusBadge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+        };
+    };
+
+    const config = getStatusConfig();
+    const StatusIcon = config.icon;
+
+    const getTitle = () => {
+        if (isSuccess) return t.success_title;
+        if (isFailed) return t.failed_title;
+        return t.pending_title;
+    };
+
+    const getMessage = () => {
+        if (isSuccess) return t.success_message;
+        if (isFailed) return t.failed_message;
+        return t.pending_message;
+    };
+
+    const getStatusText = () => {
+        if (isSuccess) return t.success_status;
+        if (isFailed) return t.failed_status;
+        return t.pending_status;
+    };
 
     return (
-      <div className='flex min-h-screen items-center justify-center bg-background'>
-          <div className='w-full max-w-md rounded-lg bg-card p-8 shadow-lg border border-border'>
-              {isSuccess && (
-                <div className='space-y-6'>
-                    <div className='space-y-2 text-center'>
-                        <div className='flex justify-center'>
-                            <div className='rounded-full bg-green-100 dark:bg-green-950 p-4'>
-                                <svg className='h-8 w-8 text-green-600 dark:text-green-500'
-                                     fill='currentColor'
-                                     viewBox='0 0 20 20'>
-                                    <path fillRule='evenodd'
-                                          d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                                          clipRule='evenodd'/>
-                                </svg>
+        <SmoothScroll>
+            <AnimatedBackground />
+
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative flex min-h-screen flex-col items-center justify-center px-4 py-12"
+            >
+                <div className="w-full max-w-md">
+                    {/* Header with Icon */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="mb-8 text-center"
+                    >
+                        <div className="mb-6 flex justify-center">
+                            <div className={`flex h-20 w-20 items-center justify-center rounded-2xl shadow-xl ${config.iconBg}`}>
+                                <StatusIcon className={`h-10 w-10 text-white ${isPending ? 'animate-pulse' : ''}`} />
                             </div>
                         </div>
-                        <h2 className='text-2xl font-bold text-green-600 dark:text-green-500'>{t.success_title}</h2>
-                        <p className='text-muted-foreground'>{t.success_message}</p>
-                    </div>
-                    <div className='space-y-2 rounded-lg bg-green-50 dark:bg-green-950 p-4 text-sm text-foreground border border-green-200 dark:border-green-800'>
-                        <p><strong>{t.reference}:</strong> {transaction.merchant_ref}</p>
-                        <p><strong>{t.amount}:</strong> {transaction.formatted_amount}</p>
-                        <p><strong>{t.status}:</strong>
-                            <span className='text-green-600 dark:text-green-500 font-medium ml-1'>{t.success_status}</span>
-                        </p>
-                    </div>
-                    {invoice && invoice.pdf_url && (
-                      <a href={invoice.pdf_url}
-                         target='_blank'
-                         download={`${invoice.invoice_number}.pdf`}
-                         className='block w-full rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 px-4 py-2 text-center text-sm font-medium text-blue-600 dark:text-blue-500 transition border border-blue-200 dark:border-blue-800'>
-                          {t.invoice_download}
-                      </a>
+                        <h1 className={`mb-3 text-3xl font-black tracking-tight md:text-4xl ${config.titleColor}`}>{getTitle()}</h1>
+                        <p className="text-zinc-600 dark:text-zinc-400">{getMessage()}</p>
+                    </motion.div>
+
+                    {/* Transaction Details Card */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className={`mb-6 overflow-hidden rounded-2xl border ${config.cardBorder} ${config.cardBg} shadow-lg backdrop-blur-sm`}
+                    >
+                        <div className="p-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{t.reference}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono font-bold text-zinc-900 dark:text-white">
+                                            {transaction.merchant_ref || t.declined}
+                                        </span>
+                                        {transaction.merchant_ref && (
+                                            <button
+                                                onClick={handleCopyReference}
+                                                className="group relative m-0 flex h-8 shrink-0 items-center justify-center rounded-lg transition-all"
+                                                title={t.copy_reference}
+                                            >
+                                                {copiedReference ? (
+                                                    <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+                                                ) : (
+                                                    <Copy className="h-3.5 w-3.5 text-zinc-400 transition-colors group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300" />
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {(isSuccess || isPending) && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{t.amount}</span>
+                                        <span className="text-lg font-bold text-zinc-900 dark:text-white">{transaction.formatted_amount}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{t.status}</span>
+                                    <span className={`rounded-full px-3 py-1 text-sm font-bold ${config.statusBadge}`}>{getStatusText()}</span>
+                                </div>
+
+                                {isFailed && error && (
+                                    <>
+                                        <div className="my-4 border-t border-zinc-200 dark:border-zinc-700" />
+                                        <div className="space-y-3">
+                                            <div>
+                                                <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">{t.category}</span>
+                                                <p className="font-medium text-zinc-900 dark:text-white">{error.categoryLabel}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">{t.reason}</span>
+                                                <p className="font-medium text-zinc-900 dark:text-white">{error.label}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">{t.action}</span>
+                                                <p className="font-medium text-zinc-900 dark:text-white">{error.actionLabel}</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Invoice Download */}
+                    {isSuccess && invoice?.pdf_url && (
+                        <>
+                            {/* Download Invoice Alert */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="mb-4 overflow-hidden rounded-2xl border border-purple-200 bg-purple-50/80 shadow-lg backdrop-blur-sm dark:border-purple-800 dark:bg-purple-950/50"
+                            >
+                                <div className="p-4">
+                                    <div className="flex gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-600 shadow-lg shadow-purple-500/20">
+                                            <FileDown className="h-5 w-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 dark:text-purple-300">{t.download_invoice_alert_title}</h3>
+                                            <p className="mt-1 text-sm text-purple-700 dark:text-purple-400">{t.download_invoice_alert_message}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Download Button */}
+                            <motion.a
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.35 }}
+                                href={invoice.pdf_url}
+                                target="_blank"
+                                download={`${invoice.invoice_number}.pdf`}
+                                className="mb-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-purple-600 to-purple-500 font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                <Download className="h-5 w-5" />
+                                {t.invoice_download}
+                            </motion.a>
+                        </>
                     )}
-                </div>
-              )}
-              {isFailed && (
-                <div className='space-y-6'>
-                    <div className='space-y-2 text-center'>
-                        <div className='flex justify-center'>
-                            <div className='rounded-full bg-red-100 dark:bg-red-950 p-4'>
-                                <svg className='h-8 w-8 text-red-600 dark:text-red-500'
-                                     fill='currentColor'
-                                     viewBox='0 0 20 20'>
-                                    <path fillRule='evenodd'
-                                          d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                                          clipRule='evenodd'/>
-                                </svg>
-                            </div>
-                        </div>
-                        <h2 className='text-2xl font-bold text-red-600 dark:text-red-500'>{t.failed_title}</h2>
-                        <p className='text-muted-foreground'>{t.failed_message}</p>
-                    </div>
-                    <div className='space-y-2 rounded-lg bg-red-50 dark:bg-red-950 p-4 text-sm text-foreground border border-red-200 dark:border-red-800'>
-                        <p><strong>{t.reference}:</strong> {transaction.merchant_ref || t.declined}</p>
-                        {error && (
-                          <>
-                              <p><strong>{t.category}:</strong> {error.categoryLabel}</p>
-                              <p><strong>{t.reason}:</strong> {error.label}</p>
-                              <p><strong>{t.action}:</strong> {error.actionLabel}</p>
-                          </>
+
+                    {/* Pending Note */}
+                    {isPending && (
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="mb-6 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                        >
+                            {t.pending_note}
+                        </motion.p>
+                    )}
+
+                    {/* Action Buttons */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-3">
+                        {isFailed && allowRetry && (
+                            <button
+                                onClick={handleRetryPayment}
+                                disabled={processing}
+                                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-purple-600 to-purple-500 text-lg font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {processing ? (
+                                    <RefreshCw className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <>
+                                        <RefreshCw className="h-5 w-5" />
+                                        {t.retry_payment}
+                                    </>
+                                )}
+                            </button>
                         )}
-                        <p><strong>{t.status}:</strong>
-                            <span className='text-red-600 dark:text-red-500 font-medium'>{t.failed_status}</span></p>
-                    </div>
+
+                        {(isSuccess || isPending) && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowLeaveConfirm(true);
+                                }}
+                                className={`flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-bold transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                                    isPending
+                                        ? 'bg-linear-to-r from-yellow-600 to-yellow-500 text-white shadow-xl shadow-yellow-500/20'
+                                        : 'border-2 border-zinc-200 bg-white text-zinc-700 shadow-lg hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-700'
+                                }`}
+                            >
+                                <Home className="h-5 w-5" />
+                                {t.back_home}
+                                <ChevronRight className="h-5 w-5" />
+                            </button>
+                        )}
+
+                        {isFailed && (
+                            <a
+                                href="/"
+                                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-zinc-200 bg-white font-bold text-zinc-700 shadow-lg transition-all hover:scale-[1.02] hover:border-zinc-300 hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-700"
+                            >
+                                <Home className="h-5 w-5" />
+                                {t.cancel_payment}
+                            </a>
+                        )}
+                    </motion.div>
                 </div>
-              )}
-              {isPending && (
-                <div className='space-y-6'>
-                    <div className='space-y-2 text-center'>
-                        <div className='flex justify-center'>
-                            <div className='rounded-full bg-yellow-100 dark:bg-yellow-950 p-4'>
-                                <svg className='h-8 w-8 text-yellow-600 dark:text-yellow-500 animate-spin'
-                                     fill='none'
-                                     stroke='currentColor'
-                                     viewBox='0 0 24 24'>
-                                    <path strokeLinecap='round'
-                                          strokeLinejoin='round'
-                                          strokeWidth={2}
-                                          d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'/>
-                                </svg>
+
+                {/* Leave Confirmation Dialog */}
+                {showLeaveConfirm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative mx-4 w-full max-w-sm overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl"
+                        >
+                            {/* Close button */}
+                            <button
+                                onClick={() => setShowLeaveConfirm(false)}
+                                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-700 text-zinc-300 transition-colors hover:bg-zinc-600"
+                            >
+                                ✕
+                            </button>
+
+                            <div className="px-6 pt-8 pb-6 text-center">
+                                {/* Icon */}
+                                <div className="mb-5 flex justify-center">
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-600 shadow-lg shadow-purple-500/30">
+                                        <AlertCircle className="h-8 w-8 text-white" />
+                                    </div>
+                                </div>
+
+                                <h3 className="mb-3 text-2xl font-black text-white">{t.leave_confirmation_title}</h3>
+                                <p className="text-sm leading-relaxed text-zinc-400">{t.leave_confirmation_message}</p>
                             </div>
-                        </div>
-                        <h2 className='text-2xl font-bold text-yellow-600 dark:text-yellow-500'>{t.pending_title}</h2>
-                        <p className='text-muted-foreground'>{t.pending_message}</p>
+
+                            <div className="border-t border-zinc-700" />
+
+                            <div className="flex items-center gap-3 p-4">
+                                <button
+                                    onClick={() => setShowLeaveConfirm(false)}
+                                    className="flex-1 py-3 text-sm font-semibold text-zinc-400 transition-colors hover:text-zinc-200"
+                                >
+                                    {t.stay_on_page}
+                                </button>
+                                <button
+                                    onClick={handleLeaveConfirm}
+                                    className="flex-1 rounded-full bg-purple-600 py-3 text-sm font-bold text-white transition-all hover:bg-purple-500 active:scale-[0.98]"
+                                >
+                                    {t.leave_page}
+                                </button>
+                            </div>
+                        </motion.div>
                     </div>
-                    <div className='space-y-2 rounded-lg bg-yellow-50 dark:bg-yellow-950 p-4 text-sm text-foreground border border-yellow-200 dark:border-yellow-800'>
-                        <p><strong>{t.reference}:</strong> {transaction.merchant_ref}</p>
-                        <p><strong>{t.status}:</strong>
-                            <span className='text-yellow-600 dark:text-yellow-500 font-medium'>{t.pending_status}</span>
-                        </p>
-                    </div>
-                    <p className='text-center text-xs text-muted-foreground'>
-                        {t.pending_note}
-                    </p>
-                </div>
-              )}
-              <div className='mt-8 space-y-2'>
-                  {isFailed && allowRetry && (
-                    <button
-                      onClick={handleRetryPayment}
-                      disabled={processing}
-                      className='block w-full rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-center font-medium text-white transition'>
-                        {processing ? 'Loading...' : t.retry_payment}
-                    </button>
-                  )}
-                  <a href='/'
-                     className={`block w-full rounded-lg px-4 py-2 text-center font-medium transition ${
-                       isFailed ? 'bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100' : 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                     }`}>
-                      {isFailed ? t.cancel_payment : t.back_home}
-                  </a>
-              </div>
-          </div>
-      </div>
+                )}
+            </motion.div>
+        </SmoothScroll>
     );
 }

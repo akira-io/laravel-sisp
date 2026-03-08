@@ -11,6 +11,7 @@ return [
     'data_protected' => 'Your data is protected',
     'redirecting_in' => 'Redirecting in :count second|Redirecting in :count seconds',
     'connecting' => 'Connecting to SISP...',
+    'developed_by' => 'Developed by: Kidiatoliny Gonçalves',
     'manual_redirect_button' => 'Click here if you are not redirected automatically',
     'continue_button' => 'Continue to Payment',
 ];
