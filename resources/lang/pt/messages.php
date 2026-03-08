@@ -94,6 +94,7 @@ return [
             'back_home' => 'Voltar ao Início',
             'declined' => 'Recusado',
             'retry_payment' => 'Tentar Novamente',
+            'retry_not_available' => 'Este pagamento não pode ser tentado novamente porque faltam dados obrigatórios do cliente.',
             'cancel_payment' => 'Cancelar',
         ],
     ],

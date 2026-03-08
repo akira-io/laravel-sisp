@@ -94,6 +94,7 @@ return [
             'back_home' => 'Retour à l\'Accueil',
             'declined' => 'Refusé',
             'retry_payment' => 'Réessayer',
+            'retry_not_available' => 'Ce paiement ne peut pas être réessayé car des données client obligatoires sont manquantes.',
             'cancel_payment' => 'Annuler',
         ],
     ],
