@@ -121,12 +121,6 @@ parameters:
 			path: src/Enums/ErrorMessageType.php
 
 		-
-			message: '#^Method Akira\\Sisp\\Http\\Controllers\\CallbackController\:\:handlePostRequest\(\) never returns Illuminate\\Routing\\Redirector so it can be removed from the return type\.$#'
-			identifier: return.unusedType
-			count: 1
-			path: src/Http/Controllers/CallbackController.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Blacklist\:\:\$expires_at\.$#'
 			identifier: property.notFound
 			count: 1

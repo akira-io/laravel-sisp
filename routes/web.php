@@ -20,7 +20,6 @@ Route::post('sisp/retry-payment', RetryPaymentController::class)
 
 Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->withoutMiddleware('web')
-    ->middleware(Akira\Sisp\Http\Middleware\PreventDuplicateCallback::class)
     ->name('sisp.callback');
 
 Route::get('sisp/cancel', CancelTransactionController::class)
