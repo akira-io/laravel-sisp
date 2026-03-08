@@ -58,7 +58,7 @@ SISP_MERCHANT_ID=your_merchant_id
 
 ## System Requirements
 
-- PHP 8.4 or higher
+- PHP 8.3 or higher
 - Laravel 12 or higher
 - PostgreSQL or MySQL database
 - Node.js for frontend assets (if using Inertia)

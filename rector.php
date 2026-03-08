@@ -24,7 +24,7 @@ return RectorConfig::configure()
     ])
     ->withComposerBased(laravel: true)
     ->withCache(
-        cacheDirectory: '/tmp/rector',
+        cacheDirectory: __DIR__.'/.context/rector-cache',
         cacheClass: FileCacheStorage::class,
     )
     ->withPaths([
@@ -36,6 +36,7 @@ return RectorConfig::configure()
     ->withSkip([
         AddOverrideAttributeToOverriddenMethodsRector::class,
     ])
+    ->withoutParallel()
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true,

@@ -392,7 +392,7 @@ Laravel 12+
 
 ### What PHP versions are supported?
 
-PHP 8.4+
+PHP 8.3+
 
 ## Still Have Questions?
 
