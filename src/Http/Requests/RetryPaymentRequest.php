@@ -32,7 +32,7 @@ final class RetryPaymentRequest extends FormRequest
         $customerEmail = $transaction->customer_email;
         $userEmail = data_get($user, 'email');
 
-        if (! is_string($customerEmail) || $customerEmail === '' || ! is_string($userEmail) || $userEmail === '') {
+        if ($customerEmail === '' || ! is_string($userEmail) || $userEmail === '') {
             return false;
         }
 
