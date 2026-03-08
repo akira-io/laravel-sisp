@@ -47,6 +47,7 @@ it('blocks after exceeding the limit and sets cache key', function (): void {
 it('resets when window elapsed then counts again', function (): void {
     $action = resolve(CheckRateLimitAction::class);
     $identifier = '2.2.2.2';
+    $windowSeconds = 60;
 
     // Create a record in the past so it is reset
     $rl = RateLimit::query()->create([
@@ -55,13 +56,13 @@ it('resets when window elapsed then counts again', function (): void {
         'context' => null,
         'hits' => 10,
         'limit' => 10,
-        'window_seconds' => 1,
+        'window_seconds' => $windowSeconds,
         'reset_at' => now()->subMinute(),
         'is_blocked' => false,
     ]);
 
     // Next handle should reset and then record a hit without throwing
-    $action->handle('ip', $identifier, null, 10, 1);
+    $action->handle('ip', $identifier, null, 10, $windowSeconds);
 
     $fresh = RateLimit::query()->find($rl->id);
     expect($fresh->hits)->toBe(1)
