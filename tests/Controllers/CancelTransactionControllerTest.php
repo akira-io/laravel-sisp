@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use Akira\Sisp\Http\Controllers\CancelTransactionController;
 use Akira\Sisp\Models\Transaction;
-use Illuminate\Http\Request;
 
 it('cancels a pending transaction and redirects', function (): void {
     $t = Transaction::factory()->create([
@@ -13,23 +11,34 @@ it('cancels a pending transaction and redirects', function (): void {
         'merchant_session' => 'MS-C',
     ]);
 
-    $controller = resolve(CancelTransactionController::class);
-    $request = Request::create('/sisp/cancel?reason=user_cancelled&merchantRef=MR-C', 'GET');
-    $response = $controller($t, $request);
+    $this->get(route('sisp.cancel', [
+        'reason' => 'user_cancelled',
+        'merchantRef' => 'MR-C',
+    ]))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-C']));
 
-    expect($response->isRedirect())->toBeTrue();
+    expect($t->refresh()->status->value)->toBe('cancelled');
 });
 
 it('handles non-cancellable transaction and flashes error', function (): void {
-    $t = Transaction::factory()->create([
+    Transaction::factory()->create([
         'status' => 'completed',
         'merchant_ref' => 'MR-C2',
         'merchant_session' => 'MS-C2',
     ]);
 
-    $controller = resolve(CancelTransactionController::class);
-    $request = Request::create('/sisp/cancel?reason=user_cancelled&merchantRef=MR-C2', 'GET');
-    $response = $controller($t, $request);
+    $this->withHeader('referer', '/checkout')
+        ->get(route('sisp.cancel', [
+            'reason' => 'user_cancelled',
+            'merchantRef' => 'MR-C2',
+        ]))
+        ->assertRedirect('/checkout')
+        ->assertSessionHas('error');
+});
 
-    expect($response->isRedirect())->toBeTrue();
+it('handles missing transaction identifier and flashes error', function (): void {
+    $this->withHeader('referer', '/checkout')
+        ->get(route('sisp.cancel'))
+        ->assertRedirect('/checkout')
+        ->assertSessionHas('error', 'Transaction not found');
 });
