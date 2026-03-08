@@ -36,6 +36,22 @@ it('handles non-cancellable transaction and flashes error', function (): void {
         ->assertSessionHas('error');
 });
 
+it('cancels a pending transaction resolved by transaction_id', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => 'pending',
+        'merchant_ref' => 'MR-C3',
+        'merchant_session' => 'MS-C3',
+    ]);
+
+    $this->get(route('sisp.cancel', [
+        'reason' => 'user_cancelled',
+        'transaction_id' => $t->id,
+    ]))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-C3']));
+
+    expect($t->refresh()->status->value)->toBe('cancelled');
+});
+
 it('handles missing transaction identifier and flashes error', function (): void {
     $this->withHeader('referer', '/checkout')
         ->get(route('sisp.cancel'))
