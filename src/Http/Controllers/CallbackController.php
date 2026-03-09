@@ -10,6 +10,7 @@ use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 final readonly class CallbackController
@@ -56,9 +57,21 @@ final readonly class CallbackController
         return $this->renderResponse->handle($transaction, []);
     }
 
-    private function handlePostRequest(Request $request): \Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse
+    private function handlePostRequest(Request $request): RedirectResponse
     {
         $payload = CallbackPayload::from($request->all());
+
+        if (! Sisp::validateCallback($payload)) {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
+        if ($payload->merchantRef === '' || $payload->merchantSession === '') {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
+        if ($this->isAlreadyProcessed($payload)) {
+            return redirect(config('sisp.redirect_url', '/'))->with('info', 'This payment has already been processed.');
+        }
 
         $transaction = Sisp::handlePaymentCallback($payload);
 
@@ -67,5 +80,15 @@ final readonly class CallbackController
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
         return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+    }
+
+    private function isAlreadyProcessed(CallbackPayload $payload): bool
+    {
+        $transaction = Transaction::query()
+            ->where('merchant_ref', $payload->merchantRef)
+            ->where('merchant_session', $payload->merchantSession)
+            ->first();
+
+        return $transaction !== null && $transaction->getAttribute('transaction_id') !== null;
     }
 }
