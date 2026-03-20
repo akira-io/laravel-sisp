@@ -24,3 +24,21 @@ it('renderInertia falls back to blade when Inertia is absent', function (): void
     // Inertia is available in this testbench; expect Inertia response
     expect($result)->toBeInstanceOf(Inertia\Response::class);
 });
+
+it('sets allowRetry to false when 3DS is enabled and transaction is missing required customer data', function (): void {
+    config([
+        'sisp.allow_retry' => true,
+        'sisp.is_3dsec' => '1',
+    ]);
+
+    $t = Transaction::factory()->failed()->create([
+        'customer_email' => null,
+        'customer_country' => null,
+        'customer_city' => null,
+        'customer_address' => null,
+    ]);
+
+    $view = resolve(RenderPaymentResponseAction::class)->renderBlade($t, []);
+
+    expect($view->getData()['allowRetry'])->toBeFalse();
+});

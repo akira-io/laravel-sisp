@@ -94,6 +94,7 @@ return [
             'back_home' => 'Back to Home',
             'declined' => 'Declined',
             'retry_payment' => 'Try Again',
+            'retry_not_available' => 'This payment cannot be retried because required customer data is missing.',
             'cancel_payment' => 'Cancel',
             'copy_reference' => 'Copy reference',
             'download_invoice_alert_title' => 'Download your invoice',

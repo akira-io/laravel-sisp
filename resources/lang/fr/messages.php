@@ -94,6 +94,7 @@ return [
             'back_home' => 'Retour à l\'Accueil',
             'declined' => 'Refusé',
             'retry_payment' => 'Réessayer',
+            'retry_not_available' => 'Ce paiement ne peut pas être réessayé car des données client obligatoires sont manquantes.',
             'cancel_payment' => 'Annuler',
             'copy_reference' => 'Copier la référence',
             'download_invoice_alert_title' => 'Téléchargez votre facture',

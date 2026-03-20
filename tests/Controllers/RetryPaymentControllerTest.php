@@ -35,3 +35,26 @@ it('updates merchant_session on transaction so callback can find it', function (
         ->not->toBe('MS-OLD')
         ->not->toBeEmpty();
 });
+
+it('returns validation error without triggering after callback when transaction does not exist', function (): void {
+    $this->post(route('sisp.retry-payment'), ['transaction_id' => 999999])
+        ->assertSessionHasErrors(['transaction_id']);
+});
+
+it('rejects retry when 3DS is enabled and required customer data is missing', function (): void {
+    config([
+        'sisp.allow_retry' => true,
+        'sisp.is_3dsec' => '1',
+    ]);
+
+    $t = Transaction::factory()->failed()->create([
+        'customer_email' => null,
+        'customer_country' => null,
+        'customer_city' => null,
+        'customer_address' => null,
+    ]);
+
+    $this->from('/sisp/callback?ref='.$t->merchant_ref)
+        ->post(route('sisp.retry-payment'), ['transaction_id' => $t->id])
+        ->assertSessionHasErrors(['transaction_id']);
+});
