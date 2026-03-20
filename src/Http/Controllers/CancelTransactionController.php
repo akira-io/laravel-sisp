@@ -49,6 +49,6 @@ final readonly class CancelTransactionController
             return null;
         }
 
-        return Transaction::query()->find($transactionId);
+        return Transaction::query()->where('transaction_id', $transactionId)->first();
     }
 }

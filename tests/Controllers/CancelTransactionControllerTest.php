@@ -41,11 +41,12 @@ it('cancels a pending transaction resolved by transaction_id', function (): void
         'status' => 'pending',
         'merchant_ref' => 'MR-C3',
         'merchant_session' => 'MS-C3',
+        'transaction_id' => 'TXN-EXT-001',
     ]);
 
     $this->get(route('sisp.cancel', [
         'reason' => 'user_cancelled',
-        'transaction_id' => $t->id,
+        'transaction_id' => 'TXN-EXT-001',
     ]))
         ->assertRedirect(route('sisp.callback', ['ref' => 'MR-C3']));
 
