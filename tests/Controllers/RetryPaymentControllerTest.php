@@ -36,6 +36,11 @@ it('updates merchant_session on transaction so callback can find it', function (
         ->not->toBeEmpty();
 });
 
+it('returns validation error without triggering after callback when transaction does not exist', function (): void {
+    $this->post(route('sisp.retry-payment'), ['transaction_id' => 999999])
+        ->assertSessionHasErrors(['transaction_id']);
+});
+
 it('rejects retry when 3DS is enabled and required customer data is missing', function (): void {
     config([
         'sisp.allow_retry' => true,
