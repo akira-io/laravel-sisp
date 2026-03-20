@@ -95,6 +95,13 @@ return [
             'declined' => 'Declined',
             'retry_payment' => 'Try Again',
             'cancel_payment' => 'Cancel',
+            'copy_reference' => 'Copy reference',
+            'download_invoice_alert_title' => 'Download your invoice',
+            'download_invoice_alert_message' => 'Save a copy of your invoice for your records.',
+            'leave_confirmation_title' => 'Are you sure you want to leave?',
+            'leave_confirmation_message' => 'If you leave now, you may lose information about your payment.',
+            'leave_page' => 'Leave page',
+            'stay_on_page' => 'Stay on page',
         ],
     ],
     'validation' => [

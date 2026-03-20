@@ -56,6 +56,7 @@ final readonly class RenderPaymentFormAction
                 'data_protected' => __('sisp::payment.data_protected'),
                 'redirecting_in' => trans('sisp::payment.redirecting_in'),
                 'connecting' => __('sisp::payment.connecting'),
+                'developed_by' => __('sisp::payment.developed_by'),
             ],
         ]);
     }

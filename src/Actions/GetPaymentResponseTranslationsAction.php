@@ -31,6 +31,13 @@ final readonly class GetPaymentResponseTranslationsAction
                 'declined' => __('sisp::messages.payment.response.declined'),
                 'retry_payment' => __('sisp::messages.payment.response.retry_payment'),
                 'cancel_payment' => __('sisp::messages.payment.response.cancel_payment'),
+                'copy_reference' => __('sisp::messages.payment.response.copy_reference'),
+                'download_invoice_alert_title' => __('sisp::messages.payment.response.download_invoice_alert_title'),
+                'download_invoice_alert_message' => __('sisp::messages.payment.response.download_invoice_alert_message'),
+                'leave_confirmation_title' => __('sisp::messages.payment.response.leave_confirmation_title'),
+                'leave_confirmation_message' => __('sisp::messages.payment.response.leave_confirmation_message'),
+                'leave_page' => __('sisp::messages.payment.response.leave_page'),
+                'stay_on_page' => __('sisp::messages.payment.response.stay_on_page'),
             ],
         ];
     }

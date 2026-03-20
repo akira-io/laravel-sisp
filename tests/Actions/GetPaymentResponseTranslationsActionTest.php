@@ -35,6 +35,13 @@ it('returns translations array with all required keys', function (): void {
             'declined',
             'retry_payment',
             'cancel_payment',
+            'copy_reference',
+            'download_invoice_alert_title',
+            'download_invoice_alert_message',
+            'leave_confirmation_title',
+            'leave_confirmation_message',
+            'leave_page',
+            'stay_on_page',
         ]);
 });
 

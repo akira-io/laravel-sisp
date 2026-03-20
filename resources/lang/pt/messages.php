@@ -95,6 +95,13 @@ return [
             'declined' => 'Recusado',
             'retry_payment' => 'Tentar Novamente',
             'cancel_payment' => 'Cancelar',
+            'copy_reference' => 'Copiar referência',
+            'download_invoice_alert_title' => 'Faça o download da sua fatura',
+            'download_invoice_alert_message' => 'Guarde uma cópia da sua fatura para os seus registos.',
+            'leave_confirmation_title' => 'Tem a certeza que quer sair?',
+            'leave_confirmation_message' => 'Se sair agora, poderá perder informações sobre o seu pagamento.',
+            'leave_page' => 'Sair da página',
+            'stay_on_page' => 'Ficar na página',
         ],
     ],
     'validation' => [
