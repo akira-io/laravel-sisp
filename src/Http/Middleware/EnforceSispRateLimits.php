@@ -35,7 +35,7 @@ final readonly class EnforceSispRateLimits
                     windowSeconds: (int) config('sisp.rate_limiting.per_ip.window_seconds')
                 );
             }
-        } catch (BlacklistedIdentifierException | RateLimitExceededException $e) {
+        } catch (BlacklistedIdentifierException|RateLimitExceededException $e) {
             return response()->json([
                 'error' => $e->getMessage(),
                 'status' => $e->getCode(),
