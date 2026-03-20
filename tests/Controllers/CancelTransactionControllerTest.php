@@ -57,5 +57,5 @@ it('handles missing transaction identifier and flashes error', function (): void
     $this->withHeader('referer', '/checkout')
         ->get(route('sisp.cancel'))
         ->assertRedirect('/checkout')
-        ->assertSessionHas('error', 'Transaction not found');
+        ->assertSessionHas('error', __('laravel-sisp::messages.validation.transaction_not_found'));
 });

@@ -22,7 +22,7 @@ final readonly class CancelTransactionController
         $transaction = $this->resolveTransaction($request);
 
         if (! $transaction instanceof Transaction) {
-            return back()->with('error', __('Transaction not found'));
+            return back()->with('error', __('laravel-sisp::messages.validation.transaction_not_found'));
         }
 
         try {
@@ -45,7 +45,7 @@ final readonly class CancelTransactionController
         }
 
         $transactionId = $request->input('transaction_id');
-        if (! $transactionId) {
+        if (! is_string($transactionId) || $transactionId === '') {
             return null;
         }
 
