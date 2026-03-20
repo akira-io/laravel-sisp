@@ -26,10 +26,13 @@ final class RetryPaymentRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $transactionId = $this->integer('transaction_id');
-            $transaction = Transaction::query()->findOrFail($transactionId);
+            if ($validator->errors()->has('transaction_id')) {
+                return;
+            }
 
-            if (! resolve(CanRetryPaymentAction::class)->handle($transaction)) {
+            $transaction = Transaction::query()->find($this->integer('transaction_id'));
+
+            if (! $transaction || ! resolve(CanRetryPaymentAction::class)->handle($transaction)) {
                 $validator->errors()->add(
                     'transaction_id',
                     __('sisp::messages.payment.response.retry_not_available')
