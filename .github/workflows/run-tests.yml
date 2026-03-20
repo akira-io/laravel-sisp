@@ -37,3 +37,6 @@ jobs:
 
       - name: Run tests (Pest)
         run: composer test
+
+      - name: Check code coverage
+        run: composer test:coverage

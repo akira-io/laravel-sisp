@@ -31,6 +31,7 @@ abstract class TestCase extends Orchestra
             'driver' => 'sqlite',
             'database' => ':memory:',
         ]);
+        config()->set('cache.default', 'array');
         config()->set('sisp.url', 'https://test.sisp.example.com');
         config()->set('sisp.posID', 'TEST_POS_001');
         config()->set('sisp.posAutCode', 'TEST_POS_AUT_CODE');
