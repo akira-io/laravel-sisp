@@ -6,8 +6,9 @@ namespace Akira\Sisp\Http\Middleware;
 
 use Akira\Sisp\Actions\CheckBlacklistAction;
 use Akira\Sisp\Actions\CheckRateLimitAction;
+use Akira\Sisp\Exceptions\BlacklistedIdentifierException;
+use Akira\Sisp\Exceptions\RateLimitExceededException;
 use Closure;
-use Exception;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,13 +35,11 @@ final readonly class EnforceSispRateLimits
                     windowSeconds: (int) config('sisp.rate_limiting.per_ip.window_seconds')
                 );
             }
-        } catch (Exception $e) {
-            $statusCode = (int) $e->getCode();
-
+        } catch (BlacklistedIdentifierException | RateLimitExceededException $e) {
             return response()->json([
                 'error' => $e->getMessage(),
-                'status' => $statusCode,
-            ], $statusCode);
+                'status' => $e->getCode(),
+            ], $e->getCode());
         }
 
         return $next($request);
