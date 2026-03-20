@@ -47,9 +47,12 @@ final readonly class GenerateInvoicePdfAction
             ->buyer($buyer)
             ->invoiceNumber($invoice->invoice_number)
             ->issuedAt($invoice->invoice_date)
-            ->dueAt($invoice->due_date)
             ->locale(str_replace('-', '_', $transaction->locale))
             ->currency('ECV');
+
+        if ($invoice->due_date !== null) {
+            $invoiceBuilder->dueAt($invoice->due_date);
+        }
 
         foreach ($transaction->items as $item) {
             $itemData = ItemBuilder::make()
