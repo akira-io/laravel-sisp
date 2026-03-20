@@ -26,9 +26,9 @@ final readonly class CanRetryPaymentAction
 
     private function isMissingRequiredThreeDSecureData(Transaction $transaction): bool
     {
-        return blank($transaction->getRawOriginal('customer_email'))
-            || blank($transaction->getRawOriginal('customer_country'))
-            || blank($transaction->getRawOriginal('customer_city'))
-            || blank($transaction->getRawOriginal('customer_address'));
+        return blank($transaction->customer_email)
+            || blank($transaction->customer_country)
+            || blank($transaction->customer_city)
+            || blank($transaction->customer_address);
     }
 }
