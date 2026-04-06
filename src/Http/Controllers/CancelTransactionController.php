@@ -16,16 +16,20 @@ final readonly class CancelTransactionController
         private CancelTransactionAction $cancelTransaction,
     ) {}
 
-    public function __invoke(Transaction $transaction, Request $request): RedirectResponse
+    public function __invoke(Request $request): RedirectResponse
     {
+        $validated = $request->validate([
+            'merchantRef' => ['required', 'string'],
+        ]);
+
+        $transaction = Transaction::where('merchant_ref', $validated['merchantRef'])->firstOrFail();
+
         $reason = $request->query('reason', 'user_cancelled');
 
         try {
-
             $this->cancelTransaction->handle($transaction, $reason);
 
-            return to_route('sisp.callback', ['ref' => $request->input('merchantRef')]);
-
+            return to_route('sisp.callback', ['ref' => $validated['merchantRef']]);
         } catch (LogicException $e) {
             return back()->with('error', $e->getMessage());
         }

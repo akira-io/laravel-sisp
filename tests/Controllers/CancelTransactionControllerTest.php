@@ -2,34 +2,51 @@
 
 declare(strict_types=1);
 
-use Akira\Sisp\Http\Controllers\CancelTransactionController;
 use Akira\Sisp\Models\Transaction;
-use Illuminate\Http\Request;
 
 it('cancels a pending transaction and redirects', function (): void {
-    $t = Transaction::factory()->create([
+    Transaction::factory()->create([
         'status' => 'pending',
         'merchant_ref' => 'MR-C',
         'merchant_session' => 'MS-C',
     ]);
 
-    $controller = resolve(CancelTransactionController::class);
-    $request = Request::create('/sisp/cancel?reason=user_cancelled&merchantRef=MR-C', 'GET');
-    $response = $controller($t, $request);
+    $response = $this->get(route('sisp.cancel', [
+        'merchantRef' => 'MR-C',
+        'reason' => 'user_cancelled',
+    ]));
 
-    expect($response->isRedirect())->toBeTrue();
+    $response->assertRedirect();
+});
+
+it('returns 404 when merchantRef does not match any transaction', function (): void {
+    $response = $this->get(route('sisp.cancel', [
+        'merchantRef' => 'NONEXISTENT',
+        'reason' => 'user_cancelled',
+    ]));
+
+    $response->assertNotFound();
+});
+
+it('returns validation error when merchantRef is missing', function (): void {
+    $response = $this->get(route('sisp.cancel'));
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors(['merchantRef']);
 });
 
 it('handles non-cancellable transaction and flashes error', function (): void {
-    $t = Transaction::factory()->create([
+    Transaction::factory()->create([
         'status' => 'completed',
         'merchant_ref' => 'MR-C2',
         'merchant_session' => 'MS-C2',
     ]);
 
-    $controller = resolve(CancelTransactionController::class);
-    $request = Request::create('/sisp/cancel?reason=user_cancelled&merchantRef=MR-C2', 'GET');
-    $response = $controller($t, $request);
+    $response = $this->get(route('sisp.cancel', [
+        'merchantRef' => 'MR-C2',
+        'reason' => 'user_cancelled',
+    ]));
 
-    expect($response->isRedirect())->toBeTrue();
+    $response->assertRedirect();
+    $response->assertSessionHas('error');
 });
