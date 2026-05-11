@@ -8,14 +8,21 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        php: [ 8.4 ]
-        laravel: [ 12.* ]
+        os: [ ubuntu-latest ]
+        php: [ 8.4, 8.5 ]
+        laravel: [ 12.*, 13.* ]
+        stability: [ prefer-lowest, prefer-stable ]
+        include:
+          - laravel: 12.*
+            testbench: ^10.0
+          - laravel: 13.*
+            testbench: ^11.0
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -33,7 +40,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y aspell aspell-en
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
+        run: |
+          composer require "illuminate/contracts:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-progress --no-interaction
 
       - name: Run tests (Pest)
         run: composer test
