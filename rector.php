@@ -5,8 +5,6 @@ declare(strict_types=1);
 use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 use Rector\Config\RectorConfig;
 use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
-use RectorLaravel\Rector\Class_\FillablePropertyToFillableAttributeRector;
-use RectorLaravel\Rector\Class_\TablePropertyToTableAttributeRector;
 use RectorLaravel\Set\LaravelSetList;
 use RectorLaravel\Set\LaravelSetProvider;
 
@@ -37,8 +35,7 @@ return RectorConfig::configure()
     ])
     ->withSkip([
         AddOverrideAttributeToOverriddenMethodsRector::class,
-        FillablePropertyToFillableAttributeRector::class,
-        TablePropertyToTableAttributeRector::class,
+        LaravelSetList::LARAVEL_130,
     ])
     ->withPreparedSets(
         deadCode: true,
