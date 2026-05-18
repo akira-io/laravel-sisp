@@ -108,5 +108,6 @@ return [
     'validation' => [
         'invalid_payment_response' => 'Invalid payment response',
         'invalid_fingerprint' => 'Invalid payment fingerprint',
+        'transaction_not_found' => 'Transaction not found',
     ],
 ];

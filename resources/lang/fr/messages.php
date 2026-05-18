@@ -108,5 +108,6 @@ return [
     'validation' => [
         'invalid_payment_response' => 'Réponse de paiement invalide',
         'invalid_fingerprint' => 'Empreinte digitale de paiement invalide',
+        'transaction_not_found' => 'Transaction introuvable',
     ],
 ];
