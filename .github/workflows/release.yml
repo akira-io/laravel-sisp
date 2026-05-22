@@ -44,10 +44,25 @@ jobs:
 
       - name: Create GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete "${{ github.ref_name }}" --yes 2>/dev/null || true
           gh release create "${{ github.ref_name }}" \
             --title "${{ github.ref_name }}" \
             --notes "${{ steps.notes.outputs.body }}" \
             --latest
+
+      - name: Send GitHub Release to Discord
+        uses: SethCohen/github-releases-to-discord@v1.20.0
+        with:
+          webhook_url: ${{ secrets.DISCORD }}
+          release_name: ${{ github.ref_name }}
+          release_body: ${{ steps.notes.outputs.body }}
+          release_html_url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+          color: "2105893"
+          username: "Laravel Sisp"
+          avatar_url: "https://avatars.githubusercontent.com/u/116525492?s=96&v=4"
+          content: "||@everyone||"
+          footer_title: "Laravel Sisp"
+          footer_icon_url: "https://avatars.githubusercontent.com/u/116525492?s=96&v=4"
+          footer_timestamp: true
