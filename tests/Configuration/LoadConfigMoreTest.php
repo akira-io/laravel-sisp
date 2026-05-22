@@ -9,12 +9,15 @@ beforeEach(function (): void {
 });
 
 it('returns sane defaults and configured values for getters', function (): void {
-    // Defaults generated values
-    expect($this->cfg->getMerchantReference())->toStartWith('R')
-        ->and($this->cfg->getMerchantSession())->toStartWith('S')
+    $merchantReferences = array_map(fn (): string => $this->cfg->getMerchantReference(), range(1, 5));
+    $merchantSessions = array_map(fn (): string => $this->cfg->getMerchantSession(), range(1, 5));
+
+    expect($merchantReferences)->each->toStartWith('R')
+        ->and($merchantReferences)->toHaveCount(count(array_unique($merchantReferences)))
+        ->and($merchantSessions)->each->toStartWith('S')
+        ->and($merchantSessions)->toHaveCount(count(array_unique($merchantSessions)))
         ->and($this->cfg->getTimeStamp())->toMatch('/^\d{4}-\d{2}-\d{2} /');
 
-    // Config-driven values
     config()->set('sisp.currency', 'XYZ');
     config()->set('sisp.language_messages', 'PT');
     config()->set('sisp.fingerprint_version', '9');
@@ -27,7 +30,6 @@ it('returns sane defaults and configured values for getters', function (): void 
         ->and($this->cfg->getDefaultTransactionCode())->toBe('42')
         ->and($this->cfg->getUri())->toBe('https://example.test');
 
-    // Invoice-related config
     config()->set('sisp.invoice', [
         'number_format' => 'date-based',
         'prefix' => 'INVX',
