@@ -22,7 +22,7 @@ it('refunds a completed transaction and returns json', function (): void {
 
         public function can(string $ability, mixed $subject): bool
         {
-            return false;
+            return $ability === 'refund' && $subject instanceof Transaction;
         }
     });
 
@@ -48,7 +48,7 @@ it('returns 400 when refund amount exceeds transaction', function (): void {
 
         public function can(string $ability, mixed $subject): bool
         {
-            return false;
+            return $ability === 'refund' && $subject instanceof Transaction;
         }
     });
 
@@ -80,6 +80,32 @@ it('returns 403 when user is not authorized for the transaction', function (): v
     expect($response->getStatusCode())->toBe(403);
     $data = $response->getData(true);
     expect($data['success'])->toBeFalse();
+});
+
+it('returns 403 when customer email matches but user lacks refund ability', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'customer_email' => 'buyer@example.com',
+    ]);
+
+    $controller = resolve(RefundTransactionController::class);
+    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 10.0]);
+    $request->setUserResolver(fn (): object => new class
+    {
+        public string $email = 'buyer@example.com';
+
+        public function can(string $ability, mixed $subject): bool
+        {
+            return false;
+        }
+    });
+
+    $response = $controller($t, $request);
+
+    expect($response->getStatusCode())->toBe(403)
+        ->and($response->getData(true)['success'])->toBeFalse()
+        ->and($t->refresh()->status)->toBe(TransactionStatus::completed);
 });
 
 it('returns 403 when no authenticated user is present', function (): void {
