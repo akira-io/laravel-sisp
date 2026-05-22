@@ -32,7 +32,8 @@ function cb_payload(string $msgType): CallbackPayload
 }
 
 beforeEach(function (): void {
-    // Ensure facade resolves fresh with our bindings
+    config()->set('sisp.posID', 'POS1');
+
     Facade::clearResolvedInstances();
 });
 
@@ -46,7 +47,13 @@ it('dispatches PaymentFailed and skips status update when fingerprint is invalid
     });
 
     Event::fake();
-    $transaction = Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'mref',
+        'merchant_session' => 'msess',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '8',
+    ]);
 
     resolve(HandleCallbackAction::class)->handle(cb_payload(ErrorMessageType::invalidAmount->value));
 
@@ -57,16 +64,31 @@ it('dispatches PaymentFailed and skips status update when fingerprint is invalid
 });
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
-    // Override Sisp facade binding to control validation
     app()->instance(Akira\Sisp\Sisp::class, new class
     {
         public function validateCallback(CallbackPayload $payload): bool
         {
             return true;
         }
+
+        public function getDefaultTransactionCode(): string
+        {
+            return '8';
+        }
+
+        public function getPosId(): string
+        {
+            return 'POS1';
+        }
     });
 
-    Transaction::factory()->create(['merchant_ref' => 'mref', 'merchant_session' => 'msess']);
+    Transaction::factory()->create([
+        'merchant_ref' => 'mref',
+        'merchant_session' => 'msess',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '8',
+    ]);
 
     Event::fake();
     resolve(HandleCallbackAction::class)->handle(cb_payload(SuccessMessageType::purchase->value));

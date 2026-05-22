@@ -4,12 +4,26 @@ declare(strict_types=1);
 
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Akira\Sisp\ValueObjects\SispCredentials;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
 });
+
+function callback_controller_payload(Transaction $transaction, array $overrides = []): array
+{
+    return Sisp::generateSandboxPayload(PaymentRequestData::from(array_merge([
+        'amount' => $transaction->amount,
+        'merchantRef' => $transaction->merchant_ref,
+        'merchantSession' => $transaction->merchant_session,
+        'timeStamp' => '2024-01-01 00:00:00',
+        'currency' => $transaction->currency,
+        'transactionCode' => $transaction->transaction_code ?? '1',
+    ], $overrides)))->toArray();
+}
 
 it('redirects when user cancelled flag present', function (): void {
     config()->set('sisp.redirect_url', '/home');
@@ -98,4 +112,83 @@ it('skips duplicate lookup when callback payload has no transaction keys', funct
 
     $this->post(route('sisp.callback'), $payload->toArray())
         ->assertRedirect('/home');
+});
+
+it('records signed amount mismatches as failed without completing the transaction', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-AMOUNT-MISMATCH',
+        'merchant_session' => 'MS-AMOUNT-MISMATCH',
+        'amount' => 20,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $this->post(route('sisp.callback'), callback_controller_payload($transaction, ['amount' => 25]))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-AMOUNT-MISMATCH']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
+});
+
+it('records signed currency mismatches as failed without completing the transaction', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-CURRENCY-MISMATCH',
+        'merchant_session' => 'MS-CURRENCY-MISMATCH',
+        'amount' => 20,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $this->post(route('sisp.callback'), callback_controller_payload($transaction, ['currency' => '978']))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-CURRENCY-MISMATCH']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
+});
+
+it('records signed pos id mismatches as failed without completing the transaction', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-POS-MISMATCH',
+        'merchant_session' => 'MS-POS-MISMATCH',
+        'amount' => 20,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $scoped = resolve(SispManager::class)->forCredentials(SispCredentials::from([
+        'pos_id' => 'OTHER_POS',
+        'pos_aut_code' => config('sisp.posAutCode'),
+        'currency' => '132',
+        'merchant_id' => config('sisp.merchantID'),
+        'url' => config('sisp.endpoint'),
+        'language_messages' => config('sisp.languageMessages'),
+        'fingerprint_version' => config('sisp.fingerPrintVersion'),
+        'is_3d_sec' => config('sisp.is3DSec'),
+        'sandbox' => true,
+        'url_merchant_response' => config('sisp.url_merchant_response'),
+    ]));
+
+    $payload = $scoped->generateSandboxPayload(PaymentRequestData::from([
+        'amount' => 20,
+        'merchantRef' => 'MR-POS-MISMATCH',
+        'merchantSession' => 'MS-POS-MISMATCH',
+        'timeStamp' => '2024-01-01 00:00:00',
+        'currency' => '132',
+        'transactionCode' => '1',
+    ]))->toArray();
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-POS-MISMATCH']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
 });
