@@ -29,6 +29,7 @@ it('blocks retry when 3DS is enabled and required customer data is missing', fun
         'customer_country' => null,
         'customer_city' => null,
         'customer_address' => null,
+        'customer_postal_code' => null,
     ]);
 
     $canRetry = resolve(CanRetryPaymentAction::class)->handle($transaction);
@@ -47,11 +48,31 @@ it('allows retry when 3DS is enabled and required customer data exists', functio
         'customer_country' => 'cv',
         'customer_city' => 'Praia',
         'customer_address' => 'Rua Principal',
+        'customer_postal_code' => '7600',
     ]);
 
     $canRetry = resolve(CanRetryPaymentAction::class)->handle($transaction);
 
     expect($canRetry)->toBeTrue();
+});
+
+it('blocks retry when 3DS postal code is missing', function (): void {
+    config([
+        'sisp.allow_retry' => true,
+        'sisp.is_3dsec' => '1',
+    ]);
+
+    $transaction = Transaction::factory()->failed()->create([
+        'customer_email' => 'john@example.test',
+        'customer_country' => 'cv',
+        'customer_city' => 'Praia',
+        'customer_address' => 'Rua Principal',
+        'customer_postal_code' => null,
+    ]);
+
+    $canRetry = resolve(CanRetryPaymentAction::class)->handle($transaction);
+
+    expect($canRetry)->toBeFalse();
 });
 
 it('blocks retry when retry is disabled by configuration', function (): void {

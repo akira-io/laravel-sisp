@@ -29,6 +29,7 @@ final readonly class CanRetryPaymentAction
         return blank($transaction->customer_email)
             || blank($transaction->customer_country)
             || blank($transaction->customer_city)
-            || blank($transaction->customer_address);
+            || blank($transaction->customer_address)
+            || blank($transaction->getAttribute('customer_postal_code'));
     }
 }
