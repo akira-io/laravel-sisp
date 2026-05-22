@@ -52,6 +52,7 @@ it('rejects retry when 3DS is enabled and required customer data is missing', fu
         'customer_country' => null,
         'customer_city' => null,
         'customer_address' => null,
+        'customer_postal_code' => null,
     ]);
 
     $this->from('/sisp/callback?ref='.$t->merchant_ref)
