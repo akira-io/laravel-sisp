@@ -23,7 +23,7 @@ render_always = false
 
 [git]
 conventional_commits = true
-filter_unconventional = false
+filter_unconventional = true
 split_commits = false
 commit_parsers = [
   { message = "^feat", group = "Features" },
@@ -33,6 +33,7 @@ commit_parsers = [
   { message = "^docs", group = "Documentation", skip = true },
   { message = "^style", group = "Styling", skip = true },
   { message = "^test", group = "Tests", skip = true },
+  { message = "^ci", group = "Build & CI/CD", skip = true },
   { message = "^chore", group = "Build & CI/CD", skip = true },
   { message = ".*", group = "Other" },
 ]
