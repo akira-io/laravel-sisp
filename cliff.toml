@@ -42,3 +42,7 @@ skip_tags = ""
 ignore_tags = ""
 topology_order = false
 sort_commits = "oldest"
+
+[remote.github]
+owner = "akira-io"
+repo = "laravel-sisp"
