@@ -52,17 +52,6 @@ final readonly class RefundTransactionController
             return false;
         }
 
-        if ($user->can('refund', $transaction)) {
-            return true;
-        }
-
-        $userEmail = data_get($user, 'email');
-        $transactionEmail = (string) ($transaction->customer_email ?? '');
-
-        if (! is_string($userEmail) || mb_trim($userEmail) === '' || mb_trim($transactionEmail) === '') {
-            return false;
-        }
-
-        return strcasecmp(mb_trim($userEmail), mb_trim($transactionEmail)) === 0;
+        return $user->can('refund', $transaction);
     }
 }
