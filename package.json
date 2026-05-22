@@ -8,8 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "release": "release-it"
+    "build": "vite build"
   },
   "keywords": [],
   "author": "",
@@ -21,10 +20,8 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/js": "^9.19.0",
-    "@release-it/conventional-changelog": "^8.0.1",
     "autoprefixer": "^10.4.13",
     "postcss": "^8.5.14",
-    "release-it": "^17.0.3",
     "tailwindcss": "^3.2.4",
     "vite": "^4.5.3"
   }
