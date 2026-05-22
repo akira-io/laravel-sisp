@@ -65,6 +65,15 @@ it('handles POST callback and redirects to GET with ref', function (): void {
 
     $this->post(route('sisp.callback'), $payload->toArray())
         ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G2']));
+
+    $t->refresh();
+
+    expect($t->status->value)->toBe('completed')
+        ->and($t->transaction_id)->toBe($payload->transactionID)
+        ->and($t->message_type)->toBe($payload->messageType)
+        ->and($t->merchant_response)->toBe($payload->merchantResponse)
+        ->and($t->response_code)->toBe($payload->merchantRespCp)
+        ->and($t->fingerprint)->toBe($payload->fingerprint);
 });
 
 it('rejects invalid callback payload before transaction lookups', function (): void {
