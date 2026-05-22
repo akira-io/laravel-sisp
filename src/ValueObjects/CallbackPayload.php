@@ -86,7 +86,7 @@ final readonly class CallbackPayload
     public function withoutFingerprint(): array
     {
         $data = $this->toArray();
-        unset($data['fingerprint']);
+        unset($data['resultFingerPrint']);
 
         return $data;
     }
