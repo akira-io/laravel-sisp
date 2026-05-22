@@ -40,7 +40,7 @@ final class RateLimit extends Model
 
     public function isLimitExceeded(): bool
     {
-        return $this->hits >= $this->limit;
+        return $this->hits > $this->limit;
     }
 
     public function recordHit(): self

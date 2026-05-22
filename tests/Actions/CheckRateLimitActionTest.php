@@ -7,9 +7,7 @@ use Akira\Sisp\Exceptions\RateLimitExceededException;
 use Akira\Sisp\Models\RateLimit;
 
 beforeEach(function (): void {
-    // Ensure array cache for deterministic behavior
     config()->set('cache.default', 'array');
-    // Enable rate limiting by default for these tests
     config()->set('sisp.rate_limiting.enabled', true);
 });
 
@@ -22,15 +20,13 @@ it('returns immediately when disabled', function (): void {
 it('blocks after exceeding the limit and sets cache key', function (): void {
     $action = resolve(CheckRateLimitAction::class);
 
-    // Small window to exercise the block path
     $identifier = '1.1.1.1';
-    $limit = 2; // allow only 2 requests
-    $window = 60; // seconds
+    $limit = 2;
+    $window = 60;
 
-    // First hit creates entry and records hit
+    $action->handle('ip', $identifier, null, $limit, $window);
     $action->handle('ip', $identifier, null, $limit, $window);
 
-    // Second hit should exceed and throw
     $thrown = false;
     try {
         $action->handle('ip', $identifier, null, $limit, $window);
@@ -39,9 +35,9 @@ it('blocks after exceeding the limit and sets cache key', function (): void {
     }
     expect($thrown)->toBeTrue();
 
-    // Model is marked blocked
     $rl = RateLimit::query()->where('identifier', $identifier)->first();
-    expect($rl->is_blocked)->toBeTrue();
+    expect($rl->hits)->toBe(3)
+        ->and($rl->is_blocked)->toBeTrue();
 });
 
 it('resets when window elapsed then counts again', function (): void {
@@ -49,7 +45,6 @@ it('resets when window elapsed then counts again', function (): void {
     $identifier = '2.2.2.2';
     $windowSeconds = 60;
 
-    // Create a record in the past so it is reset
     $rl = RateLimit::query()->create([
         'identifier' => $identifier,
         'limit_type' => 'ip',
@@ -61,7 +56,6 @@ it('resets when window elapsed then counts again', function (): void {
         'is_blocked' => false,
     ]);
 
-    // Next handle should reset and then record a hit without throwing
     $action->handle('ip', $identifier, null, 10, $windowSeconds);
 
     $fresh = RateLimit::query()->find($rl->id);

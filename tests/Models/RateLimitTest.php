@@ -23,6 +23,10 @@ it('records hits, checks limits, resets and blocks', function (): void {
 
     $rl->refresh();
     expect($rl->hits)->toBe(2)
+        ->and($rl->isLimitExceeded())->toBeFalse();
+
+    $rl->recordHit()->refresh();
+    expect($rl->hits)->toBe(3)
         ->and($rl->isLimitExceeded())->toBeTrue();
 
     $rl->block(30)->refresh();
