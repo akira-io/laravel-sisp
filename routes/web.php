@@ -23,6 +23,7 @@ Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->name('sisp.callback');
 
 Route::get('sisp/cancel', CancelTransactionController::class)
+    ->middleware(Illuminate\Routing\Middleware\ValidateSignature::class)
     ->name('sisp.cancel');
 
 Route::post('sisp/refund/{transaction}', RefundTransactionController::class)
