@@ -1,14 +1,97 @@
+name: release
+
 on:
-  release:
-    types: [ published ]
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
-  github-releases-to-discord:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.4', '8.5']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y aspell
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run tests
+        run: composer test
+
+  release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
-      - name: Github Releases To Discord
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: 1.x
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node for changelog generation
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ensure CHANGELOG header
+        run: |
+          if [ ! -s CHANGELOG.md ] || ! head -1 CHANGELOG.md | grep -q '^# Changelog'; then
+            printf '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n\n%s' "$(cat CHANGELOG.md 2>/dev/null || true)" > CHANGELOG.md
+          fi
+
+      - name: Generate CHANGELOG entry for this release
+        run: npx -y conventional-changelog-cli@5 -p angular -i CHANGELOG.md -s -r 1
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^(##|# )\\[?" ver { found=1; print; next }
+            found && /^(##|# )\[?[0-9]/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          {
+            echo "body<<EOF"
+            cat release-notes.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Commit CHANGELOG
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore(release): ${GITHUB_REF_NAME}"
+          git push origin HEAD:1.x
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+      - name: Send GitHub Release to Discord
         uses: SethCohen/github-releases-to-discord@v1.20.0
         with:
           webhook_url: ${{ secrets.DISCORD }}
