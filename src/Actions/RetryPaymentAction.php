@@ -10,6 +10,8 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 
 final readonly class RetryPaymentAction
 {
+    private const string FALLBACK_POSTAL_CODE = '0000';
+
     public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
 
     public function handle(Transaction $transaction): PaymentRequest
@@ -41,10 +43,10 @@ final readonly class RetryPaymentAction
         );
     }
 
-    private function customerPostalCode(Transaction $transaction): ?string
+    private function customerPostalCode(Transaction $transaction): string
     {
         $postalCode = $transaction->getAttribute('customer_postal_code');
 
-        return is_string($postalCode) ? $postalCode : null;
+        return is_string($postalCode) && $postalCode !== '' ? $postalCode : self::FALLBACK_POSTAL_CODE;
     }
 }

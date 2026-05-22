@@ -56,3 +56,25 @@ it('creates valid payment request with data from transaction', function (): void
     expect($paymentRequest->amount)->toBe(50000.0)
         ->and($paymentRequest->transactionCode)->toBe('1');
 });
+
+it('uses the documented fallback postal code when retry is built directly without one', function (): void {
+    config(['sisp.is_3dsec' => '1']);
+
+    $transaction = Transaction::factory()->create([
+        'amount' => 50000.0,
+        'merchant_ref' => 'REF-789',
+        'merchant_session' => 'SESS-789',
+        'currency' => 'CVE',
+        'transaction_code' => '1',
+        'customer_email' => 'customer@example.test',
+        'customer_country' => '132',
+        'customer_city' => 'Praia',
+        'customer_address' => 'Rua Principal',
+        'customer_postal_code' => null,
+    ]);
+
+    $paymentRequest = $this->action->handle($transaction);
+    $purchaseRequest = json_decode(base64_decode((string) $paymentRequest->purchaseRequest), true);
+
+    expect($purchaseRequest['billAddrPostCode'])->toBe('0000');
+});

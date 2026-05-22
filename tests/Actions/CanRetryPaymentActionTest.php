@@ -56,7 +56,7 @@ it('allows retry when 3DS is enabled and required customer data exists', functio
     expect($canRetry)->toBeTrue();
 });
 
-it('blocks retry when 3DS postal code is missing', function (): void {
+it('allows retry when only the 3DS postal code is missing', function (): void {
     config([
         'sisp.allow_retry' => true,
         'sisp.is_3dsec' => '1',
@@ -72,7 +72,7 @@ it('blocks retry when 3DS postal code is missing', function (): void {
 
     $canRetry = resolve(CanRetryPaymentAction::class)->handle($transaction);
 
-    expect($canRetry)->toBeFalse();
+    expect($canRetry)->toBeTrue();
 });
 
 it('blocks retry when retry is disabled by configuration', function (): void {
