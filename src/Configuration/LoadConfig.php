@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Akira\Sisp\Configuration;
 
 use Illuminate\Contracts\Config\Repository;
-use Illuminate\Support\Str;
 
 final readonly class LoadConfig
 {
@@ -50,16 +49,16 @@ final readonly class LoadConfig
 
     public function getMerchantReference(): string
     {
-        $configured = $this->config->get('sisp.merchant_ref');
+        $generator = $this->config->get('sisp.generators.merchantReference');
 
-        return $configured ?? 'R'.Str::uuid()->toString();
+        return resolve($generator)();
     }
 
     public function getMerchantSession(): string
     {
-        $configured = $this->config->get('sisp.merchant_session');
+        $generator = $this->config->get('sisp.generators.merchantSession');
 
-        return $configured ?? 'S'.Str::random(32);
+        return resolve($generator)();
     }
 
     public function getTimeStamp(): string
