@@ -54,7 +54,7 @@
     }
   },
   "scripts": {
-    "post-autoload-dump": "@composer run prepare",
+    "post-autoload-dump": "@php scripts/prepare-testbench.php",
     "clear": "@php vendor/bin/testbench package:purge-laravel-sisp --ansi",
     "prepare": "@php vendor/bin/testbench package:discover --ansi",
     "build": [

@@ -20,7 +20,8 @@
             "roadmap",
             "addr",
             "pdfs",
-            "decrypted"
+            "decrypted",
+            "testbench"
         ],
         "paths": []
     }
