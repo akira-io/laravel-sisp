@@ -6,6 +6,8 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Actions\Transaction\FindOrCreateTransactionAction;
 use Akira\Sisp\Actions\Transaction\UpdateTransactionAction;
+use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
@@ -19,6 +21,8 @@ final readonly class HandleCallbackAction
     public function __construct(
         private FindOrCreateTransactionAction $findOrCreateTransaction,
         private UpdateTransactionAction $updateTransaction,
+        private SispCredentialsResolver $credentialsResolver,
+        private LoadConfig $config,
     ) {}
 
     public function handle(CallbackPayload $payload): Transaction
@@ -30,6 +34,14 @@ final readonly class HandleCallbackAction
             event(new PaymentFailed($transaction, $payload));
 
             $this->updateTransaction->handle($transaction, $payload);
+
+            return $transaction;
+        }
+
+        if (! $this->matchesTransaction($transaction, $payload)) {
+            $this->failTransaction($transaction, $payload);
+
+            event(new PaymentFailed($transaction, $payload));
 
             return $transaction;
         }
@@ -49,5 +61,53 @@ final readonly class HandleCallbackAction
             TransactionStatus::pending => event(new PaymentPending($transaction, $payload)),
             default => null, // @codeCoverageIgnore
         };
+    }
+
+    private function matchesTransaction(Transaction $transaction, CallbackPayload $payload): bool
+    {
+        return $this->transactionString($transaction, 'merchant_ref') === $payload->merchantRef
+            && $this->transactionString($transaction, 'merchant_session') === $payload->merchantSession
+            && $this->amountMatches($this->transactionAmount($transaction), $payload->amount)
+            && $this->transactionString($transaction, 'currency') === $payload->currency
+            && $this->transactionCode($transaction) === $payload->transactionCode
+            && $this->credentialsResolver->resolve()->posId === $payload->posID;
+    }
+
+    private function amountMatches(float|int|string $expected, float|int|string $actual): bool
+    {
+        return (int) round((float) $expected * 1000) === (int) round((float) $actual * 1000);
+    }
+
+    private function failTransaction(Transaction $transaction, CallbackPayload $payload): void
+    {
+        $transaction->update([
+            'transaction_id' => $payload->transactionID,
+            'message_type' => $payload->messageType,
+            'merchant_response' => 'callback_details_mismatch',
+            'response_code' => $payload->merchantRespCp,
+            'fingerprint' => $payload->fingerprint,
+            'status' => TransactionStatus::failed,
+        ]);
+    }
+
+    private function transactionAmount(Transaction $transaction): float|int|string
+    {
+        $amount = $transaction->getAttribute('amount');
+
+        return is_float($amount) || is_int($amount) || is_string($amount) ? $amount : 0;
+    }
+
+    private function transactionString(Transaction $transaction, string $attribute): string
+    {
+        $value = $transaction->getAttribute($attribute);
+
+        return is_string($value) ? $value : '';
+    }
+
+    private function transactionCode(Transaction $transaction): string
+    {
+        $transactionCode = $this->transactionString($transaction, 'transaction_code');
+
+        return $transactionCode === '' ? $this->config->getDefaultTransactionCode() : $transactionCode;
     }
 }
