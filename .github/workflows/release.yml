@@ -57,8 +57,19 @@ jobs:
             printf '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n\n%s' "$(cat CHANGELOG.md 2>/dev/null || true)" > CHANGELOG.md
           fi
 
+      - name: Prepare changelog package version
+        run: |
+          cp package.json package.json.release-backup
+          node -e "const fs = require('fs'); const p = JSON.parse(fs.readFileSync('package.json', 'utf8')); p.version = process.env.VERSION.replace(/^v/, ''); fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\\n');"
+        env:
+          VERSION: ${{ github.ref_name }}
+
       - name: Generate CHANGELOG entry for this release
         run: npx -y conventional-changelog-cli@5 -p angular -i CHANGELOG.md -s -r 1
+
+      - name: Restore package manifest
+        if: always()
+        run: mv package.json.release-backup package.json
 
       - name: Extract release notes from CHANGELOG
         id: notes
@@ -90,15 +101,3 @@ jobs:
           name: ${{ github.ref_name }}
           body: ${{ steps.notes.outputs.body }}
           prerelease: ${{ contains(github.ref_name, '-') }}
-
-      - name: Send GitHub Release to Discord
-        uses: SethCohen/github-releases-to-discord@v1.20.0
-        with:
-          webhook_url: ${{ secrets.DISCORD }}
-          color: "2105893"
-          username: "Laravel Sisp"
-          avatar_url: "https://avatars.githubusercontent.com/u/116525492?s=96&v=4"
-          content: "||@everyone||"
-          footer_title: "Laravel Sisp"
-          footer_icon_url: "https://avatars.githubusercontent.com/u/116525492?s=96&v=4"
-          footer_timestamp: true

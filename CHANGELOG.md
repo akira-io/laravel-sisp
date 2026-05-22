@@ -1,4 +1,3 @@
-# [0.0.0](https://github.com/akira-io/laravel-sisp/compare/v0.6.2...v0.0.0) (2026-05-22)
 # Changelog
 
 All notable changes to this project will be documented in this file.
