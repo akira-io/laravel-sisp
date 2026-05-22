@@ -37,6 +37,8 @@ it('builds request payload via facade with deterministic fingerprint', function 
 });
 
 it('generates sandbox payload and validates callback', function (): void {
+    config()->set('sisp.sandbox', true);
+
     $data = PaymentRequestData::from([
         'amount' => 50.0,
         'merchantRef' => 'MR-CB',
@@ -71,7 +73,8 @@ it('stores a transaction and lists it via facade', function (): void {
 });
 
 it('handles payment callback and updates status', function (): void {
-    // Create a matching transaction in DB
+    config()->set('sisp.sandbox', true);
+
     $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-CB2',
         'merchant_session' => 'MS-CB2',
