@@ -7,6 +7,10 @@ use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Support\Facades\DB;
 
+beforeEach(function (): void {
+    config()->set('sisp.sandbox', true);
+});
+
 it('redirects when user cancelled flag present', function (): void {
     config()->set('sisp.redirect_url', '/home');
     $this->post(route('sisp.callback'), ['UserCancelled' => true])

@@ -11,6 +11,8 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
+    config()->set('sisp.sandbox', true);
+
     Event::fake();
 });
 
@@ -46,7 +48,6 @@ it('dispatches PaymentPending for pending status', function (): void {
         'status' => 'pending',
     ]);
 
-    // Build a custom payload with unknown message type to force pending
     $data = [
         'messageType' => 'Z',
         'merchantRespCP' => '01',

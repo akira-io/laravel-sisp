@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 it('returns auto-submitting html form for sandbox callback', function (): void {
+    config()->set('sisp.sandbox', true);
+
     $response = $this->get(route('sisp.sandbox', [
         'status' => 'success',
         'amount' => 12.34,
@@ -17,4 +19,15 @@ it('returns auto-submitting html form for sandbox callback', function (): void {
     $response->assertHeader('Content-Type', 'text/html; charset=utf-8');
     $response->assertSee('form', false);
     $response->assertSee('sisp/callback');
+});
+
+it('does not expose sandbox callback generation when sandbox mode is disabled', function (): void {
+    config()->set('sisp.sandbox', false);
+
+    $this->get(route('sisp.sandbox', [
+        'status' => 'success',
+        'amount' => 12.34,
+        'merchantRef' => 'MR-TEST',
+        'merchantSession' => 'MS-TEST',
+    ]))->assertNotFound();
 });

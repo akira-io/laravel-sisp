@@ -13,6 +13,8 @@ final readonly class SandboxController
 {
     public function __invoke(Request $request): Response
     {
+        abort_unless(config('sisp.sandbox', false), 404);
+
         $status = $request->input('status', $request->query('status', 'success'));
 
         $paymentData = PaymentRequestData::from([

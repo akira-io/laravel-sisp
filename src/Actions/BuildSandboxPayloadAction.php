@@ -12,6 +12,7 @@ use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Support\Str;
+use LogicException;
 
 final readonly class BuildSandboxPayloadAction
 {
@@ -23,6 +24,8 @@ final readonly class BuildSandboxPayloadAction
     public function handle(PaymentRequestData $data, string $status = 'success'): CallbackPayload
     {
         $credentials = $this->resolver->resolve();
+
+        throw_unless($credentials->sandbox, LogicException::class, 'Sandbox payloads can only be generated when SISP sandbox mode is enabled.');
 
         $merchantRef = $data->merchantRef ?? Sisp::getMerchantReference();
         $merchantSession = $data->merchantSession ?? Sisp::getMerchantSession();

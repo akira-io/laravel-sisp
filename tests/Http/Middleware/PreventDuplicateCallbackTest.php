@@ -7,6 +7,8 @@ use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 
 it('redirects duplicate callback requests after validation', function (): void {
+    config()->set('sisp.sandbox', true);
+
     Transaction::factory()->create([
         'merchant_ref' => 'MR-CB-DUP',
         'merchant_session' => 'MS-CB-DUP',
