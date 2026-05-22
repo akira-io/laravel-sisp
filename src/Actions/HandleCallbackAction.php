@@ -69,7 +69,7 @@ final readonly class HandleCallbackAction
             && $this->transactionString($transaction, 'merchant_session') === $payload->merchantSession
             && $this->amountMatches($this->transactionAmount($transaction), $payload->amount)
             && $this->transactionString($transaction, 'currency') === $payload->currency
-            && ($this->transactionString($transaction, 'transaction_code') ?: $this->config->getDefaultTransactionCode()) === $payload->transactionCode
+            && $this->transactionCode($transaction) === $payload->transactionCode
             && $this->credentialsResolver->resolve()->posId === $payload->posID;
     }
 
@@ -86,7 +86,6 @@ final readonly class HandleCallbackAction
             'merchant_response' => 'callback_details_mismatch',
             'response_code' => $payload->merchantRespCp,
             'fingerprint' => $payload->fingerprint,
-            'payload' => $transaction->payload,
             'status' => TransactionStatus::failed,
         ]);
     }
@@ -103,5 +102,12 @@ final readonly class HandleCallbackAction
         $value = $transaction->getAttribute($attribute);
 
         return is_string($value) ? $value : '';
+    }
+
+    private function transactionCode(Transaction $transaction): string
+    {
+        $transactionCode = $this->transactionString($transaction, 'transaction_code');
+
+        return $transactionCode === '' ? $this->config->getDefaultTransactionCode() : $transactionCode;
     }
 }

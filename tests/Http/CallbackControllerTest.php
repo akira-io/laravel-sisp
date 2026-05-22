@@ -192,3 +192,21 @@ it('records signed pos id mismatches as failed without completing the transactio
     expect($transaction->status->value)->toBe('failed')
         ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
 });
+
+it('reconciles zero transaction codes without falling back to config default', function (): void {
+    config()->set('sisp.transaction_code', '1');
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-ZERO-CODE',
+        'merchant_session' => 'MS-ZERO-CODE',
+        'amount' => 20,
+        'currency' => '132',
+        'transaction_code' => '0',
+        'status' => 'pending',
+    ]);
+
+    $this->post(route('sisp.callback'), callback_controller_payload($transaction))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-ZERO-CODE']));
+
+    expect($transaction->refresh()->status->value)->toBe('completed');
+});

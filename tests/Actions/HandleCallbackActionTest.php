@@ -70,16 +70,6 @@ it('dispatches events for completed, failed, and pending statuses', function ():
         {
             return true;
         }
-
-        public function getDefaultTransactionCode(): string
-        {
-            return '8';
-        }
-
-        public function getPosId(): string
-        {
-            return 'POS1';
-        }
     });
 
     Transaction::factory()->create([
