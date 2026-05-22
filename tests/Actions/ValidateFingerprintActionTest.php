@@ -10,12 +10,11 @@ beforeEach(function (): void {
     $this->action = resolve(ValidatePaymentResponseFingerprintAction::class);
 });
 
-it(/**
- * @throws Exception
- */ 'fingerprint is computed with correct field order', function (): void {
+it('accepts a known SISP response fingerprint vector', function (): void {
     $payloadData = [
         'messageType' => 'S',
         'merchantRespCP' => '01',
+        'merchantRespTid' => '987654321',
         'merchantRespMerchantRef' => 'R20251112123456',
         'merchantRespMerchantSession' => 'S20251112123456',
         'merchantRespPurchaseAmount' => '1000',
@@ -30,17 +29,13 @@ it(/**
         'reloadCode' => '',
     ];
 
-    $expectedAmount = (int) ((float) 1000 * 1000);
-    expect($expectedAmount)->toBe(1000000);
-
-    $payload = CallbackPayload::from($payloadData);
-    $fingerprint = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
-    $payloadData['resultFingerPrint'] = $fingerprint;
+    $payloadData['resultFingerPrint'] = 'f21S7MCbbqbco+LdminDXubQwQGwRL/UIOB28GDUJqjnOaKGG7ZZIAYobEVFweAcwPkRyh9Z1orbk1YfKMYNHg==';
     $payload = CallbackPayload::from($payloadData);
 
     $response = $this->action->handle($payload);
 
-    expect($response)->toBeTrue();
+    expect($payload->fingerprint)->toBe('f21S7MCbbqbco+LdminDXubQwQGwRL/UIOB28GDUJqjnOaKGG7ZZIAYobEVFweAcwPkRyh9Z1orbk1YfKMYNHg==')
+        ->and($response)->toBeTrue();
 });
 
 it('fingerprint rejects altered amount', function (): void {
