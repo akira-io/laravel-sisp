@@ -8,7 +8,7 @@ beforeEach(function (): void {
     $this->action = resolve(GenerateFingerprintAction::class);
 });
 
-it('fingerprint is generated with correct order', function (): void {
+it('generates the known SISP request fingerprint vector', function (): void {
     $data = [
         'timeStamp' => '2024-01-15 14:30:00',
         'amount' => 100.50,
@@ -20,8 +20,8 @@ it('fingerprint is generated with correct order', function (): void {
     ];
 
     $fingerprint = $this->action->handle($data);
-    expect($fingerprint)->not->toBeEmpty()
-        ->and(mb_strlen((string) $fingerprint))->toBeGreaterThan(0);
+
+    expect($fingerprint)->toBe('xoYJjgMu1BZN/pZHxIj2GL9gyulZjByJ/moOMc6iDd/N962z6GYHGqZfnIQKoxfxpUiM79NvA6WrasgecGAqJg==');
 });
 
 it('amount is converted to integer milliseconds', function (): void {
