@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/akira-io/laravel-sisp/compare/v0.6.2...v0.7.0) (2026-05-23)
+
+### Bug Fixes
+
+- **package:** Remove missing node entrypoint ([5b1dcef](https://github.com/akira-io/laravel-sisp/commit/5b1dcefb564768e6a558099acb9c7558bb978664))
+- **callback:** Strip serialized fingerprint key ([62aa391](https://github.com/akira-io/laravel-sisp/commit/62aa39145fce72f24d73fbf740dc9c257b5a8153))
+- **config:** Generate unique merchant identifiers ([8c24550](https://github.com/akira-io/laravel-sisp/commit/8c245509d2e7d9317b68256e5734af87b0be55aa))
+- **config:** Use configured merchant generators ([6686ba0](https://github.com/akira-io/laravel-sisp/commit/6686ba06b856c0d2b30220481b4ee30004ed3c6a))
+- **package:** Align node license metadata ([09e72c4](https://github.com/akira-io/laravel-sisp/commit/09e72c457fdcab17abded895fa82b911fac51945))
+
 ## [0.6.2](https://github.com/akira-io/laravel-sisp/compare/0.6.1...v0.6.2) (2026-05-22)
 
 ### Bug Fixes
