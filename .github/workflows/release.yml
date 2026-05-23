@@ -23,6 +23,8 @@ jobs:
           tool: git-cliff
 
       - name: Generate CHANGELOG
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: git-cliff --config cliff.toml --tag "${{ github.ref_name }}" --output CHANGELOG.md
 
       - name: Commit CHANGELOG
@@ -35,11 +37,14 @@ jobs:
 
       - name: Extract release notes
         id: notes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
+          git-cliff --config cliff.toml --latest --strip all > /tmp/release-notes.md
           {
-            echo 'body<<EOF'
-            git-cliff --config cliff.toml --latest --strip all
-            echo 'EOF'
+            echo 'body<<RELEASE_NOTES_EOF'
+            cat /tmp/release-notes.md
+            echo 'RELEASE_NOTES_EOF'
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
