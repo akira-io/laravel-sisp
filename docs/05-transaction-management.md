@@ -124,6 +124,61 @@ GET /sisp/cancel?transaction_id=uuid-here&reason=user_cancelled
 
 Dispatches `TransactionCancelled` event.
 
+## Status Reconciliation
+
+Use SISP status reconciliation when a transaction stays `pending` because the automatic callback was not received after the SISP timeout window.
+
+### Manual Query
+
+Check the status in SISP without changing the local transaction:
+
+```bash
+php artisan sisp:transaction-status R20260523235959
+```
+
+The command prints:
+
+- `Result` - whether the SISP status API request itself succeeded
+- `Payment` - local interpretation: `completed`, `failed`, or `pending`
+- `Description` - SISP status description such as `C-SUCESSO` or `E-ERRO`
+- `Message` - SISP diagnostic message
+
+### Manual Update
+
+Update a local transaction only after a successful status API response:
+
+```bash
+php artisan sisp:transaction-status --transaction=123 --update
+```
+
+The update rules are:
+
+- `result=false`: no local update
+- `result=true` and `transactionSuccess=true`: status becomes `completed`
+- `result=true` and `transactionSuccess=false`: status becomes `failed`
+
+### Automatic Scheduled Reconciliation
+
+Enable the feature:
+
+```env
+SISP_TRANSACTION_RECONCILIATION_ENABLED=true
+SISP_TRANSACTION_RECONCILE_AFTER_MINUTES=5
+SISP_TRANSACTION_RECONCILE_LIMIT=50
+```
+
+Schedule the command in your application:
+
+```php
+$schedule->command('sisp:reconcile-pending')->everyFiveMinutes();
+```
+
+The command reconciles only old indeterminate transactions:
+
+- status is `pending`
+- `message_type` is `null`
+- creation time is older than the configured threshold
+
 ## Refund Transaction
 
 Refund a completed or partially refunded transaction:

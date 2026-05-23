@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Blacklist\:\:\$reason\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/CheckBlacklistAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\RateLimit\:\:\$reset_at\.$#'
 			identifier: property.notFound
 			count: 1

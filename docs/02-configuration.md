@@ -108,6 +108,82 @@ npm install @inertiajs/react    # For React
 npm install @inertiajs/vue3     # For Vue 3
 ```
 
+## Transaction Status Checks
+
+SISP provides three official ways to check payment status:
+
+- Programmatic POS API: use when the payment gateway times out after about 5 minutes or when no automatic callback was received.
+- Merchant Portal: manual lookup for support teams.
+- Daily VBVT reconciliation file: accounting/bulk reconciliation after midnight for the previous day.
+
+Configure the POS transaction-status API:
+
+```env
+SISP_TRANSACTION_STATUS_URL=https://comerciante.vinti4.cv/pos/transaction-status
+SISP_PORTAL_ID=your_portal_or_application_id
+SISP_PORTAL_PASSWORD=your_portal_password
+SISP_TRANSACTION_STATUS_TIMEOUT=10
+SISP_TRANSACTION_RECONCILIATION_ENABLED=false
+SISP_TRANSACTION_RECONCILE_AFTER_MINUTES=5
+SISP_TRANSACTION_RECONCILE_LIMIT=50
+```
+
+The default URL is the production endpoint. For the SISP test environment, set `SISP_TRANSACTION_STATUS_URL=https://comerciante.teste.sisp.cv/pos/transaction-status`.
+
+The API sends HTTP Basic authentication using `SISP_PORTAL_ID:SISP_PORTAL_PASSWORD` and posts JSON with `posID`, `posAuthCode`, and `merchantRef`.
+
+### Manual Status Query
+
+Query a transaction without changing local data:
+
+```bash
+php artisan sisp:transaction-status R20260523235959
+```
+
+Query by local transaction ID and update it only when SISP returns a successful status API result:
+
+```bash
+php artisan sisp:transaction-status --transaction=123 --update
+```
+
+`result=false` means the status API request itself failed and should not be treated as a definitive payment failure. `result=true` with `transactionSuccess=true` maps to `completed`; `result=true` with `transactionSuccess=false` maps to `failed`.
+
+### Scheduled Pending Reconciliation
+
+Enable reconciliation only when the application is ready to let the package update old indeterminate pending transactions:
+
+```env
+SISP_TRANSACTION_RECONCILIATION_ENABLED=true
+SISP_TRANSACTION_RECONCILE_AFTER_MINUTES=5
+SISP_TRANSACTION_RECONCILE_LIMIT=50
+```
+
+Then schedule:
+
+```php
+use Illuminate\Console\Scheduling\Schedule;
+
+app(Schedule::class)->command('sisp:reconcile-pending')->everyFiveMinutes();
+```
+
+The command only selects local transactions where:
+
+- `status = pending`
+- `message_type IS NULL`
+- `created_at` is older than `SISP_TRANSACTION_RECONCILE_AFTER_MINUTES`
+
+For each selected transaction:
+
+- `result=false`: leaves the transaction as `pending`
+- `result=true` and `transactionSuccess=true`: updates it to `completed`
+- `result=true` and `transactionSuccess=false`: updates it to `failed`
+
+Use `--force` to run the command manually even when the feature flag is disabled:
+
+```bash
+php artisan sisp:reconcile-pending --force --older-than=5 --limit=10
+```
+
 ## Rate Limiting Configuration
 
 ```env

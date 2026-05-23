@@ -11,7 +11,9 @@ use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Commands\DoctorCommand;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
+use Akira\Sisp\Commands\ReconcilePendingTransactionsCommand;
 use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
+use Akira\Sisp\Commands\TransactionStatusCommand;
 use Akira\Sisp\Configuration\EnvSispCredentialsResolver;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
@@ -34,6 +36,8 @@ final class SispServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 LaravelSispInstallCommand::class,
                 RegenerateMissingInvoicePdfsCommand::class,
+                ReconcilePendingTransactionsCommand::class,
+                TransactionStatusCommand::class,
                 DoctorCommand::class,
             ]);
     }

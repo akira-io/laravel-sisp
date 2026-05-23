@@ -106,9 +106,12 @@ Transactions submitted to SISP remain pending until:
 
 The transaction remains in `pending` status. You can:
 
-1. Send a reminder email with a payment link
-2. Cancel it and create a new one
-3. Let it auto-expire
+1. Query SISP with `php artisan sisp:transaction-status <merchantRef>` after the timeout window.
+2. Check the transaction manually in the Merchant Portal.
+3. Reconcile in bulk using the daily VBVT file.
+4. Cancel it and create a new one if SISP confirms it was not completed.
+
+For automatic monitoring, enable `SISP_TRANSACTION_RECONCILIATION_ENABLED=true` and schedule `sisp:reconcile-pending` every five minutes. The package only updates transactions when the SISP status API returns `result=true`.
 
 ### What happens if 3D Secure is enabled but customer data is missing?
 

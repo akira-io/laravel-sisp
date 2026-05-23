@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Exceptions\BlacklistedIdentifierException;
 use Akira\Sisp\Models\Blacklist;
+use Illuminate\Database\Eloquent\Builder;
 
 final readonly class CheckBlacklistAction
 {
@@ -15,8 +16,11 @@ final readonly class CheckBlacklistAction
     public function handle(string $type = 'ip', ?string $value = null): void
     {
         $entry = Blacklist::query()
-            ->active()
-            ->byType($type)
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->where('type', $type)
             ->where('value', $value ?? request()->ip())
             ->first();
 
@@ -25,14 +29,18 @@ final readonly class CheckBlacklistAction
         }
 
         throw new BlacklistedIdentifierException(
-            "This {$type} is blacklisted: {$entry->reason}"
+            "This {$type} is blacklisted: {$entry->getAttribute('reason')}"
         );
     }
 
     public function isBlacklisted(string $type, string $value): bool
     {
-        return Blacklist::query()->active()
-            ->byType($type)
+        return Blacklist::query()
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->where('type', $type)
             ->where('value', $value)
             ->exists();
     }

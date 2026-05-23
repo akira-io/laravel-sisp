@@ -18,7 +18,7 @@ final readonly class SandboxController
         $status = $request->input('status', $request->query('status', 'success'));
 
         $paymentData = PaymentRequestData::from([
-            'amount' => (float) ($request->input('amount') ?? $request->query('amount', 0)),
+            'amount' => (float) ($request->input('amount') ?? $request->query('amount', '0')),
             'merchantRef' => $request->input('merchantRef') ?? $request->query('merchantRef'),
             'merchantSession' => $request->input('merchantSession') ?? $request->query('merchantSession'),
             'timeStamp' => $request->input('timeStamp') ?? $request->query('timeStamp'),
