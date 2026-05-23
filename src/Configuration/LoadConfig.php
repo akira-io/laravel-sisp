@@ -118,6 +118,40 @@ final readonly class LoadConfig
         return $this->config->get('sisp.url', '');
     }
 
+    public function isTransactionStatusReconciliationEnabled(): bool
+    {
+        return (bool) $this->config->get('sisp.transaction_status.enabled', true);
+    }
+
+    public function getTransactionStatusUrl(): string
+    {
+        if ($this->isSandboxEnabled()) {
+            return $this->config->get('sisp.transaction_status.test_url', 'https://comerciante.teste.sisp.cv/pos/transaction-status');
+        }
+
+        return $this->config->get('sisp.transaction_status.production_url', 'https://comerciante.vinti4.cv/pos/transaction-status');
+    }
+
+    public function getTransactionStatusPortalId(): string
+    {
+        return $this->config->get('sisp.transaction_status.portal_id', '');
+    }
+
+    public function getTransactionStatusPortalPassword(): string
+    {
+        return $this->config->get('sisp.transaction_status.portal_password', '');
+    }
+
+    public function getTransactionStatusTimeoutSeconds(): int
+    {
+        return (int) $this->config->get('sisp.transaction_status.timeout_seconds', 10);
+    }
+
+    public function getTransactionStatusIndeterminateAfterMinutes(): int
+    {
+        return (int) $this->config->get('sisp.transaction_status.indeterminate_after_minutes', 5);
+    }
+
     public function getInvoiceNumberFormat(): string
     {
         return $this->config->get('sisp.invoice.number_format', 'date-based');

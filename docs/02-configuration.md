@@ -106,6 +106,26 @@ npm install @inertiajs/react    # For React
 npm install @inertiajs/vue3     # For Vue 3
 ```
 
+## Transaction Status Reconciliation
+
+Use the SISP transaction status API to reconcile payments that remain pending after the customer leaves the gateway or when a callback is delayed/lost.
+
+```env
+SISP_TRANSACTION_STATUS_ENABLED=true
+SISP_TRANSACTION_STATUS_TEST_URL=https://comerciante.teste.sisp.cv/pos/transaction-status
+SISP_TRANSACTION_STATUS_PRODUCTION_URL=https://comerciante.vinti4.cv/pos/transaction-status
+SISP_PORTAL_ID=your_portal_id
+SISP_PORTAL_PASSWORD=your_portal_password
+SISP_TRANSACTION_STATUS_INDETERMINATE_AFTER=5
+SISP_TRANSACTION_STATUS_TIMEOUT=10
+```
+
+The package automatically checks an indeterminate pending transaction when the callback response page is opened after the configured threshold. For batch reconciliation, schedule:
+
+```php
+$schedule->command('sisp:reconcile-pending')->everyFiveMinutes();
+```
+
 ## Rate Limiting Configuration
 
 ```env

@@ -8,6 +8,7 @@ use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
@@ -59,6 +60,37 @@ it('renders response for existing transaction via GET', function (): void {
 
     $this->get(route('sisp.callback', ['ref' => 'MR-G1']))
         ->assertOk();
+});
+
+it('reconciles indeterminate pending transactions via GET callback', function (): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+    config()->set('sisp.transaction_status.indeterminate_after_minutes', 5);
+
+    Http::fake([
+        '*' => Http::response([
+            'result' => true,
+            'transactionSuccess' => true,
+            'transactionStatusDescription' => 'C-SUCESSO',
+            'msg' => 'Approved',
+        ]),
+    ]);
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-RECONCILE',
+        'merchant_session' => 'MS-RECONCILE',
+        'amount' => 10,
+        'currency' => '132',
+        'status' => 'pending',
+        'message_type' => null,
+        'created_at' => now()->subMinutes(6),
+    ]);
+
+    $this->get(route('sisp.callback', ['ref' => 'MR-RECONCILE']))
+        ->assertOk();
+
+    expect($transaction->refresh()->status->value)->toBe('completed')
+        ->and($transaction->message_type)->toBe('transaction_status_success');
 });
 
 it('handles POST callback and redirects to GET with ref', function (): void {

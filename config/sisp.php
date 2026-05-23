@@ -239,6 +239,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Transaction Status Reconciliation
+    |--------------------------------------------------------------------------
+    |
+    | SISP exposes a status endpoint for reconciling transactions that remain
+    | pending after the customer leaves the payment gateway or when callbacks
+    | are delayed/lost. Portal credentials are used for HTTP Basic Auth.
+    |
+    */
+    'transaction_status' => [
+        'enabled' => env('SISP_TRANSACTION_STATUS_ENABLED', true),
+        'test_url' => env('SISP_TRANSACTION_STATUS_TEST_URL', 'https://comerciante.teste.sisp.cv/pos/transaction-status'),
+        'production_url' => env('SISP_TRANSACTION_STATUS_PRODUCTION_URL', 'https://comerciante.vinti4.cv/pos/transaction-status'),
+        'portal_id' => env('SISP_PORTAL_ID', ''),
+        'portal_password' => env('SISP_PORTAL_PASSWORD', ''),
+        'timeout_seconds' => env('SISP_TRANSACTION_STATUS_TIMEOUT', 10),
+        'indeterminate_after_minutes' => env('SISP_TRANSACTION_STATUS_INDETERMINATE_AFTER', 5),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Invoice Configuration
     |--------------------------------------------------------------------------
     |
