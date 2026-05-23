@@ -6,7 +6,9 @@
 	<meta name="csrf-token" content="{{ csrf_token() }}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{{ config('app.name') }}</title>
-	@vite('resources/css/app.css')
+	@if (file_exists(public_path('build/manifest.json')))
+		@vite('resources/css/app.css')
+	@endif
 	<script>
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
           document.documentElement.classList.add('dark');
