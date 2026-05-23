@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Akira\Sisp\Actions\RenderPaymentResponseAction;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\InertiaAvailability;
+use Illuminate\Contracts\View\View;
 
 it('renders blade view with structured error when message type is error', function (): void {
     $t = Transaction::factory()->create([
@@ -12,17 +14,37 @@ it('renders blade view with structured error when message type is error', functi
     ]);
 
     $view = resolve(RenderPaymentResponseAction::class)->renderBlade($t, ['foo' => 'bar']);
-    expect($view->name())->toBe('sisp::payment-response');
+    $error = $view->getData()['error'];
+
+    expect($view->name())->toBe('sisp::payment-response')
+        ->and($error)->toMatchArray([
+            'code' => ErrorMessageType::invalidAmount->value,
+            'label' => ErrorMessageType::invalidAmount->label(),
+            'category' => 'validation',
+            'action' => 'check-payment-details',
+        ]);
 });
 
-it('renderInertia falls back to blade when Inertia is absent', function (): void {
+it('renderInertia returns an inertia response when Inertia is available', function (): void {
     $t = Transaction::factory()->create([
         'message_type' => null,
     ]);
 
     $result = resolve(RenderPaymentResponseAction::class)->renderInertia($t, ['a' => 1]);
-    // Inertia is available in this testbench; expect Inertia response
     expect($result)->toBeInstanceOf(Inertia\Response::class);
+});
+
+it('renderInertia falls back to blade when Inertia is absent', function (): void {
+    app()->instance(InertiaAvailability::class, new InertiaAvailability(false));
+
+    $t = Transaction::factory()->create([
+        'message_type' => null,
+    ]);
+
+    $result = resolve(RenderPaymentResponseAction::class)->renderInertia($t, ['a' => 1]);
+
+    expect($result)->toBeInstanceOf(View::class)
+        ->and($result->name())->toBe('sisp::payment-response');
 });
 
 it('sets allowRetry to false when 3DS is enabled and transaction is missing required customer data', function (): void {

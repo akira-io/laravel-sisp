@@ -25,6 +25,22 @@ function callback_controller_payload(Transaction $transaction, array $overrides 
     ], $overrides)))->toArray();
 }
 
+function callback_query_reads_transactions_table(string $query): bool
+{
+    $normalizedQuery = str_replace(['`', '"', '[', ']'], '', mb_strtolower($query));
+
+    return preg_match('/\bfrom\s+(?:[a-z0-9_]+\.)?transactions\b/', $normalizedQuery) === 1;
+}
+
+it('detects transaction table lookups across database grammars', function (string $query): void {
+    expect(callback_query_reads_transactions_table($query))->toBeTrue();
+})->with([
+    'sqlite quoted table' => ['select * from "transactions" where "merchant_ref" = ?'],
+    'mysql quoted table' => ['select * from `transactions` where `merchant_ref` = ?'],
+    'unquoted table' => ['select * from transactions where merchant_ref = ?'],
+    'qualified quoted table' => ['select * from `main`.`transactions` where `merchant_ref` = ?'],
+]);
+
 it('redirects when user cancelled flag present', function (): void {
     config()->set('sisp.redirect_url', '/home');
     $this->post(route('sisp.callback'), ['UserCancelled' => true])
@@ -65,6 +81,15 @@ it('handles POST callback and redirects to GET with ref', function (): void {
 
     $this->post(route('sisp.callback'), $payload->toArray())
         ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G2']));
+
+    $t->refresh();
+
+    expect($t->status->value)->toBe('completed')
+        ->and($t->transaction_id)->toBe($payload->transactionID)
+        ->and($t->message_type)->toBe($payload->messageType)
+        ->and($t->merchant_response)->toBe($payload->merchantResponse)
+        ->and($t->response_code)->toBe($payload->merchantRespCp)
+        ->and($t->fingerprint)->toBe($payload->fingerprint);
 });
 
 it('rejects invalid callback payload before transaction lookups', function (): void {
@@ -94,7 +119,7 @@ it('rejects invalid callback payload before transaction lookups', function (): v
     $queries = collect(DB::getQueryLog())->pluck('query');
 
     expect($queries->filter(
-        fn (string $query): bool => str_contains(mb_strtolower($query), 'from "transactions"')
+        fn (string $query): bool => callback_query_reads_transactions_table($query)
     ))->toHaveCount(0);
 });
 
@@ -108,9 +133,10 @@ it('skips duplicate lookup when callback payload has no transaction keys', funct
         'timeStamp' => '2024-01-01 00:00:00',
         'currency' => '132',
         'transactionCode' => '1',
-    ]));
+    ]))->toArray();
+    unset($payload['merchantRespMerchantRef'], $payload['merchantRespMerchantSession']);
 
-    $this->post(route('sisp.callback'), $payload->toArray())
+    $this->post(route('sisp.callback'), $payload)
         ->assertRedirect('/home');
 });
 

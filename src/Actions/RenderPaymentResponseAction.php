@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\ErrorMessageType;
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\InertiaAvailability;
 use Illuminate\Contracts\View\View;
 use Inertia\Inertia;
 
@@ -15,6 +17,7 @@ final readonly class RenderPaymentResponseAction
         private GetPaymentErrorResponseAction $getErrorResponse,
         private GetPaymentResponseTranslationsAction $getTranslations,
         private CanRetryPaymentAction $canRetryPayment,
+        private InertiaAvailability $inertiaAvailability,
     ) {}
 
     public function renderBlade(Transaction $transaction, array $payload): View
@@ -32,8 +35,8 @@ final readonly class RenderPaymentResponseAction
 
     public function renderInertia(Transaction $transaction, array $payload, string $component = 'Sisp/PaymentResponse'): mixed
     {
-        if (! class_exists(Inertia::class)) {
-            return $this->renderBlade($transaction, $payload); // @codeCoverageIgnore
+        if (! $this->inertiaAvailability->available()) {
+            return $this->renderBlade($transaction, $payload);
         }
 
         $invoice = $transaction->invoice;
@@ -52,8 +55,11 @@ final readonly class RenderPaymentResponseAction
             'error' => $this->getStructuredError($transaction),
             'translations' => $this->getTranslations->handle(),
             'allowRetry' => $this->canRetryPayment->handle($transaction),
-            'invoice' => $invoice ? [
+            'invoice' => $invoice instanceof Invoice ? [
                 'invoice_number' => $invoice->invoice_number,
+                'invoice_date' => $invoice->invoice_date->toDateString(),
+                'status' => $invoice->status->value,
+                'pdf_path' => $invoice->pdf_path,
                 'pdf_url' => $invoice->pdf_url,
             ] : null,
             'payload' => $payload,

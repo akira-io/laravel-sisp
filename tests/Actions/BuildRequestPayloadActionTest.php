@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\BuildRequestPayloadAction;
-use Akira\Sisp\Actions\GenerateFingerprintAction;
 use Akira\Sisp\Exceptions\MissingThreeDSecureDataException;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 
@@ -11,7 +10,6 @@ it('builds payment request payload using defaults and generated fingerprint', fu
 
     $action = resolve(BuildRequestPayloadAction::class);
 
-    // Provide all fields to ensure determinism
     $data = PaymentRequestData::from([
         'amount' => 123.45,
         'merchantRef' => 'MR-123',
@@ -27,17 +25,6 @@ it('builds payment request payload using defaults and generated fingerprint', fu
 
     $request = $action->handle($data);
     $arr = $request->toArray();
-
-    // Compute expected fingerprint using actual generator
-    $expectedFingerprint = resolve(GenerateFingerprintAction::class)->handle([
-        'timeStamp' => '2024-01-01 00:00:00',
-        'amount' => 123.45,
-        'merchantRef' => 'MR-123',
-        'merchantSession' => 'MS-456',
-        'posID' => config('sisp.posID'),
-        'currency' => '132',
-        'transactionCode' => '1',
-    ]);
 
     expect($arr)
         ->toHaveKeys([
@@ -60,7 +47,7 @@ it('builds payment request payload using defaults and generated fingerprint', fu
         ->and($arr['entityCode'])->toBe('ENT')
         ->and($arr['referenceNumber'])->toBe('REF')
         ->and($arr['locale'])->toBe('pt_PT')
-        ->and($arr['fingerprint'])->toBe($expectedFingerprint);
+        ->and($arr['fingerprint'])->toBe('aVX+WpYP7A9AqZs9clZMtoW1R2gci+QaZuQ1cRRgdKNzVFcx/48eJa9ow8DyWlFa918qJdGMsxxJ6z1guRordQ==');
 });
 
 it('does not include purchaseRequest when 3DS is disabled', function (): void {
@@ -115,7 +102,6 @@ it('throws exception when 3DS enabled but customer data incomplete', function ()
     $data = PaymentRequestData::from([
         'amount' => 100.0,
         'customer_email' => 'test@example.com',
-        // Missing: country, city, address, postal_code
     ]);
 
     expect(fn () => $action->handle($data))
@@ -131,7 +117,6 @@ it('exception message lists missing fields', function (): void {
         'amount' => 100.0,
         'customer_email' => 'test@example.com',
         'customer_city' => 'Praia',
-        // Missing: country, address, postal_code
     ]);
 
     try {

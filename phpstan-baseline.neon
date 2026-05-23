@@ -55,18 +55,6 @@ parameters:
 			path: src/Actions/RenderPaymentResponseAction.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_number\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pdf_url\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
 			identifier: property.notFound
 			count: 1

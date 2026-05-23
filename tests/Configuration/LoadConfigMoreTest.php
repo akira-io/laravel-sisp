@@ -9,12 +9,10 @@ beforeEach(function (): void {
 });
 
 it('returns sane defaults and configured values for getters', function (): void {
-    // Defaults generated values
-    expect($this->cfg->getMerchantReference())->toStartWith('R')
-        ->and($this->cfg->getMerchantSession())->toStartWith('S')
+    expect($this->cfg->getMerchantReference())->toMatch('/^R\d{14}$/')
+        ->and($this->cfg->getMerchantSession())->toMatch('/^S\d{14}$/')
         ->and($this->cfg->getTimeStamp())->toMatch('/^\d{4}-\d{2}-\d{2} /');
 
-    // Config-driven values
     config()->set('sisp.currency', 'XYZ');
     config()->set('sisp.language_messages', 'PT');
     config()->set('sisp.fingerprint_version', '9');
@@ -27,7 +25,6 @@ it('returns sane defaults and configured values for getters', function (): void 
         ->and($this->cfg->getDefaultTransactionCode())->toBe('42')
         ->and($this->cfg->getUri())->toBe('https://example.test');
 
-    // Invoice-related config
     config()->set('sisp.invoice', [
         'number_format' => 'date-based',
         'prefix' => 'INVX',
@@ -83,4 +80,39 @@ it('reads boolean flags for features and security', function (): void {
         ->and($this->cfg->getRateLimitPerIp())->toBe(5)
         ->and($this->cfg->getRateLimitWindowSeconds())->toBe(60)
         ->and($this->cfg->getGeolocationProvider())->toBe('ip2location');
+});
+
+it('uses configured merchant identifier generators', function (): void {
+    app()->singleton('sisp.test.merchantReference', fn (): object => new class
+    {
+        private int $next = 0;
+
+        public function __invoke(): string
+        {
+            $this->next++;
+
+            return 'CUSTOM-REF-'.$this->next;
+        }
+    });
+
+    app()->singleton('sisp.test.merchantSession', fn (): object => new class
+    {
+        private int $next = 0;
+
+        public function __invoke(): string
+        {
+            $this->next++;
+
+            return 'CUSTOM-SESSION-'.$this->next;
+        }
+    });
+
+    config()->set('sisp.generators.merchantReference', 'sisp.test.merchantReference');
+    config()->set('sisp.generators.merchantSession', 'sisp.test.merchantSession');
+
+    $merchantReferences = array_map(fn (): string => $this->cfg->getMerchantReference(), range(1, 3));
+    $merchantSessions = array_map(fn (): string => $this->cfg->getMerchantSession(), range(1, 3));
+
+    expect($merchantReferences)->toBe(['CUSTOM-REF-1', 'CUSTOM-REF-2', 'CUSTOM-REF-3'])
+        ->and($merchantSessions)->toBe(['CUSTOM-SESSION-1', 'CUSTOM-SESSION-2', 'CUSTOM-SESSION-3']);
 });

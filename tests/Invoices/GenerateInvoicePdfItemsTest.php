@@ -12,9 +12,12 @@ use Illuminate\Support\Facades\Storage;
 
 final class TestPdfGeneratorItems implements PdfGeneratorContract
 {
+    public ?DtoInvoiceData $lastInvoice = null;
+
     public function generate(DtoInvoiceData $invoice, string $template = 'modern'): string
     {
-        // return static content regardless of items
+        $this->lastInvoice = $invoice;
+
         return '%PDF-WITH-ITEMS%';
     }
 
@@ -25,19 +28,40 @@ final class TestPdfGeneratorItems implements PdfGeneratorContract
 }
 
 it('includes transaction items when generating invoice PDF', function (): void {
-    app()->instance(PdfGeneratorContract::class, new TestPdfGeneratorItems());
+    $pdfGenerator = new TestPdfGeneratorItems();
+    app()->instance(PdfGeneratorContract::class, $pdfGenerator);
     Storage::fake('public');
 
-    $t = Transaction::factory()->create([
+    $transaction = Transaction::factory()->create([
         'customer_name' => 'John',
         'customer_email' => 'john@example.test',
     ]);
 
-    // Ensure items exist so the foreach in action is executed
-    TransactionItem::factory()->forTransaction($t)->count(2)->create();
+    TransactionItem::factory()->forTransaction($transaction)->create([
+        'product_name' => 'Adult ticket',
+        'quantity' => 2,
+        'unit_price_cents' => 1250,
+        'total_price_cents' => 2500,
+    ]);
+    TransactionItem::factory()->forTransaction($transaction)->create([
+        'product_name' => 'Child ticket',
+        'quantity' => 1,
+        'unit_price_cents' => 750,
+        'total_price_cents' => 750,
+    ]);
 
-    $invoice = resolve(GenerateInvoiceAction::class)->handle($t);
+    $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
     $relativePath = resolve(GenerateInvoicePdfAction::class)->handle($invoice);
 
     Storage::disk('public')->assertExists($relativePath);
+    expect($pdfGenerator->lastInvoice)->not->toBeNull()
+        ->and($pdfGenerator->lastInvoice?->items)->toHaveCount(2)
+        ->and($pdfGenerator->lastInvoice?->items[0]->description)->toBe('Adult ticket')
+        ->and($pdfGenerator->lastInvoice?->items[0]->quantity)->toBe(2)
+        ->and($pdfGenerator->lastInvoice?->items[0]->unitPrice)->toBe(12.5)
+        ->and($pdfGenerator->lastInvoice?->items[0]->getTotal())->toBe(25.0)
+        ->and($pdfGenerator->lastInvoice?->items[1]->description)->toBe('Child ticket')
+        ->and($pdfGenerator->lastInvoice?->items[1]->quantity)->toBe(1)
+        ->and($pdfGenerator->lastInvoice?->items[1]->unitPrice)->toBe(7.5)
+        ->and($pdfGenerator->lastInvoice?->items[1]->getTotal())->toBe(7.5);
 });

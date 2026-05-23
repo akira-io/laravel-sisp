@@ -56,5 +56,7 @@ it('withoutFingerprint removes fingerprint key from array', function (): void {
     ]);
 
     $arr = $vo->withoutFingerprint();
-    expect($arr)->not->toHaveKey('fingerprint');
+    expect($arr)->not->toHaveKey('resultFingerPrint')
+        ->and($arr['merchantRespMerchantRef'])->toBe('R2')
+        ->and($arr['merchantRespTid'])->toBe('T2');
 });

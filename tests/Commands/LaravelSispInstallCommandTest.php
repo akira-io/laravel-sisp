@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 it('detects inertia stack when composer requires inertia', function (): void {
     withInstallCommandFsLock(function (): void {
         $composerPath = base_path('composer.json');
-        withFileBackups([$composerPath], function () use ($composerPath): void {
-            // Create a composer.json that includes inertia
+        withInstallCommandProjectBackups(function () use ($composerPath): void {
             file_put_contents($composerPath, json_encode([
                 'require' => [
                     'inertiajs/inertia-laravel' => '^2.0',
@@ -33,17 +32,15 @@ it('falls back to blade when no inertia indicators are present', function (): vo
         $inertiaConfig = base_path('config/inertia.php');
         $composerPath = base_path('composer.json');
 
-        withFileBackups([$viteTs, $viteJs, $inertiaConfig, $composerPath], function () use (
+        withInstallCommandProjectBackups(function () use (
             $viteTs,
             $viteJs,
             $inertiaConfig,
             $composerPath
         ): void {
-            // Ensure vite configs do not contain react
             @unlink($viteTs);
             @unlink($viteJs);
             @unlink($inertiaConfig);
-            // Overwrite composer.json without inertia requirement
             file_put_contents($composerPath, json_encode([
                 'require' => [
                     'php' => '^8.4',
@@ -70,7 +67,7 @@ it('detects inertia stack via vite config containing react', function (): void {
     withInstallCommandFsLock(function (): void {
         $viteJs = base_path('vite.config.js');
         $viteTs = base_path('vite.config.ts');
-        withFileBackups([$viteJs, $viteTs], function () use ($viteJs, $viteTs): void {
+        withInstallCommandProjectBackups(function () use ($viteJs, $viteTs): void {
             @unlink($viteTs);
             file_put_contents($viteJs, "export default { plugins: ['react'] }");
             $cmd = resolve(LaravelSispInstallCommand::class);
@@ -86,7 +83,7 @@ it('detects inertia stack via vite.config.ts containing react', function (): voi
     withInstallCommandFsLock(function (): void {
         $viteJs = base_path('vite.config.js');
         $viteTs = base_path('vite.config.ts');
-        withFileBackups([$viteJs, $viteTs], function () use ($viteJs, $viteTs): void {
+        withInstallCommandProjectBackups(function () use ($viteJs, $viteTs): void {
             @unlink($viteJs);
             file_put_contents($viteTs, "export default { plugins: ['react'] }");
             $cmd = resolve(LaravelSispInstallCommand::class);
