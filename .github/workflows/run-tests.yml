@@ -36,6 +36,7 @@ jobs:
           tools: composer:v2
 
       - name: Install Aspell
+        timeout-minutes: 5
         run: sudo apt-get update && sudo apt-get install -y aspell aspell-en
 
       - name: Install dependencies
