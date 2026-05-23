@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Akira\Sisp\Traits\EncryptsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 final class TmpEncrypted extends Model
@@ -48,7 +50,7 @@ it('encrypts and decrypts string attributes via trait', function (): void {
     });
 
     $m = TmpEncrypted::query()->create(['secret' => 'hello-world']);
-    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
+    $raw = DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
     expect($raw)->not->toBe('hello-world');
 
     $found = TmpEncrypted::query()->find($m->id);
@@ -62,8 +64,17 @@ it('encrypts and decrypts array attributes via trait', function (): void {
     });
 
     $m = TmpEncrypted::query()->create(['secret' => ['hello-world', 'goodbye-world', 'secret' => 'secret-value']]);
-    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
-    expect($raw)->not->toBe('hello-world');
+    $raw = DB::table('tmp_encrypts')->where('id', $m->id)->value('secret');
+
+    expect($raw)->toBeString()
+        ->and($raw)->not->toContain('hello-world')
+        ->and($raw)->not->toContain('goodbye-world')
+        ->and($raw)->not->toContain('secret-value')
+        ->and(json_decode(Crypt::decryptString($raw), true))->toBe([
+            'hello-world',
+            'goodbye-world',
+            'secret' => 'secret-value',
+        ]);
 
     $found = TmpEncrypted::query()->find($m->id);
     expect($found->secret)->toBe(['hello-world', 'goodbye-world', 'secret' => 'secret-value']);
@@ -99,7 +110,7 @@ final class TmpEncryptedAccessor extends Model
 
     protected function getSecretAttribute($value): string
     {
-        return Illuminate\Support\Facades\Crypt::encryptString('accessor-secret');
+        return Crypt::encryptString('accessor-secret');
     }
 }
 
@@ -110,7 +121,7 @@ it('encrypts all attributes when encryptable list is empty', function (): void {
     });
 
     $m = TmpEncryptAll::query()->create(['notes' => 'secret-note']);
-    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts_all')->where('id', $m->id)->value('notes');
+    $raw = DB::table('tmp_encrypts_all')->where('id', $m->id)->value('notes');
     expect($raw)->not->toBe('secret-note');
 
     $found = TmpEncryptAll::query()->find($m->id);
@@ -150,14 +161,14 @@ it('does not double-encrypt values already encrypted', function (): void {
         $table->text('secret')->nullable();
     });
 
-    $already = Illuminate\Support\Facades\Crypt::encryptString('already');
+    $already = Crypt::encryptString('already');
 
     $m = new TmpEncrypted();
     $m->setTable('tmp_encrypts2');
     $m->secret = $already;
     $m->save();
 
-    $raw = Illuminate\Support\Facades\DB::table('tmp_encrypts2')->where('id', $m->id)->value('secret');
+    $raw = DB::table('tmp_encrypts2')->where('id', $m->id)->value('secret');
     expect($raw)->toBe($already);
 
     $found = new TmpEncrypted()->setTable('tmp_encrypts2')->find($m->id);
@@ -176,7 +187,7 @@ it('does not encrypt attributes not in encryptable list', function (): void {
         'note' => 'plain-note',
     ]);
 
-    $row = Illuminate\Support\Facades\DB::table('tmp_encrypts_selective')->where('id', $m->id)->first();
+    $row = DB::table('tmp_encrypts_selective')->where('id', $m->id)->first();
     expect($row->secret)->not->toBe('top-secret')
         ->and($row->note)->toBe('plain-note');
 
@@ -191,7 +202,7 @@ it('falls back when raw attribute decryption fails and returns original', functi
         $table->text('secret')->nullable();
     });
 
-    $id = Illuminate\Support\Facades\DB::table('tmp_encrypts_fail')->insertGetId(['secret' => 'bogus']);
+    $id = DB::table('tmp_encrypts_fail')->insertGetId(['secret' => 'bogus']);
 
     $model = new TmpEncrypted();
     $model->setTable('tmp_encrypts_fail');
