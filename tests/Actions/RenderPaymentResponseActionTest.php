@@ -17,7 +17,7 @@ it('renders blade view with structured error when message type is error', functi
     expect($view->name())->toBe('sisp::payment-response')
         ->and($error)->toMatchArray([
             'code' => ErrorMessageType::invalidAmount->value,
-            'label' => 'Invalid amount',
+            'label' => ErrorMessageType::invalidAmount->label(),
             'category' => 'validation',
             'action' => 'check-payment-details',
         ]);
