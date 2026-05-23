@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\ErrorMessageType;
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\View\View;
 use Inertia\Inertia;
@@ -52,8 +53,11 @@ final readonly class RenderPaymentResponseAction
             'error' => $this->getStructuredError($transaction),
             'translations' => $this->getTranslations->handle(),
             'allowRetry' => $this->canRetryPayment->handle($transaction),
-            'invoice' => $invoice ? [
+            'invoice' => $invoice instanceof Invoice ? [
                 'invoice_number' => $invoice->invoice_number,
+                'invoice_date' => $invoice->invoice_date->toDateString(),
+                'status' => $invoice->status->value,
+                'pdf_path' => $invoice->pdf_path,
                 'pdf_url' => $invoice->pdf_url,
             ] : null,
             'payload' => $payload,
