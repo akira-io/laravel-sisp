@@ -186,6 +186,30 @@ Uses `PreventDuplicateCallback` middleware to:
 - `PaymentFailed` - Payment rejected
 - `PaymentPending` - Still processing
 
+## Step 10: Timeout Reconciliation
+
+In normal operation, SISP resolves the transaction through the automatic callback. If no callback is received after the SISP timeout window, the transaction can remain indeterminate:
+
+- status is `pending`
+- `message_type` is `null`
+- the transaction is older than the configured reconciliation threshold
+
+Enable scheduled reconciliation when you want the package to monitor those incomplete transactions:
+
+```env
+SISP_TRANSACTION_RECONCILIATION_ENABLED=true
+SISP_TRANSACTION_RECONCILE_AFTER_MINUTES=5
+SISP_TRANSACTION_RECONCILE_LIMIT=50
+```
+
+Then schedule:
+
+```php
+$schedule->command('sisp:reconcile-pending')->everyFiveMinutes();
+```
+
+The scheduled command uses SISP's POS transaction-status API. It does not mark a transaction failed when the API request itself fails. It only updates the local status when SISP returns `result=true`.
+
 ## Events Dispatched
 
 ### PaymentCompleted

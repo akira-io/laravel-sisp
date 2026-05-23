@@ -215,6 +215,9 @@ return [
         'portal_id' => env('SISP_PORTAL_ID', ''),
         'portal_password' => env('SISP_PORTAL_PASSWORD', ''),
         'timeout_seconds' => env('SISP_TRANSACTION_STATUS_TIMEOUT', 10),
+        'reconciliation_enabled' => env('SISP_TRANSACTION_RECONCILIATION_ENABLED', false),
+        'reconcile_after_minutes' => env('SISP_TRANSACTION_RECONCILE_AFTER_MINUTES', 5),
+        'reconcile_limit' => env('SISP_TRANSACTION_RECONCILE_LIMIT', 50),
     ],
 
     /*

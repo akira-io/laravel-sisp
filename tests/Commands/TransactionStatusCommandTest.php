@@ -48,6 +48,8 @@ it('updates the local transaction only when requested', function (): void {
         ->expectsOutput('Local transaction updated.')
         ->assertSuccessful();
 
+    Http::assertSentCount(1);
+
     expect($transaction->refresh()->status->value)->toBe('failed')
         ->and($transaction->merchant_response)->toBe('E-ERRO');
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Actions\QueryTransactionStatusAction;
+use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Console\Command;
 
@@ -17,7 +18,7 @@ final class TransactionStatusCommand extends Command
 
     protected $description = 'Query the SISP POS transaction-status API for a merchant reference';
 
-    public function handle(QueryTransactionStatusAction $queryTransactionStatus): int
+    public function handle(QueryTransactionStatusAction $queryTransactionStatus, ReconcileTransactionStatusAction $reconcile): int
     {
         $transaction = $this->resolveTransaction();
         $merchantRef = $transaction?->getAttribute('merchant_ref') ?? $this->argument('merchantRef');
@@ -36,10 +37,7 @@ final class TransactionStatusCommand extends Command
         $this->line("Message: {$response->message}");
 
         if ($transaction instanceof Transaction && $this->option('update') && $response->result) {
-            $transaction->update([
-                'status' => $response->paymentStatus()->value,
-                'merchant_response' => $response->transactionStatusDescription ?: $response->message,
-            ]);
+            $reconcile->applyResponse($transaction, $response);
 
             $this->info('Local transaction updated.');
         }

@@ -111,6 +111,8 @@ The transaction remains in `pending` status. You can:
 3. Reconcile in bulk using the daily VBVT file.
 4. Cancel it and create a new one if SISP confirms it was not completed.
 
+For automatic monitoring, enable `SISP_TRANSACTION_RECONCILIATION_ENABLED=true` and schedule `sisp:reconcile-pending` every five minutes. The package only updates transactions when the SISP status API returns `result=true`.
+
 ### What happens if 3D Secure is enabled but customer data is missing?
 
 The payment request throws `MissingThreeDSecureDataException`. When `SISP_IS_3D_SEC=1`,
