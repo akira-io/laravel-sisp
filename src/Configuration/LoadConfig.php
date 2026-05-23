@@ -49,16 +49,16 @@ final readonly class LoadConfig
 
     public function getMerchantReference(): string
     {
-        $configured = $this->config->get('sisp.merchant_ref');
+        $generator = $this->config->get('sisp.generators.merchantReference');
 
-        return $configured ?? 'R'.date('YmdHis');
+        return resolve($generator)();
     }
 
     public function getMerchantSession(): string
     {
-        $configured = $this->config->get('sisp.merchant_session');
+        $generator = $this->config->get('sisp.generators.merchantSession');
 
-        return $configured ?? 'S'.date('YmdHis');
+        return resolve($generator)();
     }
 
     public function getTimeStamp(): string
