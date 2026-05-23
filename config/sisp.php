@@ -206,10 +206,12 @@ return [
     | automatic callback response is received. Authentication uses HTTP Basic
     | with the Portal/Application ID and Portal password.
     |
+    | Production: https://comerciante.vinti4.cv/pos/transaction-status
+    | Test:       https://comerciante.teste.sisp.cv/pos/transaction-status
+    |
     */
     'transaction_status' => [
-        'test_url' => env('SISP_TRANSACTION_STATUS_TEST_URL', 'https://comerciante.teste.sisp.cv/pos/transaction-status'),
-        'production_url' => env('SISP_TRANSACTION_STATUS_PRODUCTION_URL', 'https://comerciante.vinti4.cv/pos/transaction-status'),
+        'url' => env('SISP_TRANSACTION_STATUS_URL', 'https://comerciante.vinti4.cv/pos/transaction-status'),
         'portal_id' => env('SISP_PORTAL_ID', ''),
         'portal_password' => env('SISP_PORTAL_PASSWORD', ''),
         'timeout_seconds' => env('SISP_TRANSACTION_STATUS_TIMEOUT', 10),

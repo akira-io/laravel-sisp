@@ -8,8 +8,8 @@ use Akira\Sisp\Models\Transaction;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
-it('queries the SISP test transaction-status endpoint with basic auth', function (): void {
-    config()->set('sisp.sandbox', true);
+it('queries the configured SISP transaction-status endpoint with basic auth', function (): void {
+    config()->set('sisp.transaction_status.url', 'https://comerciante.teste.sisp.cv/pos/transaction-status');
     config()->set('sisp.transaction_status.portal_id', 'portal');
     config()->set('sisp.transaction_status.portal_password', 'secret');
 

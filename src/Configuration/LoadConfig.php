@@ -120,11 +120,7 @@ final readonly class LoadConfig
 
     public function getTransactionStatusUrl(): string
     {
-        if ($this->isSandboxEnabled()) {
-            return $this->config->get('sisp.transaction_status.test_url', 'https://comerciante.teste.sisp.cv/pos/transaction-status');
-        }
-
-        return $this->config->get('sisp.transaction_status.production_url', 'https://comerciante.vinti4.cv/pos/transaction-status');
+        return $this->config->get('sisp.transaction_status.url', 'https://comerciante.vinti4.cv/pos/transaction-status');
     }
 
     public function getTransactionStatusPortalId(): string

@@ -119,12 +119,13 @@ SISP provides three official ways to check payment status:
 Configure the POS transaction-status API:
 
 ```env
-SISP_TRANSACTION_STATUS_TEST_URL=https://comerciante.teste.sisp.cv/pos/transaction-status
-SISP_TRANSACTION_STATUS_PRODUCTION_URL=https://comerciante.vinti4.cv/pos/transaction-status
+SISP_TRANSACTION_STATUS_URL=https://comerciante.vinti4.cv/pos/transaction-status
 SISP_PORTAL_ID=your_portal_or_application_id
 SISP_PORTAL_PASSWORD=your_portal_password
 SISP_TRANSACTION_STATUS_TIMEOUT=10
 ```
+
+The default URL is the production endpoint. For the SISP test environment, set `SISP_TRANSACTION_STATUS_URL=https://comerciante.teste.sisp.cv/pos/transaction-status`.
 
 The API sends HTTP Basic authentication using `SISP_PORTAL_ID:SISP_PORTAL_PASSWORD` and posts JSON with `posID`, `posAuthCode`, and `merchantRef`.
 
