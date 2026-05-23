@@ -8,17 +8,14 @@ it('drives handle() through inertia prompts via config toggles', function (): vo
     withInstallCommandFsLock(function (): void {
         $viteJs = base_path('vite.config.js');
         $viteTs = base_path('vite.config.ts');
-        withFileBackups([$viteJs, $viteTs], function () use ($viteJs, $viteTs): void {
-            // Ensure inertia is detected via vite config containing react
+        withInstallCommandProjectBackups(function () use ($viteJs, $viteTs): void {
             @unlink($viteTs);
             file_put_contents($viteJs, "export default { plugins: ['react'] }");
 
-            // Drive confirmations using config (test mode)
             config()->set('sisp.tests.publish_config', true);
             config()->set('sisp.tests.force_config', false);
             config()->set('sisp.tests.publish_migrations', true);
             config()->set('sisp.tests.force_migrations', false);
-            // Avoid publishing to keep tests fast/stable under parallel
             config()->set('sisp.tests.publish_inertia', false);
             config()->set('sisp.tests.force_inertia', false);
             config()->set('sisp.tests.run_migrations', true);
@@ -35,8 +32,7 @@ it('drives handle() through blade prompts via config toggles', function (): void
     withInstallCommandFsLock(function (): void {
         $viteJs = base_path('vite.config.js');
         $viteTs = base_path('vite.config.ts');
-        withFileBackups([$viteJs, $viteTs], function () use ($viteJs, $viteTs): void {
-            // Ensure blade is detected (no react/inertia indicators)
+        withInstallCommandProjectBackups(function () use ($viteJs, $viteTs): void {
             @unlink($viteJs);
             @unlink($viteTs);
 

@@ -48,8 +48,10 @@ function withFileBackups(array $paths, callable $callback): void
 function withPublishedPathBackups(array $paths, callable $callback): void
 {
     $snapshots = [];
+    $fingerprints = [];
     foreach ($paths as $path) {
         $snapshots[$path] = snapshotPublishedPath($path);
+        $fingerprints[$path] = pathSnapshotFingerprint($path);
     }
 
     try {
@@ -57,8 +59,24 @@ function withPublishedPathBackups(array $paths, callable $callback): void
     } finally {
         foreach ($snapshots as $path => $snapshot) {
             restorePublishedPath($path, $snapshot);
+            expect(pathSnapshotFingerprint($path))->toBe($fingerprints[$path]);
         }
     }
+}
+
+function withInstallCommandProjectBackups(callable $callback): void
+{
+    withPublishedPathBackups([
+        base_path('composer.json'),
+        base_path('vite.config.js'),
+        base_path('vite.config.ts'),
+        base_path('config/inertia.php'),
+        config_path('sisp.php'),
+        database_path('migrations'),
+        resource_path('views/vendor/sisp'),
+        resource_path('js/pages/sisp'),
+        public_path('vendor/sisp/css'),
+    ], $callback);
 }
 
 function snapshotPublishedPath(string $path): array
@@ -104,4 +122,38 @@ function restorePublishedPath(string $path, array $snapshot): void
 
     Illuminate\Support\Facades\File::copyDirectory($snapshot['path'], $path);
     Illuminate\Support\Facades\File::deleteDirectory($snapshot['path']);
+}
+
+function pathSnapshotFingerprint(string $path): array
+{
+    if (! file_exists($path)) {
+        return ['type' => 'missing'];
+    }
+
+    if (is_file($path)) {
+        return [
+            'type' => 'file',
+            'hash' => hash_file('sha256', $path),
+        ];
+    }
+
+    $entries = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST,
+    );
+
+    foreach ($iterator as $entry) {
+        $relativePath = mb_substr((string) $entry->getPathname(), mb_strlen($path) + 1);
+        $entries[] = $entry->isDir()
+            ? 'dir:'.$relativePath
+            : 'file:'.$relativePath.':'.hash_file('sha256', $entry->getPathname());
+    }
+
+    sort($entries);
+
+    return [
+        'type' => 'directory',
+        'entries' => $entries,
+    ];
 }
