@@ -108,6 +108,35 @@ npm install @inertiajs/react    # For React
 npm install @inertiajs/vue3     # For Vue 3
 ```
 
+## Transaction Status Checks
+
+SISP provides three official ways to check payment status:
+
+- Programmatic POS API: use when the payment gateway times out after about 5 minutes or when no automatic callback was received.
+- Merchant Portal: manual lookup for support teams.
+- Daily VBVT reconciliation file: accounting/bulk reconciliation after midnight for the previous day.
+
+Configure the POS transaction-status API:
+
+```env
+SISP_TRANSACTION_STATUS_TEST_URL=https://comerciante.teste.sisp.cv/pos/transaction-status
+SISP_TRANSACTION_STATUS_PRODUCTION_URL=https://comerciante.vinti4.cv/pos/transaction-status
+SISP_PORTAL_ID=your_portal_or_application_id
+SISP_PORTAL_PASSWORD=your_portal_password
+SISP_TRANSACTION_STATUS_TIMEOUT=10
+```
+
+The API sends HTTP Basic authentication using `SISP_PORTAL_ID:SISP_PORTAL_PASSWORD` and posts JSON with `posID`, `posAuthCode`, and `merchantRef`.
+
+Query a transaction explicitly:
+
+```bash
+php artisan sisp:transaction-status R20260523235959
+php artisan sisp:transaction-status --transaction=123 --update
+```
+
+`result=false` means the status API request itself failed and should not be treated as a definitive payment failure. `result=true` with `transactionSuccess=true` maps to `completed`; `result=true` with `transactionSuccess=false` maps to `failed`.
+
 ## Rate Limiting Configuration
 
 ```env

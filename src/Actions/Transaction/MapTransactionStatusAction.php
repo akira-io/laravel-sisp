@@ -31,6 +31,7 @@ final class MapTransactionStatusAction
     {
 
         return collect(SuccessMessageType::cases())
-            ->map(fn (SuccessMessageType $case) => $case->value);
+            ->map(fn (SuccessMessageType $case) => $case->value)
+            ->push('10');
     }
 }

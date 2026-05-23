@@ -198,6 +198,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Transaction Status API
+    |--------------------------------------------------------------------------
+    |
+    | SISP provides a POS transaction-status API for confirming the definitive
+    | status of a payment, especially after a 5-minute timeout where no
+    | automatic callback response is received. Authentication uses HTTP Basic
+    | with the Portal/Application ID and Portal password.
+    |
+    */
+    'transaction_status' => [
+        'test_url' => env('SISP_TRANSACTION_STATUS_TEST_URL', 'https://comerciante.teste.sisp.cv/pos/transaction-status'),
+        'production_url' => env('SISP_TRANSACTION_STATUS_PRODUCTION_URL', 'https://comerciante.vinti4.cv/pos/transaction-status'),
+        'portal_id' => env('SISP_PORTAL_ID', ''),
+        'portal_password' => env('SISP_PORTAL_PASSWORD', ''),
+        'timeout_seconds' => env('SISP_TRANSACTION_STATUS_TIMEOUT', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Blade Template Rendering
     |--------------------------------------------------------------------------
     |

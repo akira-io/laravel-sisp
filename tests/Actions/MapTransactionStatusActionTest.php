@@ -7,7 +7,10 @@ use Akira\Sisp\Enums\TransactionStatus;
 
 it('maps success message type to completed', function (): void {
     $map = resolve(MapTransactionStatusAction::class);
-    expect($map->handle('8'))->toBe(TransactionStatus::completed);
+    expect($map->handle('8'))->toBe(TransactionStatus::completed)
+        ->and($map->handle('10'))->toBe(TransactionStatus::completed)
+        ->and($map->handle('M'))->toBe(TransactionStatus::completed)
+        ->and($map->handle('P'))->toBe(TransactionStatus::completed);
 });
 
 it('maps error message type to failed', function (): void {
