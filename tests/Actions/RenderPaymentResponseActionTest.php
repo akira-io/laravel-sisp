@@ -12,7 +12,15 @@ it('renders blade view with structured error when message type is error', functi
     ]);
 
     $view = resolve(RenderPaymentResponseAction::class)->renderBlade($t, ['foo' => 'bar']);
-    expect($view->name())->toBe('sisp::payment-response');
+    $error = $view->getData()['error'];
+
+    expect($view->name())->toBe('sisp::payment-response')
+        ->and($error)->toMatchArray([
+            'code' => ErrorMessageType::invalidAmount->value,
+            'label' => ErrorMessageType::invalidAmount->label(),
+            'category' => 'validation',
+            'action' => 'check-payment-details',
+        ]);
 });
 
 it('renderInertia falls back to blade when Inertia is absent', function (): void {
@@ -21,7 +29,6 @@ it('renderInertia falls back to blade when Inertia is absent', function (): void
     ]);
 
     $result = resolve(RenderPaymentResponseAction::class)->renderInertia($t, ['a' => 1]);
-    // Inertia is available in this testbench; expect Inertia response
     expect($result)->toBeInstanceOf(Inertia\Response::class);
 });
 
