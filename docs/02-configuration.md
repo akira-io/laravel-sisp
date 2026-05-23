@@ -89,6 +89,8 @@ SISP_USE_INERTIA=false
 
 Renders payment forms using Blade templates.
 
+Package Blade views use the package-scoped `<x-sisp::layouts.app>` layout by default, so they do not require the host application to provide a `layouts.app` view. If you publish the views for customization, keep the package layout component or replace it with your own explicit application layout.
+
 ### Inertia.js
 
 ```env

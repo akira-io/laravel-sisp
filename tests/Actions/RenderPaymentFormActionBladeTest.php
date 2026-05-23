@@ -19,5 +19,6 @@ it('renders blade payment form view', function (): void {
     $req = Sisp::buildRequestPayload($data);
 
     $view = resolve(RenderPaymentFormAction::class)->renderBlade($req);
-    expect($view->name())->toBe('sisp::payment-form');
+    expect($view->name())->toBe('sisp::payment-form')
+        ->and($view->render())->toContain(trans('sisp::payment.manual_redirect_button'));
 });

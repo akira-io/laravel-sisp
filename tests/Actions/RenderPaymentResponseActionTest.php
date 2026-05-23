@@ -17,6 +17,7 @@ it('renders blade view with structured error when message type is error', functi
     $error = $view->getData()['error'];
 
     expect($view->name())->toBe('sisp::payment-response')
+        ->and($view->render())->toContain('<!DOCTYPE html>')
         ->and($error)->toMatchArray([
             'code' => ErrorMessageType::invalidAmount->value,
             'label' => ErrorMessageType::invalidAmount->label(),
