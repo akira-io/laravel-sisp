@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
@@ -37,7 +38,7 @@ beforeEach(function (): void {
     Facade::clearResolvedInstances();
 });
 
-it('dispatches PaymentFailed and skips status update when fingerprint is invalid', function (): void {
+it('dispatches PaymentFailed and marks the transaction failed when fingerprint is invalid', function (): void {
     app()->instance(Akira\Sisp\Sisp::class, new class
     {
         public function validateCallback(CallbackPayload $payload): bool
@@ -53,6 +54,7 @@ it('dispatches PaymentFailed and skips status update when fingerprint is invalid
         'amount' => 10,
         'currency' => '132',
         'transaction_code' => '8',
+        'status' => TransactionStatus::pending,
     ]);
 
     resolve(HandleCallbackAction::class)->handle(cb_payload(ErrorMessageType::invalidAmount->value));
