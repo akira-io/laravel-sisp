@@ -10,6 +10,7 @@ use Akira\PdfInvoices\Builder\ItemBuilder;
 use Akira\PdfInvoices\Contracts\PdfGeneratorContract;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Models\Invoice;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -54,11 +55,13 @@ final readonly class GenerateInvoicePdfAction
             $invoiceBuilder->dueAt($invoice->due_date);
         }
 
-        foreach ($transaction->items as $item) {
+        foreach ($transaction->items->groupBy(fn (Model $item): string => $item->getAttribute('product_name')."\0".$item->getAttribute('unit_price_cents')) as $items) {
+            $firstItem = $items->first();
+
             $itemData = ItemBuilder::make()
-                ->description($item->product_name)
-                ->unitPrice($item->unit_price_cents / 100)
-                ->quantity($item->quantity)
+                ->description($firstItem->product_name)
+                ->unitPrice($firstItem->unit_price_cents / 100)
+                ->quantity($items->sum(fn (Model $item): int => $item->quantity))
                 ->build();
 
             $invoiceBuilder->addItem($itemData);

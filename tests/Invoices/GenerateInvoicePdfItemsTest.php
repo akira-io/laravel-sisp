@@ -27,7 +27,7 @@ final class TestPdfGeneratorItems implements PdfGeneratorContract
     }
 }
 
-it('includes transaction items when generating invoice PDF', function (): void {
+it('aggregates matching transaction items when generating invoice PDF', function (): void {
     $pdfGenerator = new TestPdfGeneratorItems();
     app()->instance(PdfGeneratorContract::class, $pdfGenerator);
     Storage::fake('public');
@@ -39,29 +39,48 @@ it('includes transaction items when generating invoice PDF', function (): void {
 
     TransactionItem::factory()->forTransaction($transaction)->create([
         'product_name' => 'Adult ticket',
-        'quantity' => 2,
+        'quantity' => 1,
         'unit_price_cents' => 1250,
-        'total_price_cents' => 2500,
+        'total_price_cents' => 1250,
+    ]);
+    TransactionItem::factory()->forTransaction($transaction)->create([
+        'product_name' => 'Adult ticket',
+        'quantity' => 1,
+        'unit_price_cents' => 1250,
+        'total_price_cents' => 1250,
+    ]);
+    TransactionItem::factory()->forTransaction($transaction)->create([
+        'product_name' => 'Adult ticket',
+        'quantity' => 1,
+        'unit_price_cents' => 1000,
+        'total_price_cents' => 1000,
     ]);
     TransactionItem::factory()->forTransaction($transaction)->create([
         'product_name' => 'Child ticket',
-        'quantity' => 1,
+        'quantity' => 3,
         'unit_price_cents' => 750,
-        'total_price_cents' => 750,
+        'total_price_cents' => 2250,
     ]);
+
+    expect($transaction->items()->count())->toBe(4);
 
     $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
     $relativePath = resolve(GenerateInvoicePdfAction::class)->handle($invoice);
 
+    $invoiceItems = collect($pdfGenerator->lastInvoice?->items)
+        ->keyBy(fn ($item): string => $item->description.'|'.(int) round($item->unitPrice * 100));
+
     Storage::disk('public')->assertExists($relativePath);
     expect($pdfGenerator->lastInvoice)->not->toBeNull()
-        ->and($pdfGenerator->lastInvoice?->items)->toHaveCount(2)
-        ->and($pdfGenerator->lastInvoice?->items[0]->description)->toBe('Adult ticket')
-        ->and($pdfGenerator->lastInvoice?->items[0]->quantity)->toBe(2)
-        ->and($pdfGenerator->lastInvoice?->items[0]->unitPrice)->toBe(12.5)
-        ->and($pdfGenerator->lastInvoice?->items[0]->getTotal())->toBe(25.0)
-        ->and($pdfGenerator->lastInvoice?->items[1]->description)->toBe('Child ticket')
-        ->and($pdfGenerator->lastInvoice?->items[1]->quantity)->toBe(1)
-        ->and($pdfGenerator->lastInvoice?->items[1]->unitPrice)->toBe(7.5)
-        ->and($pdfGenerator->lastInvoice?->items[1]->getTotal())->toBe(7.5);
+        ->and($invoiceItems)->toHaveCount(3)
+        ->and($invoiceItems->get('Adult ticket|1250')->quantity)->toBe(2)
+        ->and($invoiceItems->get('Adult ticket|1250')->unitPrice)->toBe(12.5)
+        ->and($invoiceItems->get('Adult ticket|1250')->getTotal())->toBe(25.0)
+        ->and($invoiceItems->get('Adult ticket|1000')->quantity)->toBe(1)
+        ->and($invoiceItems->get('Adult ticket|1000')->unitPrice)->toBe(10.0)
+        ->and($invoiceItems->get('Adult ticket|1000')->getTotal())->toBe(10.0)
+        ->and($invoiceItems->get('Child ticket|750')->quantity)->toBe(3)
+        ->and($invoiceItems->get('Child ticket|750')->unitPrice)->toBe(7.5)
+        ->and($invoiceItems->get('Child ticket|750')->getTotal())->toBe(22.5)
+        ->and($transaction->items()->count())->toBe(4);
 });
