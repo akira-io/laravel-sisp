@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4](https://github.com/akira-io/laravel-sisp/compare/v0.6.3...v0.6.4) (2026-05-24)
+
+### Bug Fixes
+
+- **invoice:** Aggregate matching PDF items ([fd7e6d4](https://github.com/akira-io/laravel-sisp/commit/fd7e6d4b3713694614206a22193896f2bbb6a74c))
+- **blade:** Use package scoped layout ([9b921f3](https://github.com/akira-io/laravel-sisp/commit/9b921f3a0b62a144ffa5f7d1ddbe17659f718d38))
+- **types:** Satisfy lowest dependency phpstan ([7d79213](https://github.com/akira-io/laravel-sisp/commit/7d79213f188c09749d0d6492ebdcc9e1f393d455))
+- **refund:** Require full-amount reversals ([3f4ac09](https://github.com/akira-io/laravel-sisp/commit/3f4ac099960486dab0e6ad55be5eaf74965e66e3))
+- **retry:** Require signed retry requests ([4eddc47](https://github.com/akira-io/laravel-sisp/commit/4eddc471a62e83f7a57c7c015c9f8825771254d0))
+- **types:** Avoid strict view helper argument ([8d33cdd](https://github.com/akira-io/laravel-sisp/commit/8d33cdd9bc5a6a80f13a3df5233ec74e0eae3431))
+- **payment:** Validate item totals ([873bf9c](https://github.com/akira-io/laravel-sisp/commit/873bf9c1ab24782851b8fc8e8b6f89f0c7d90fb3))
+- **routes:** Configure state-changing middleware ([6b33f77](https://github.com/akira-io/laravel-sisp/commit/6b33f775f516acd4e4d89725f1af0f1da2de9c4e))
+- **rate-limit:** Serialize hit updates ([c912672](https://github.com/akira-io/laravel-sisp/commit/c9126721b4722d1e998f29180bf5ad1b4377f282))
+
+
+### Code Refactoring
+
+- **config:** Use single SISP status URL ([2c24172](https://github.com/akira-io/laravel-sisp/commit/2c24172a22c49646f08a722afb8706774c0ffb0b))
+
+
+### Features
+
+- **payments:** Add documented SISP status query ([6c015e9](https://github.com/akira-io/laravel-sisp/commit/6c015e970854d903a9bc285b73784c2832af37ec))
+- **payments:** Add pending status reconciliation ([0bb1cfc](https://github.com/akira-io/laravel-sisp/commit/0bb1cfc735e9fb2fa75185b7cc1cb96afdae11a7))
+
 ## [0.6.3](https://github.com/akira-io/laravel-sisp/compare/v0.6.2...v0.6.3) (2026-05-23)
 
 ### Bug Fixes
