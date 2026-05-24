@@ -213,12 +213,13 @@ Customize middleware assigned to package routes in `config/sisp.php`:
 
 ```php
 'middleware' => [
-    // Applied to POST /sisp/refund/{transaction}
+    'payment' => [Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class],
+    'retry' => [],
     'refund' => ['web', 'auth'],
 ],
 ```
 
-Use this to enforce authentication/authorization for refunds.
+Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default. The callback route is intentionally not part of this configuration because SISP must be able to post callbacks without browser CSRF middleware.
 
 ## Security Configuration
 

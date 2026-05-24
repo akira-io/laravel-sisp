@@ -12,10 +12,11 @@ use Akira\Sisp\Http\Controllers\SandboxController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('sisp/payment', PaymentController::class)
-    ->middleware(Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class)
+    ->middleware(config()->array('sisp.middleware.payment', [Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class]))
     ->name('sisp.payment');
 
 Route::post('sisp/retry-payment', RetryPaymentController::class)
+    ->middleware(config()->array('sisp.middleware.retry', []))
     ->name('sisp.retry-payment');
 
 Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)

@@ -993,7 +993,7 @@ POST   /sisp/sandbox           -> SandboxController
 GET    /sisp/countries         -> CountriesController
 ```
 
-Refund route middleware is configurable via `config('sisp.middleware.refund')`.
+State-changing route middleware is configurable via `config('sisp.middleware.payment')`, `config('sisp.middleware.retry')`, and `config('sisp.middleware.refund')`. The callback route remains outside this configuration so SISP callbacks are not blocked by browser-only middleware.
 
 Route names:
 
