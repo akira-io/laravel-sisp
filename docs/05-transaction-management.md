@@ -181,7 +181,7 @@ The command reconciles only old indeterminate transactions:
 
 ## Refund Transaction
 
-Refund a completed or partially refunded transaction:
+Refund a completed transaction:
 
 ```php
 use Akira\Sisp\Actions\RefundTransactionAction;
@@ -191,7 +191,7 @@ $action = app(RefundTransactionAction::class);
 try {
     $transaction = $action->handle(
         transaction: $transaction,
-        refundAmount: 500.00,      // Amount to refund
+        refundAmount: 500.00,      // Must equal the original transaction amount
         reason: 'customer_request' // Optional reason
     );
     echo "Refunded " . $transaction->formatted_amount;
@@ -203,21 +203,23 @@ try {
 ### Refund Rules
 
 Can be refunded:
-- `completed` - Full or partial refund
-- `partially_refunded` - Additional refunds
+- `completed` - Full refund only
 
 Cannot be refunded:
 - `pending` - Waiting for payment
 - `failed` - Payment failed
 - `cancelled` - Transaction cancelled
-- `refunded` - Already fully refunded
+- `refunded` - Already refunded
 
 ### Refund Amount Rules
 
 - Must be greater than 0
-- Cannot exceed transaction amount
-- Full refund changes status to `refunded`
-- Partial refund changes status to `partially_refunded`
+- Must equal the original transaction amount
+- SISP does not support partial refunds
+- Successful refunds preserve the original transaction amount and change status to `refunded`
+- SISP refund requests use `transactionCode = 4`, and the request amount must be the original transaction amount
+- Refunds are limited to the SISP-supported reversal window, currently no more than 30 days after the original purchase
+- For refunds on a different day, SISP may require enough daily purchase liquidity to cover the refunded amount
 
 ### Refund via Route
 

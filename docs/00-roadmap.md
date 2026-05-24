@@ -7,7 +7,7 @@ extension points.
 
 **Enhanced Transaction Management**
 
-- Partial refunds with itemized selection
+- Full-amount SISP refund compliance helpers
 - Split payments across multiple cards
 - Recurring payment scheduling
 - Payment plan installment tracking

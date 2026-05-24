@@ -128,7 +128,7 @@ you must provide:
 
 ### Can I refund a payment?
 
-Yes, refund completed transactions using `RefundTransactionAction`. Partial and full refunds are supported.
+Yes, refund completed transactions using `RefundTransactionAction`. SISP only supports full-amount refunds, so the refund amount must equal the original transaction amount.
 
 ### Can I cancel a pending payment?
 
