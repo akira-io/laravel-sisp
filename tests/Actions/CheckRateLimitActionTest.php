@@ -62,3 +62,30 @@ it('resets when window elapsed then counts again', function (): void {
     expect($fresh->hits)->toBe(1)
         ->and($fresh->reset_at->isFuture())->toBeTrue();
 });
+
+it('increments an existing active window without creating duplicate records', function (): void {
+    $action = resolve(CheckRateLimitAction::class);
+    $identifier = '3.3.3.3';
+
+    RateLimit::query()->create([
+        'identifier' => $identifier,
+        'limit_type' => 'ip',
+        'context' => 'checkout',
+        'hits' => 1,
+        'limit' => 5,
+        'window_seconds' => 60,
+        'reset_at' => now()->addMinute(),
+        'is_blocked' => false,
+    ]);
+
+    $action->handle('ip', $identifier, 'checkout', 5, 60);
+
+    $rows = RateLimit::query()
+        ->where('identifier', $identifier)
+        ->where('limit_type', 'ip')
+        ->where('context', 'checkout')
+        ->get();
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows->first()->hits)->toBe(2);
+});
