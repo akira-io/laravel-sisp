@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 final class StorePaymentRequest extends FormRequest
 {
@@ -34,5 +35,44 @@ final class StorePaymentRequest extends FormRequest
             'customer_postal_code' => ['sometimes', 'string', 'max:20'],
             'locale' => ['sometimes', 'string', 'max:10'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->has('amount') || $validator->errors()->has('items')) {
+                return;
+            }
+
+            $items = $this->input('items', []);
+            if (! is_array($items)) {
+                return;
+            }
+
+            $submittedTotal = 0;
+
+            foreach ($items as $index => $item) {
+                if (! is_array($item)) {
+                    return;
+                }
+
+                $lineTotal = $this->amountInMinorUnits($item['total_price'] ?? 0);
+                $expectedLineTotal = ((int) ($item['quantity'] ?? 0)) * $this->amountInMinorUnits($item['unit_price'] ?? 0);
+                $submittedTotal += $lineTotal;
+
+                if ($lineTotal !== $expectedLineTotal) {
+                    $validator->errors()->add("items.{$index}.total_price", 'Item total must equal quantity multiplied by unit price.');
+                }
+            }
+
+            if ($this->amountInMinorUnits($this->input('amount')) !== $submittedTotal) {
+                $validator->errors()->add('amount', 'Payment amount must equal the sum of item totals.');
+            }
+        });
+    }
+
+    private function amountInMinorUnits(mixed $amount): int
+    {
+        return (int) round((float) $amount * 100);
     }
 }

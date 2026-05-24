@@ -63,3 +63,35 @@ it('blocks duplicate transactions via middleware', function (): void {
 
     $response->assertRedirect('/');
 });
+
+it('rejects item totals that do not match quantity multiplied by unit price', function (): void {
+    config()->set('sisp.rate_limiting.enabled', false);
+
+    $this->postJson(route('sisp.payment'), [
+        'amount' => 100.0,
+        'items' => [[
+            'product_name' => 'Test',
+            'quantity' => 2,
+            'unit_price' => 50.0,
+            'total_price' => 90.0,
+        ]],
+    ])->assertJsonValidationErrors(['items.0.total_price', 'amount']);
+
+    expect(Transaction::query()->count())->toBe(0);
+});
+
+it('rejects payment amount that does not match item totals', function (): void {
+    config()->set('sisp.rate_limiting.enabled', false);
+
+    $this->postJson(route('sisp.payment'), [
+        'amount' => 120.0,
+        'items' => [[
+            'product_name' => 'Test',
+            'quantity' => 2,
+            'unit_price' => 50.0,
+            'total_price' => 100.0,
+        ]],
+    ])->assertJsonValidationErrors(['amount']);
+
+    expect(Transaction::query()->count())->toBe(0);
+});
