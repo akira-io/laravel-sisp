@@ -106,7 +106,7 @@
                 <!-- Action Buttons -->
                 <div class="space-y-3 fade-in-up" style="animation-delay: 0.4s">
                     <button
-                        v-if="isFailed && allowRetry"
+                        v-if="isFailed && allowRetry && retryUrl"
                         @click="retryPayment"
                         :disabled="processing"
                         class="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-purple-600 to-purple-500 text-lg font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
@@ -192,76 +192,21 @@ import SmoothScroll from '@/components/landing/SmoothScroll.vue';
 import { useForm } from '@inertiajs/vue3';
 import { AlertCircle, Check, CheckCircle2, ChevronRight, Clock, Copy, Download, FileDown, Home, RefreshCw } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-
-interface TransactionData {
-    id: number;
-    status: 'completed' | 'failed' | 'pending';
-    amount: number;
-    formatted_amount: string;
-    currency: string;
-    merchant_ref: string;
-    merchant_session: string;
-    message_type?: string;
-}
-
-interface ErrorData {
-    code: string;
-    label: string;
-    category: string;
-    categoryLabel: string;
-    action: string;
-    actionLabel: string;
-}
-
-interface InvoiceData {
-    invoice_number: string;
-    pdf_url: string;
-}
-
-interface Translations {
-    payment: {
-        success_title: string;
-        success_message: string;
-        success_status: string;
-        failed_title: string;
-        failed_message: string;
-        failed_status: string;
-        pending_title: string;
-        pending_message: string;
-        pending_status: string;
-        pending_note: string;
-        reference: string;
-        amount: string;
-        status: string;
-        category: string;
-        reason: string;
-        action: string;
-        invoice_download: string;
-        back_home: string;
-        declined: string;
-        retry_payment: string;
-        cancel_payment: string;
-        copy_reference: string;
-        download_invoice_alert_title: string;
-        download_invoice_alert_message: string;
-        leave_confirmation_title: string;
-        leave_confirmation_message: string;
-        leave_page: string;
-        stay_on_page: string;
-    };
-}
+import { DEFAULT_TRANSLATIONS, type ErrorData, type InvoiceData, type TransactionData, type Translations } from './payment-response-data';
 
 interface PaymentResponseProps {
     transaction: TransactionData;
     error?: ErrorData | null;
     translations?: Translations;
     allowRetry?: boolean;
+    retryUrl?: string | null;
     invoice?: InvoiceData | null;
     payload: Record<string, unknown>;
 }
 
 const props = withDefaults(defineProps<PaymentResponseProps>(), {
     allowRetry: true,
+    retryUrl: null,
     error: null,
     invoice: null,
 });
@@ -270,36 +215,7 @@ const isSuccess = computed(() => props.transaction.status === 'completed');
 const isFailed = computed(() => props.transaction.status === 'failed');
 const isPending = computed(() => props.transaction.status === 'pending');
 
-const t = computed(() => props.translations?.payment ?? {
-    success_title: 'Pagamento Concluído com Sucesso!',
-    success_message: 'A sua transação foi processada com sucesso.',
-    success_status: 'Concluído',
-    failed_title: 'Pagamento Recusado',
-    failed_message: 'Desculpe, o seu pagamento não foi processado.',
-    failed_status: 'Falhou',
-    pending_title: 'Pagamento Pendente',
-    pending_message: 'O seu pagamento está a ser processado.',
-    pending_status: 'Pendente',
-    pending_note: 'Receberá uma confirmação em breve. Por favor, não feche esta página.',
-    reference: 'Referência',
-    amount: 'Montante',
-    status: 'Estado',
-    category: 'Categoria',
-    reason: 'Motivo',
-    action: 'Ação',
-    invoice_download: 'Baixar Fatura',
-    back_home: 'Voltar ao Início',
-    declined: 'Recusado',
-    retry_payment: 'Tentar Novamente',
-    cancel_payment: 'Cancelar',
-    copy_reference: 'Copiar referência',
-    download_invoice_alert_title: 'Faça o download da sua fatura',
-    download_invoice_alert_message: 'Guarde uma cópia da sua fatura para os seus registos.',
-    leave_confirmation_title: 'Tem a certeza que quer sair?',
-    leave_confirmation_message: 'Se sair agora, poderá perder informações sobre o seu pagamento.',
-    leave_page: 'Sair da página',
-    stay_on_page: 'Ficar na página',
-});
+const t = computed(() => props.translations?.payment ?? DEFAULT_TRANSLATIONS.payment);
 
 const statusConfig = computed(() => {
     if (isSuccess.value) {
@@ -350,14 +266,18 @@ const statusText = computed(() => {
     return t.value.pending_status;
 });
 
-const { post, processing } = useForm({ transaction_id: props.transaction.id });
+const { post, processing } = useForm({});
 
 const showLeaveConfirm = ref(false);
 const copiedReference = ref(false);
 const isBackButton = ref(false);
 let beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
 
-const retryPayment = () => post('/sisp/retry-payment');
+const retryPayment = () => {
+    if (props.retryUrl) {
+        post(props.retryUrl);
+    }
+};
 
 const copyReference = async () => {
     if (!props.transaction.merchant_ref) return;

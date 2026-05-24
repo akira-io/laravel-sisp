@@ -18,7 +18,7 @@ final readonly class RetryPaymentController
 
     public function __invoke(RetryPaymentRequest $request): mixed
     {
-        $transaction = Transaction::query()->findOrFail($request->integer('transaction_id'));
+        $transaction = Transaction::query()->findOrFail($request->integer('transaction'));
 
         $paymentRequest = $this->retryPayment->handle($transaction);
 

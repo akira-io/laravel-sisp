@@ -65,3 +65,16 @@ it('sets allowRetry to false when 3DS is enabled and transaction is missing requ
 
     expect($view->getData()['allowRetry'])->toBeFalse();
 });
+
+it('provides a signed retry URL when retry is allowed', function (): void {
+    $t = Transaction::factory()->failed()->create();
+
+    $view = resolve(RenderPaymentResponseAction::class)->renderBlade($t, []);
+    $retryUrl = $view->getData()['retryUrl'];
+
+    expect($view->getData()['allowRetry'])->toBeTrue()
+        ->and($retryUrl)->toBeString()
+        ->and($retryUrl)->toContain('/sisp/retry-payment')
+        ->and($retryUrl)->toContain('signature=')
+        ->and($retryUrl)->toContain('transaction='.$t->id);
+});
