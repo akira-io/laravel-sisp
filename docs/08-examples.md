@@ -482,7 +482,7 @@ use Akira\Sisp\Actions\RefundTransactionAction;
 use Akira\Sisp\Models\Transaction;
 
 $transaction = Transaction::find($id);
-$refundAmount = 50.00;
+$refundAmount = $transaction->amount;
 
 $action = app(RefundTransactionAction::class);
 
@@ -495,7 +495,7 @@ try {
 
     return response()->json([
         'success' => true,
-        'message' => "Refunded {$refundAmount} ECV",
+        'message' => "Refunded the full {$refundAmount} ECV transaction amount",
     ]);
 
 } catch (LogicException $e) {

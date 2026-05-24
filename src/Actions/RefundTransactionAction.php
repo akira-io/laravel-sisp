@@ -22,19 +22,16 @@ final readonly class RefundTransactionAction
             );
         }
 
-        if ($refundAmount > $transaction->amount) {
+        throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
+
+        if ($this->amountInMinorUnits($refundAmount) !== $this->amountInMinorUnits($transaction->amount)) {
             throw new LogicException(
-                "Refund amount ({$refundAmount}) cannot exceed transaction amount ({$transaction->amount})."
+                "SISP only supports full-amount refunds. Refund amount ({$refundAmount}) must equal transaction amount ({$transaction->amount})."
             );
         }
 
-        throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
-
-        $newAmount = $transaction->amount - $refundAmount;
-
         $transaction->update([
             'status' => TransactionStatus::refunded->value,
-            'amount' => $newAmount,
             'merchant_response' => "{$reason}::{$refundAmount}",
             'refunded_at' => now(),
         ]);
@@ -47,5 +44,10 @@ final readonly class RefundTransactionAction
     private function canBeRefunded(Transaction $transaction): bool
     {
         return $transaction->status->value === 'completed';
+    }
+
+    private function amountInMinorUnits(float $amount): int
+    {
+        return (int) round($amount * 100);
     }
 }

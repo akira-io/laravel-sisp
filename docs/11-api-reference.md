@@ -419,8 +419,7 @@ TransactionStatus::pending        // Awaiting SISP response
 TransactionStatus::completed      // Payment successful
 TransactionStatus::failed         // Payment rejected
 TransactionStatus::cancelled      // Transaction cancelled
-TransactionStatus::refunded       // Fully refunded
-TransactionStatus::partially_refunded // Partially refunded
+TransactionStatus::refunded       // Fully refunded through SISP full-amount reversal
 ```
 
 ### InvoiceStatus
@@ -518,7 +517,7 @@ app(CancelTransactionAction::class)->handle(
 
 ### RefundTransactionAction
 
-Refund a completed transaction.
+Refund a completed transaction. SISP only supports full-amount refunds, so `refundAmount` must equal the original transaction amount.
 
 ```php
 app(RefundTransactionAction::class)->handle(
