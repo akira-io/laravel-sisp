@@ -6,7 +6,9 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Exceptions\RateLimitExceededException;
 use Akira\Sisp\Models\RateLimit;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 final readonly class CheckRateLimitAction
 {
@@ -27,14 +29,46 @@ final readonly class CheckRateLimitAction
         $limit ??= $this->getDefaultLimit($limitType);
         $windowSeconds ??= $this->getDefaultWindow($limitType);
         $blockedKey = "rate_limit_blocked:{$limitType}:{$identifier}:{$context}";
+        $lockKey = "rate_limit_lock:{$limitType}:{$identifier}:{$context}";
 
         throw_if(Cache::has($blockedKey), RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}");
 
-        $rateLimit = RateLimit::query()->firstOrCreate([
+        $exceeded = false;
+
+        try {
+            Cache::lock($lockKey, 10)->block(5, function () use (&$exceeded, $limitType, $identifier, $context, $limit, $windowSeconds, $blockedKey): void {
+                $exceeded = DB::transaction(
+                    fn (): bool => $this->recordHit($limitType, $identifier, $context, $limit, $windowSeconds, $blockedKey)
+                );
+            });
+        } catch (LockTimeoutException) {
+            throw new RateLimitExceededException("Rate limit lock timeout for {$limitType}: {$identifier}");
+        }
+
+        throw_if($exceeded, RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}. Limit: {$limit} requests per {$windowSeconds} seconds");
+    }
+
+    private function recordHit(
+        string $limitType,
+        string $identifier,
+        ?string $context,
+        int $limit,
+        int $windowSeconds,
+        string $blockedKey,
+    ): bool {
+        $rateLimit = RateLimit::query()
+            ->where([
+                'identifier' => $identifier,
+                'limit_type' => $limitType,
+                'context' => $context,
+            ])
+            ->lockForUpdate()
+            ->first();
+
+        $rateLimit ??= RateLimit::query()->create([
             'identifier' => $identifier,
             'limit_type' => $limitType,
             'context' => $context,
-        ], [
             'hits' => 0,
             'limit' => $limit,
             'window_seconds' => $windowSeconds,
@@ -51,10 +85,10 @@ final readonly class CheckRateLimitAction
             $rateLimit->block($windowSeconds);
             Cache::put($blockedKey, true, $windowSeconds);
 
-            throw new RateLimitExceededException(
-                "Rate limit exceeded for {$limitType}: {$identifier}. Limit: {$limit} requests per {$windowSeconds} seconds"
-            );
+            return true;
         }
+
+        return false;
     }
 
     private function getDefaultLimit(string $limitType): int
