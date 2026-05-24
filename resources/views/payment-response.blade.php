@@ -151,10 +151,9 @@
 
         {{-- Action Buttons --}}
         <div class="space-y-3 fade-in-up" style="animation-delay:.4s">
-            @if($transaction->status === 'failed' && $allowRetry)
-                <form method="POST" action="{{ route('sisp.retry-payment') }}">
+            @if($transaction->status === 'failed' && $allowRetry && $retryUrl)
+                <form method="POST" action="{{ $retryUrl }}">
                     @csrf
-                    <input type="hidden" name="transaction_id" value="{{ $transaction->id }}">
                     <button type="submit" class="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-purple-600 hover:bg-purple-700 text-lg font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>

@@ -9,6 +9,7 @@ use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\InertiaAvailability;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 
 final readonly class RenderPaymentResponseAction
@@ -22,14 +23,14 @@ final readonly class RenderPaymentResponseAction
 
     public function renderBlade(Transaction $transaction, array $payload): View
     {
-        /** @var view-string $viewName */
-        $viewName = 'sisp::payment-response';
+        $allowRetry = $this->canRetryPayment->handle($transaction);
 
-        return view($viewName, [
+        return view()->make('sisp::payment-response', [
             'transaction' => $transaction,
             'payload' => $payload,
             'error' => $this->getStructuredError($transaction),
-            'allowRetry' => $this->canRetryPayment->handle($transaction),
+            'allowRetry' => $allowRetry,
+            'retryUrl' => $allowRetry ? $this->retryUrl($transaction) : null,
         ]);
     }
 
@@ -40,6 +41,7 @@ final readonly class RenderPaymentResponseAction
         }
 
         $invoice = $transaction->invoice;
+        $allowRetry = $this->canRetryPayment->handle($transaction);
 
         return Inertia::render($component, [
             'transaction' => [
@@ -54,7 +56,8 @@ final readonly class RenderPaymentResponseAction
             ],
             'error' => $this->getStructuredError($transaction),
             'translations' => $this->getTranslations->handle(),
-            'allowRetry' => $this->canRetryPayment->handle($transaction),
+            'allowRetry' => $allowRetry,
+            'retryUrl' => $allowRetry ? $this->retryUrl($transaction) : null,
             'invoice' => $invoice instanceof Invoice ? [
                 'invoice_number' => $invoice->invoice_number,
                 'invoice_date' => $invoice->invoice_date->toDateString(),
@@ -79,5 +82,14 @@ final readonly class RenderPaymentResponseAction
         }
 
         return $this->getErrorResponse->handle($errorType)->toArray();
+    }
+
+    private function retryUrl(Transaction $transaction): string
+    {
+        return URL::temporarySignedRoute(
+            'sisp.retry-payment',
+            now()->addMinutes(30),
+            ['transaction' => $transaction->id],
+        );
     }
 }

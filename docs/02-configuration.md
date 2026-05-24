@@ -26,6 +26,14 @@ The locale for each transaction is automatically stored in the `locale` field of
 
 ## Optional Configuration
 
+### Retry Payments
+
+```env
+SISP_ALLOW_RETRY=true
+```
+
+Retry links are temporary signed URLs. The retry endpoint rejects unsigned, expired, or tampered requests before resolving the transaction.
+
 ### 3D Secure
 
 ```env
