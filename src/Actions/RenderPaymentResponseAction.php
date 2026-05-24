@@ -25,7 +25,7 @@ final readonly class RenderPaymentResponseAction
     {
         $allowRetry = $this->canRetryPayment->handle($transaction);
 
-        return view('sisp::payment-response', [
+        return view()->make('sisp::payment-response', [
             'transaction' => $transaction,
             'payload' => $payload,
             'error' => $this->getStructuredError($transaction),
