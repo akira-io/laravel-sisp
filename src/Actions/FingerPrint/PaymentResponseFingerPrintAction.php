@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions\FingerPrint;
 
 use Akira\Sisp\Actions\PostAutCode;
+use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class PaymentResponseFingerPrintAction
@@ -15,7 +16,7 @@ final readonly class PaymentResponseFingerPrintAction
     {
         $posAutCode = $this->postAutCode->handle();
 
-        $amountThousandths = (int) ((float) $payload->amount * 1000);
+        $amountThousandths = SispAmount::toThousandths($payload->amount);
 
         $fields = [
             $posAutCode,

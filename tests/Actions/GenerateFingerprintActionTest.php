@@ -24,7 +24,7 @@ it('generates the known SISP request fingerprint vector', function (): void {
     expect($fingerprint)->toBe('xoYJjgMu1BZN/pZHxIj2GL9gyulZjByJ/moOMc6iDd/N962z6GYHGqZfnIQKoxfxpUiM79NvA6WrasgecGAqJg==');
 });
 
-it('amount is converted to integer milliseconds', function (): void {
+it('amount is converted to integer thousandths', function (): void {
     $data1 = [
         'timeStamp' => '2024-01-15 14:30:00',
         'amount' => 100.50,
@@ -49,6 +49,22 @@ it('amount is converted to integer milliseconds', function (): void {
     $fingerprint2 = $this->action->handle($data2);
 
     expect($fingerprint1)->toBe($fingerprint2);
+});
+
+it('normalizes decimal amounts to SISP thousandths before fingerprinting', function (): void {
+    $fingerprintData = [
+        'timeStamp' => '2024-01-15 14:30:00',
+        'amount' => 8.03,
+        'merchantRef' => 'test-ref-803',
+        'merchantSession' => 'test-session-803',
+        'posID' => 'POS-001',
+        'currency' => 'AOA',
+        'transactionCode' => 'PURCHASE',
+    ];
+
+    $fingerprint = $this->action->handle($fingerprintData);
+
+    expect($fingerprint)->toBe('Yr0dM+VllFj8HUK9HdwOkS5Cwd2iPdJ5FSweuVnYttxnuYXP88c0ijnxy5iKQp3eF32NKCVJF7lovl4Xug3YnA==');
 });
 
 it('different amounts generate different fingerprints', function (): void {

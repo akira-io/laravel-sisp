@@ -14,6 +14,7 @@ use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class HandleCallbackAction
@@ -75,7 +76,7 @@ final readonly class HandleCallbackAction
 
     private function amountMatches(float|int|string $expected, float|int|string $actual): bool
     {
-        return (int) round((float) $expected * 1000) === (int) round((float) $actual * 1000);
+        return SispAmount::toThousandths($expected) === SispAmount::toThousandths($actual);
     }
 
     private function failTransaction(Transaction $transaction, CallbackPayload $payload): void
