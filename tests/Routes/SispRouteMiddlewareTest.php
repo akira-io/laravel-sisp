@@ -6,6 +6,22 @@ use Akira\Sisp\Http\Middleware\ProtectPaymentRoute;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Route;
 
+it('publishes middleware defaults for configurable state-changing routes', function (): void {
+    expect(config('sisp.middleware.payment'))->toBe([ProtectPaymentRoute::class])
+        ->and(config('sisp.middleware.retry'))->toBe([])
+        ->and(config('sisp.middleware.refund'))->toBe(['web', 'auth']);
+});
+
+it('uses published middleware defaults for payment and retry routes', function (): void {
+    withReloadedSispRoutes(function (): void {
+        $paymentMiddleware = Route::getRoutes()->getByName('sisp.payment')->gatherMiddleware();
+        $retryMiddleware = Route::getRoutes()->getByName('sisp.retry-payment')->gatherMiddleware();
+
+        expect($paymentMiddleware)->toContain(ProtectPaymentRoute::class)
+            ->and($retryMiddleware)->toBe([]);
+    });
+});
+
 it('uses configurable middleware for payment and retry routes', function (): void {
     config()->set('sisp.middleware.payment', ['web', 'auth', ProtectPaymentRoute::class]);
     config()->set('sisp.middleware.retry', ['web', 'auth']);
