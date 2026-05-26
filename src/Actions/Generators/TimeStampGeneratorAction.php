@@ -10,6 +10,6 @@ final readonly class TimeStampGeneratorAction implements Generator
 {
     public function __invoke(): string
     {
-        return date('YmdHis');
+        return now()->format('Y-m-d H:i:s');
     }
 }

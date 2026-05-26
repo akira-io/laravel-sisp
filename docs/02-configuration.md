@@ -26,6 +26,20 @@ The locale for each transaction is automatically stored in the `locale` field of
 
 ## Optional Configuration
 
+### Generators
+
+The package resolves generator classes through the Laravel container and invokes them with no arguments:
+
+```php
+'generators' => [
+    'merchantSession' => App\Sisp\GenerateMerchantSession::class,
+    'merchantReference' => App\Sisp\GenerateMerchantReference::class,
+    'timeStamp' => App\Sisp\GenerateTimeStamp::class,
+],
+```
+
+Each generator must be an invokable class that returns a string. The `timeStamp` generator must return the SISP timestamp format `Y-m-d H:i:s`, for example `2026-05-26 14:30:00`. If a configured generator cannot be resolved or invoked, Laravel raises an exception while building the payment request.
+
 ### Retry Payments
 
 ```env

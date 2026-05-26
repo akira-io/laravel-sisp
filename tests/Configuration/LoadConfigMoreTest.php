@@ -91,7 +91,7 @@ it('defaults unsupported advanced security controls to disabled', function (): v
         ->and($this->cfg->shouldBlockNewCountryPayments())->toBeFalse();
 });
 
-it('uses configured merchant identifier generators', function (): void {
+it('uses configured payment value generators', function (): void {
     app()->singleton('sisp.test.merchantReference', fn (): object => new class
     {
         private int $next = 0;
@@ -118,10 +118,19 @@ it('uses configured merchant identifier generators', function (): void {
 
     config()->set('sisp.generators.merchantReference', 'sisp.test.merchantReference');
     config()->set('sisp.generators.merchantSession', 'sisp.test.merchantSession');
+    app()->bind('sisp.test.timeStamp', fn (): object => new class
+    {
+        public function __invoke(): string
+        {
+            return '2030-01-02 03:04:05';
+        }
+    });
+    config()->set('sisp.generators.timeStamp', 'sisp.test.timeStamp');
 
     $merchantReferences = array_map(fn (): string => $this->cfg->getMerchantReference(), range(1, 3));
     $merchantSessions = array_map(fn (): string => $this->cfg->getMerchantSession(), range(1, 3));
 
     expect($merchantReferences)->toBe(['CUSTOM-REF-1', 'CUSTOM-REF-2', 'CUSTOM-REF-3'])
-        ->and($merchantSessions)->toBe(['CUSTOM-SESSION-1', 'CUSTOM-SESSION-2', 'CUSTOM-SESSION-3']);
+        ->and($merchantSessions)->toBe(['CUSTOM-SESSION-1', 'CUSTOM-SESSION-2', 'CUSTOM-SESSION-3'])
+        ->and($this->cfg->getTimeStamp())->toBe('2030-01-02 03:04:05');
 });
