@@ -57,7 +57,6 @@ it('detects browser/OS/device/mobile flags from user-agent variants', function (
 });
 
 it('handles public ip when location driver is missing', function (): void {
-    // No location.driver configured; ensure action catches and returns [] geo
     config()->set('location.driver');
 
     $action = resolve(StoreRequestMetadataAction::class);
@@ -74,6 +73,28 @@ it('handles public ip when location driver is missing', function (): void {
 
     expect($meta->country_code)->toBeNull()
         ->and($meta->country_name)->toBeNull();
+});
+
+it('stores neutral advanced security metadata without external detection support', function (): void {
+    config()->set('sisp.security.detect_vpn', true);
+    config()->set('sisp.security.detect_proxy', true);
+    config()->set('sisp.security.calculate_risk_score', true);
+    config()->set('sisp.security.block_vpn_proxy', true);
+
+    $action = resolve(StoreRequestMetadataAction::class);
+    $transaction = Transaction::factory()->create();
+
+    $request = Request::create('/test', 'GET', server: [
+        'REMOTE_ADDR' => '127.0.0.1',
+        'HTTP_USER_AGENT' => 'Mozilla/5.0',
+    ]);
+
+    $meta = $action->handle($request, $transaction);
+
+    expect($meta->is_vpn)->toBeFalse()
+        ->and($meta->is_proxy)->toBeFalse()
+        ->and($meta->risk_score)->toBe(0)
+        ->and($meta->risk_reason)->toBeNull();
 });
 
 it('detects tablet (iPad) and marks mobile true', function (): void {

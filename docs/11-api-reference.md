@@ -205,11 +205,11 @@ $metadata->os                     // Windows/macOS/Linux/iOS/Android
 $metadata->device_fingerprint     // SHA256 hash of device
 $metadata->response_time_ms       // API response time in milliseconds
 $metadata->api_version            // API version used
-$metadata->is_vpn                 // VPN detected (boolean)
-$metadata->is_proxy               // Proxy detected (boolean)
+$metadata->is_vpn                 // Reserved for external VPN detection
+$metadata->is_proxy               // Reserved for external proxy detection
 $metadata->is_mobile              // Mobile device (boolean)
-$metadata->risk_score             // Fraud risk score 0-100
-$metadata->risk_reason            // Why risk was assigned
+$metadata->risk_score             // Reserved risk score, defaults to 0
+$metadata->risk_reason            // Reserved risk explanation
 $metadata->custom_metadata        // Custom metadata (array)
 $metadata->created_at             // Created timestamp
 $metadata->updated_at             // Updated timestamp

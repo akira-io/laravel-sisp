@@ -38,6 +38,8 @@ final readonly class StoreRequestMetadataAction
                 'is_vpn' => $ipInfo['is_vpn'] ?? false,
                 'is_proxy' => $ipInfo['is_proxy'] ?? false,
                 'is_mobile' => $this->isMobileDevice($request),
+                'risk_score' => 0,
+                'risk_reason' => null,
             ]);
     }
 

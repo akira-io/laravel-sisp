@@ -86,7 +86,11 @@ Before creating transaction:
 - Captures IP address
 - Device information
 - Geolocation data (if enabled)
-- Risk score calculation
+- Risk score fields for application-level integrations
+
+The package does not perform VPN detection, proxy detection, risk scoring, or
+whitelist enforcement by itself. Use custom middleware or blacklist entries for
+those controls.
 
 ## Step 4: Transaction Creation
 

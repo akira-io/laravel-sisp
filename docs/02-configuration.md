@@ -233,12 +233,17 @@ Use this to add CSRF, authentication, tenancy, or custom authorization checks to
 
 ```env
 SISP_COLLECT_METADATA=true         # Collect IP, device, geolocation
-SISP_DETECT_VPN=true               # Detect VPN usage
-SISP_DETECT_PROXY=true             # Detect proxy usage
-SISP_CALCULATE_RISK_SCORE=true     # Calculate fraud risk score
-SISP_BLOCK_VPN_PROXY=true          # Block VPN/proxy requests
-SISP_REQUIRE_WHITELIST=false       # Require IP whitelist
+SISP_DETECT_VPN=false              # Reserved for external VPN detection
+SISP_DETECT_PROXY=false            # Reserved for external proxy detection
+SISP_CALCULATE_RISK_SCORE=false    # Reserved for external risk scoring
+SISP_BLOCK_VPN_PROXY=false         # Reserved for external VPN and proxy blocking
+SISP_REQUIRE_WHITELIST=false       # Reserved for external IP whitelist enforcement
 ```
+
+The package currently enforces blacklist and rate-limit checks. VPN detection,
+proxy detection, risk scoring, country blocking, and whitelist enforcement are
+not built in. Add custom middleware or application services if your project
+requires those controls.
 
 ### Amount Limits
 
@@ -432,10 +437,10 @@ SISP_RATE_LIMIT_PER_USER_WINDOW=3600
 
 # Security
 SISP_COLLECT_METADATA=true
-SISP_DETECT_VPN=true
-SISP_DETECT_PROXY=true
-SISP_CALCULATE_RISK_SCORE=true
-SISP_BLOCK_VPN_PROXY=true
+SISP_DETECT_VPN=false
+SISP_DETECT_PROXY=false
+SISP_CALCULATE_RISK_SCORE=false
+SISP_BLOCK_VPN_PROXY=false
 SISP_REQUIRE_WHITELIST=false
 SISP_MAX_AMOUNT_PER_DAY=
 SISP_MAX_AMOUNT_PER_MONTH=

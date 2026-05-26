@@ -167,24 +167,27 @@ echo $metadata->city;               // Geolocation city
 echo $metadata->latitude;           // Geolocation latitude
 echo $metadata->longitude;          // Geolocation longitude
 echo $metadata->isp;                // Internet service provider
-echo $metadata->is_vpn;             // VPN detected (boolean)
-echo $metadata->is_proxy;           // Proxy detected (boolean)
+echo $metadata->is_vpn;             // Reserved for external VPN detection
+echo $metadata->is_proxy;           // Reserved for external proxy detection
 echo $metadata->is_mobile;          // Mobile device (boolean)
-echo $metadata->risk_score;         // Risk score 0-100
-echo $metadata->risk_reason;        // Why risk score was assigned
+echo $metadata->risk_score;         // Reserved risk score, defaults to 0
+echo $metadata->risk_reason;        // Reserved risk explanation
 ```
 
-### Enable/Disable Collection
+### Configure Collection
 
 ```env
 SISP_COLLECT_METADATA=true
-SISP_DETECT_VPN=true
-SISP_DETECT_PROXY=true
-SISP_CALCULATE_RISK_SCORE=true
-SISP_BLOCK_VPN_PROXY=true
+SISP_DETECT_VPN=false
+SISP_DETECT_PROXY=false
+SISP_CALCULATE_RISK_SCORE=false
+SISP_BLOCK_VPN_PROXY=false
 ```
 
-When `SISP_BLOCK_VPN_PROXY=true`, requests from VPN/proxy will be rejected with 403.
+The package does not perform VPN detection, proxy detection, risk scoring, or
+whitelist enforcement by itself. These flags are reserved for application-level
+integrations. Use blacklist entries, rate limits, or custom middleware to block
+requests before creating payment transactions.
 
 ## Geolocation
 
@@ -213,10 +216,10 @@ use Akira\Sisp\Models\RequestMetadata;
 // Get metadata for transaction
 $metadata = RequestMetadata::where('transaction_id', $transactionId)->first();
 
-// High risk transactions
+// Application-assigned risk values
 $risky = RequestMetadata::where('risk_score', '>=', 70)->get();
 
-// VPN/Proxy users
+// Application-assigned VPN and proxy flags
 $suspicious = RequestMetadata::where(function ($q) {
     $q->where('is_vpn', true)
         ->orWhere('is_proxy', true);

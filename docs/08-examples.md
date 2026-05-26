@@ -328,7 +328,7 @@ $englishTransactions = Transaction::where('locale', 'en')
     ->where('status', TransactionStatus::completed)
     ->count();
 
-// Transactions with high risk score
+// Transactions with application-assigned risk score
 $risky = Transaction::with('metadata')
     ->whereHas('metadata', fn ($q) => $q->where('risk_score', '>=', 70))
     ->get();
@@ -426,7 +426,7 @@ if ($failedCount >= 3) {
     );
 }
 
-// Monitor high-risk IPs
+// Monitor application-assigned high-risk IPs
 $riskMetadata = RequestMetadata::where('risk_score', '>=', 80)
     ->where('created_at', '>=', now()->subHour())
     ->get();
@@ -436,7 +436,7 @@ foreach ($riskMetadata as $metadata) {
         type: 'ip',
         value: $metadata->ip_address,
         severity: 'medium',
-        reason: 'High fraud risk score',
+        reason: 'Application-assigned fraud risk score',
         expiresInMinutes: 1440  // 24 hours
     );
 }
@@ -513,7 +513,7 @@ Analyze payment risk and security metrics.
 ```php
 use Akira\Sisp\Models\RequestMetadata;
 
-// VPN/Proxy detection
+// Application-assigned VPN and proxy flags
 $vpnUsers = RequestMetadata::where(function ($q) {
     $q->where('is_vpn', true)
         ->orWhere('is_proxy', true);
@@ -522,7 +522,7 @@ $vpnUsers = RequestMetadata::where(function ($q) {
 // Mobile payments
 $mobilePayments = RequestMetadata::where('is_mobile', true)->count();
 
-// High-risk transactions
+// Application-assigned high-risk transactions
 $highRisk = RequestMetadata::where('risk_score', '>=', 70)
     ->orderByDesc('risk_score')
     ->get();

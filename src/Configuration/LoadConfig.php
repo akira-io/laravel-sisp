@@ -205,7 +205,7 @@ final readonly class LoadConfig
 
     public function shouldBlockVpnProxy(): bool
     {
-        return $this->config->get('sisp.security.block_vpn_proxy', true);
+        return $this->config->get('sisp.security.block_vpn_proxy', false);
     }
 
     public function shouldBlockNewCountryPayments(): bool
@@ -215,17 +215,17 @@ final readonly class LoadConfig
 
     public function isVpnDetectionEnabled(): bool
     {
-        return $this->config->get('sisp.security.detect_vpn', true);
+        return $this->config->get('sisp.security.detect_vpn', false);
     }
 
     public function isProxyDetectionEnabled(): bool
     {
-        return $this->config->get('sisp.security.detect_proxy', true);
+        return $this->config->get('sisp.security.detect_proxy', false);
     }
 
     public function isRiskScoringEnabled(): bool
     {
-        return $this->config->get('sisp.security.calculate_risk_score', true);
+        return $this->config->get('sisp.security.calculate_risk_score', false);
     }
 
     public function getRateLimitPerIp(): int
