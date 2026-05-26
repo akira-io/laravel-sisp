@@ -65,6 +65,31 @@ it('fingerprint rejects altered amount', function (): void {
     expect($this->action->handle($alteredPayload))->toBeFalse();
 });
 
+it('accepts response fingerprint when decimal amount would otherwise truncate', function (): void {
+    $payloadData = [
+        'messageType' => 'S',
+        'merchantRespCP' => '01',
+        'merchantRespTid' => '987654321',
+        'merchantRespMerchantRef' => 'R20251112123456',
+        'merchantRespMerchantSession' => 'S20251112123456',
+        'merchantRespPurchaseAmount' => '8.03',
+        'merchantRespMessageID' => 'ABCDEF12345',
+        'merchantRespPan' => '504150XXXXXX1234',
+        'merchantResp' => '00',
+        'merchantRespTimeStamp' => '2025-11-12 14:34:56',
+        'merchantRespReferenceNumber' => '123456789',
+        'merchantRespEntityCode' => '10010',
+        'merchantRespClientReceipt' => '**********',
+        'merchantRespAdditionalErrorMessage' => '',
+        'reloadCode' => '',
+        'resultFingerPrint' => 'mnY+ewvtKlfO1HR4TOq3lwOha5Wff6Wc6SLu8t6KsbBJnWJ+5yE8Mf+HyzVu2BNCaF2bENVRI8hO1vJHNhMlRQ==',
+    ];
+
+    $payload = CallbackPayload::from($payloadData);
+
+    expect($this->action->handle($payload))->toBeTrue();
+});
+
 it('fingerprint rejects altered message type', function (): void {
     $payloadData = [
         'messageType' => 'S',

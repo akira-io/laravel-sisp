@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Support\SispAmount;
+
 final readonly class GenerateFingerprintAction
 {
     public function __construct(private PostAutCode $postAutCode) {}
@@ -17,7 +19,7 @@ final readonly class GenerateFingerprintAction
 
     private function buildFingerprintContent(array $data): string
     {
-        $parsedAmount = (int) ((float) $data['amount'] * 1000);
+        $parsedAmount = SispAmount::toThousandths($data['amount']);
 
         return $this->postAutCode->handle()
             .($data['timeStamp'] ?? '')
