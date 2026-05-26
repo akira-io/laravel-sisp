@@ -276,12 +276,14 @@ Test callback manually:
 ```bash
 curl -X POST http://localhost:8000/sisp/callback \
   -H "Content-Type: application/json" \
-  -d '{"merchantRespMerchantRef":"test","merchantRespMerchantSession":"test","messageType":"success","merchantResp":"Approved"}'
+  -d '{"merchantRespMerchantRef":"test","merchantRespMerchantSession":"test","merchantResp":"C","messageType":"8","resultFingerPrint":"valid-sisp-fingerprint"}'
 ```
+
+Unsigned test payloads are expected to redirect to `config('sisp.redirect_url', '/')`. Use the sandbox route or `BuildSandboxPayloadAction` when you need a locally generated callback with a valid fingerprint.
 
 ### Callback signature validation fails
 
-Error: Invalid fingerprint or signature
+Symptom: the callback redirects to `config('sisp.redirect_url', '/')` and the transaction is not updated.
 
 This means SISP's response was tampered with or your credentials are wrong.
 
@@ -299,11 +301,23 @@ Check logs for exact error:
 tail -f storage/logs/laravel.log | grep -i signature
 ```
 
+### Callback redirects before processing
+
+The controller redirects without processing when:
+
+1. `UserCancelled` is truthy
+2. The request is a GET without a valid `ref` query parameter
+3. The POST fingerprint is invalid
+4. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
+5. The callback was already processed and the transaction already has a SISP transaction ID
+
+Duplicate callbacks redirect with an `info` flash message: `This payment has already been processed.`
+
 ### Transaction not found in callback
 
 Error: "No transaction found" when SISP calls callback
 
-The transaction may not have been created. Verify:
+The action can create a missing transaction from a signed callback, but a normal payment callback should match a transaction created by `POST /sisp/payment`. Verify:
 
 ```php
 php artisan tinker
@@ -446,8 +460,10 @@ php artisan tinker
 If status is still `pending`, callback wasn't processed. Check:
 
 1. Callback route is accessible
-2. No middleware blocking the callback
-3. No exceptions thrown in CallbackController (check logs)
+2. The callback payload has a valid fingerprint
+3. `merchantRespMerchantRef` and `merchantRespMerchantSession` are present
+4. The callback values match the stored transaction amount, currency, transaction code, and POS ID
+5. No exceptions were thrown in CallbackController (check logs)
 
 If the customer reached SISP but no callback arrived after about 5 minutes, query the SISP POS transaction-status API:
 

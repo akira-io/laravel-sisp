@@ -597,15 +597,21 @@ $isValid = app(ValidatePaymentResponseFingerprintAction::class)->handle(
 // Returns false if tampering detected
 ```
 
-### PreventDuplicateCallbackAction
+### CallbackController
 
-Prevent double-processing of callback requests.
-
-Registered as `PreventDuplicateCallback` middleware on callback routes.
+Handles the SISP callback route.
 
 ```php
-// Automatically redirects already-processed callbacks
-// to payment response page
+// GET /sisp/callback?ref=<merchant_ref>
+// Renders the payment response for a known merchant reference.
+
+// POST /sisp/callback
+// 1. Redirects cancelled requests.
+// 2. Validates the callback fingerprint before transaction lookup.
+// 3. Requires merchant reference and merchant session.
+// 4. Redirects duplicate callbacks when transaction_id is already set.
+// 5. Handles the callback, stores metadata, updates invoice status,
+//    then redirects to GET /sisp/callback?ref=<merchant_ref>.
 ```
 
 ### RenderPaymentResponseAction
@@ -666,15 +672,6 @@ Protects the payment route from duplicate submissions.
 ```php
 // Applied to POST /sisp/payment
 // Blocks duplicate merchantRef + merchantSession combinations
-```
-
-### PreventDuplicateCallback
-
-Prevents double-processing of callback requests.
-
-```php
-// Applied to GET|POST /sisp/callback
-// Redirects already-processed callbacks to response page
 ```
 
 ## Enums
@@ -760,16 +757,6 @@ Thrown when 3D Secure is enabled but required customer data is missing.
 ```php
 catch (MissingThreeDSecureDataException $e) {
     // Provide the missing fields and retry
-}
-```
-
-### InvalidSignatureException
-
-Thrown when a callback fingerprint/signature is invalid.
-
-```php
-catch (InvalidSignatureException $e) {
-    // Reject callback and log attempt
 }
 ```
 
