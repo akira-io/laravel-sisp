@@ -24,6 +24,7 @@ return RectorConfig::configure()
         cacheDirectory: '/tmp/rector',
         cacheClass: FileCacheStorage::class,
     )
+    ->withParallel(timeoutSeconds: 300)
     ->withPaths([
         __DIR__.'/src',
         __DIR__.'/config',

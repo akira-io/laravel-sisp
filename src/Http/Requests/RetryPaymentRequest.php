@@ -8,6 +8,7 @@ use Akira\Sisp\Actions\CanRetryPaymentAction;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 final class RetryPaymentRequest extends FormRequest
@@ -20,7 +21,7 @@ final class RetryPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'transaction' => ['required', 'integer', 'exists:sisp_transactions,id'],
+            'transaction' => ['required', 'integer', Rule::exists(new Transaction()->getTable(), 'id')],
         ];
     }
 
