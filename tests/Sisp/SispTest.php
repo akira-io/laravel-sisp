@@ -7,6 +7,7 @@ use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\TransactionData;
+use Illuminate\Support\Facades\Http;
 
 it('builds request payload via facade with deterministic fingerprint', function (): void {
     $data = PaymentRequestData::from([
@@ -97,4 +98,71 @@ it('handles payment callback and updates status', function (): void {
     $updated = Sisp::handlePaymentCallback($payload);
 
     expect($updated->status->value)->toBe('completed');
+});
+
+it('queries transaction status through the facade', function (): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+
+    Http::fake([
+        '*' => Http::response([
+            'result' => true,
+            'transactionSuccess' => true,
+            'transactionStatusDescription' => 'C-SUCESSO',
+            'msg' => 'Approved',
+        ]),
+    ]);
+
+    $response = Sisp::queryTransactionStatus('MR-FACADE-STATUS');
+
+    expect($response->result)->toBeTrue()
+        ->and($response->transactionSuccess)->toBeTrue()
+        ->and($response->paymentStatus()->value)->toBe('completed');
+});
+
+it('does not expose failed status API requests as payment failures through the facade', function (): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+
+    Http::fake([
+        '*' => Http::response(['msg' => 'Forbidden'], 403),
+    ]);
+
+    $response = Sisp::queryTransactionStatus('MR-FACADE-FAILED-QUERY');
+
+    expect($response->result)->toBeFalse()
+        ->and($response->paymentStatus()->value)->toBe('pending')
+        ->and($response->message)->toContain('HTTP 403');
+});
+
+it('reconciles completed and failed payments through the facade', function (): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+
+    Http::fakeSequence()
+        ->push([
+            'result' => true,
+            'transactionSuccess' => true,
+            'transactionStatusDescription' => 'C-SUCESSO',
+            'msg' => 'Approved',
+        ])
+        ->push([
+            'result' => true,
+            'transactionSuccess' => false,
+            'transactionStatusDescription' => 'E-ERRO',
+            'msg' => 'Declined',
+        ]);
+
+    $completed = Transaction::factory()->create([
+        'status' => 'pending',
+        'merchant_response' => null,
+    ]);
+
+    $failed = Transaction::factory()->create([
+        'status' => 'pending',
+        'merchant_response' => null,
+    ]);
+
+    expect(Sisp::reconcileTransactionStatus($completed)->status->value)->toBe('completed')
+        ->and(Sisp::reconcileTransactionStatus($failed)->status->value)->toBe('failed');
 });

@@ -156,6 +156,33 @@ php artisan sisp:transaction-status --transaction=123 --update
 
 `result=false` means the status API request itself failed and should not be treated as a definitive payment failure. `result=true` with `transactionSuccess=true` maps to `completed`; `result=true` with `transactionSuccess=false` maps to `failed`.
 
+### Public Status API
+
+Use the facade when application code needs a one-off status check or wants to reconcile a known transaction inside a domain workflow:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\Models\Transaction;
+
+$response = Sisp::queryTransactionStatus($transaction);
+$response = Sisp::queryTransactionStatus('R20260523235959');
+
+$updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
+```
+
+`queryTransactionStatus()` returns `TransactionStatusResponse` and does not change local data. `reconcileTransactionStatus()` updates only pending transactions when SISP returns `result=true`.
+
+For multi-merchant applications, pass explicit credentials:
+
+```php
+$sisp = Sisp::forCredentials($credentials);
+
+$response = $sisp->queryTransactionStatus($transaction);
+$updatedTransaction = $sisp->reconcileTransactionStatus($transaction);
+```
+
+Use the Artisan commands for operations and scheduled monitoring. Use the public API when the application is already handling a specific transaction and needs the result immediately.
+
 ### Scheduled Pending Reconciliation
 
 Enable reconciliation only when the application is ready to let the package update old indeterminate pending transactions:

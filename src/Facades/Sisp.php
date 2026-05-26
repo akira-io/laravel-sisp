@@ -11,6 +11,7 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
+use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Facade;
 
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static PaymentRequest buildRequestPayload(PaymentRequestData $data)
  * @method static bool validateCallback(CallbackPayload $payload)
  * @method static Transaction handlePaymentCallback(CallbackPayload $payload)
+ * @method static TransactionStatusResponse queryTransactionStatus(Transaction|string $transaction)
+ * @method static Transaction reconcileTransactionStatus(Transaction $transaction)
  * @method static CallbackPayload generateSandboxPayload(PaymentRequestData $data, string $status = 'success')
  * @method static Transaction storeTransaction(TransactionData $data)
  * @method static string getMerchantReference()
@@ -38,14 +41,9 @@ use Illuminate\Support\Facades\Facade;
  * @method static string getCountryNumericCode(string $alpha2)
  * @method static string getCountryFlag(string $alpha2)
  * @method static string|null getCountryName(string $alpha2)
- *
- * @see \Akira\Sisp\Sisp
  */
 final class Sisp extends Facade
 {
-    /**
-     * Get the registered name of the component.
-     */
     protected static function getFacadeAccessor(): string
     {
         return \Akira\Sisp\Sisp::class;
