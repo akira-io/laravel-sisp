@@ -254,7 +254,8 @@ TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 
 ### sisp_transactions
 - transaction_id (UUID)
-- amount (in cents)
+- amount (decimal CVE, compatibility)
+- amount_cents (integer cents, canonical storage)
 - status (pending/completed/failed)
 - merchant_ref (unique reference)
 - merchant_session

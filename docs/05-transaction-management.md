@@ -25,7 +25,8 @@ Access transaction data:
 
 ```php
 $transaction->merchant_ref;        // Unique reference ID
-$transaction->amount;              // Amount in cents
+$transaction->amount;              // Decimal amount in CVE
+$transaction->amount_cents;        // Canonical integer amount in cents
 $transaction->status;              // pending/completed/failed/cancelled/refunded
 $transaction->customer_email;      // Customer email
 $transaction->customer_name;       // Customer name
@@ -42,6 +43,14 @@ $transaction->refunded_at;         // Refund timestamp
 $transaction->created_at;          // Created timestamp
 $transaction->updated_at;          // Updated timestamp
 ```
+
+`amount` remains a decimal CVE value for backward compatibility. `amount_cents` is the canonical integer storage value used to avoid money precision drift before the public API is stabilized.
+
+### Breaking Change Note
+
+Before `1.0.0`, applications should treat `amount_cents` as the stable storage representation and `amount` as the compatibility accessor. A future major release may expose only integer minor-unit amounts in public APIs. Migration path: read and write decimal CVE through `amount` while also persisting `amount_cents`, then switch integrations that need exact arithmetic to `amount_cents`.
+
+After upgrading to the version that introduces `amount_cents`, publish or run the package migrations so existing rows are backfilled from `amount`.
 
 ## Formatted Amount
 

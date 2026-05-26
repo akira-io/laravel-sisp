@@ -28,6 +28,7 @@ it('creates transaction and renders payment form', function (): void {
     $transaction = Transaction::query()->sole();
 
     expect($transaction->amount)->toBe(100.0)
+        ->and($transaction->amount_cents)->toBe(10000)
         ->and($transaction->currency)->toBe('132')
         ->and($transaction->status->value)->toBe('pending')
         ->and($transaction->customer_name)->toBe('John')
@@ -38,6 +39,27 @@ it('creates transaction and renders payment form', function (): void {
         ->and($transaction->items->first()->product_name)->toBe('Test')
         ->and($transaction->items->first()->quantity)->toBe(1)
         ->and((float) $transaction->items->first()->total_price)->toBe(100.0);
+});
+
+it('stores decimal payment amounts with canonical cents', function (): void {
+    config()->set('sisp.rate_limiting.enabled', false);
+
+    $this->post(route('sisp.payment'), [
+        'amount' => 8.03,
+        'items' => [[
+            'product_name' => 'Decimal Amount',
+            'quantity' => 1,
+            'unit_price' => 8.03,
+            'total_price' => 8.03,
+        ]],
+        'customer_name' => 'Decimal Customer',
+        'customer_email' => 'decimal@example.test',
+    ])->assertOk();
+
+    $transaction = Transaction::query()->sole();
+
+    expect($transaction->amount)->toBe(8.03)
+        ->and($transaction->amount_cents)->toBe(803);
 });
 
 it('blocks duplicate transactions via middleware', function (): void {

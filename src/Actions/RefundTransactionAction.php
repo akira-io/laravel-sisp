@@ -7,6 +7,7 @@ namespace Akira\Sisp\Actions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\SispAmount;
 use LogicException;
 
 final readonly class RefundTransactionAction
@@ -48,6 +49,6 @@ final readonly class RefundTransactionAction
 
     private function amountInMinorUnits(float $amount): int
     {
-        return (int) round($amount * 100);
+        return SispAmount::toCents($amount);
     }
 }
