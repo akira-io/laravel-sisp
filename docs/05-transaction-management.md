@@ -252,7 +252,7 @@ $action = app(RefundTransactionAction::class);
 try {
     $transaction = $action->handle(
         transaction: $transaction,
-        refundAmount: 500.00,      // Must equal the original transaction amount
+        refundAmount: 500.00,
         reason: 'customer_request' // Optional reason
     );
     echo "Refunded " . $transaction->formatted_amount;
@@ -264,7 +264,7 @@ try {
 ### Refund Rules
 
 Can be refunded:
-- `completed` - Full refund only
+- `completed` - Total reversal or partial refund
 
 Cannot be refunded:
 - `pending` - Waiting for payment
@@ -275,12 +275,29 @@ Cannot be refunded:
 ### Refund Amount Rules
 
 - Must be greater than 0
-- Must equal the original transaction amount
-- SISP does not support partial refunds
-- Successful refunds preserve the original transaction amount and change status to `refunded`
-- SISP refund requests use `transactionCode = 4`, and the request amount must be the original transaction amount
-- Refunds are limited to the SISP-supported reversal window, currently no more than 30 days after the original purchase
+- Must not exceed the refundable balance known by the package
+- Total reversal uses `transactionCode = 4`
+- Partial refund uses `transactionCode = 8`
+- Refund history lookup uses `transactionCode = 9` and `amount = 0`
+- Refund and history requests use `reversal = R`
+- Refund operations use the dedicated refund FingerPrint with version `2`
+- Successful full refunds preserve the original transaction amount and change status to `refunded`
+- Successful partial refunds preserve the transaction as `completed` until the known refunded balance reaches the original amount
 - For refunds on a different day, SISP may require enough daily purchase liquidity to cover the refunded amount
+- For DCC transactions, refund in the original transaction currency
+
+The original SISP callback must provide `merchantRespCP` and `merchantRespTid`; these are used as `clearingPeriod` and `transactionID` in refund requests.
+
+Build a refund history request without changing local transaction status:
+
+```php
+use Akira\Sisp\Actions\BuildRefundRequestAction;
+
+$request = app(BuildRefundRequestAction::class)->history($transaction);
+$payload = $request->toArray();
+```
+
+Sandbox certification should validate SISP test cases 29-31 for total reversal, 32-34 for partial refund, and 35 for refund history. Confirm final accounting in the daily VBVT reconciliation file.
 
 ### Refund via Route
 

@@ -461,7 +461,7 @@ TransactionStatus::pending        // Awaiting SISP response
 TransactionStatus::completed      // Payment successful
 TransactionStatus::failed         // Payment rejected
 TransactionStatus::cancelled      // Transaction cancelled
-TransactionStatus::refunded       // Fully refunded through SISP full-amount reversal
+TransactionStatus::refunded       // Fully refunded through SISP reversal or partial refunds
 ```
 
 ### InvoiceStatus
@@ -585,7 +585,7 @@ app(CancelTransactionAction::class)->handle(
 
 ### RefundTransactionAction
 
-Refund a completed transaction. SISP only supports full-amount refunds, so `refundAmount` must equal the original transaction amount.
+Refund a completed transaction. The action supports SISP total reversal and partial refund requests.
 
 ```php
 app(RefundTransactionAction::class)->handle(
@@ -596,6 +596,26 @@ app(RefundTransactionAction::class)->handle(
 
 // Throws LogicException if cannot refund
 ```
+
+### BuildRefundRequestAction
+
+Build SISP refund and refund-history request payloads with the dedicated refund FingerPrint.
+
+```php
+$total = app(BuildRefundRequestAction::class)->total($transaction);
+$partial = app(BuildRefundRequestAction::class)->partial($transaction, 500.00);
+$history = app(BuildRefundRequestAction::class)->history($transaction);
+
+$payload = $history->toArray();
+```
+
+Transaction codes:
+
+- `4` - total reversal
+- `8` - partial refund
+- `9` - refund history lookup
+
+Refund-history payloads use `amount = 0`. All refund payloads use `reversal = R`, `fingerprintversion = 2`, the original `clearingPeriod`, and the original `transactionID`.
 
 ### GenerateInvoiceAction
 
