@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 it('reports healthy storage and invoices on public disk', function (): void {
     Storage::fake('public');
     config()->set('sisp.invoice.disk', 'public');
-    config()->set('sisp.invoice.path', 'invoices');
+    config()->set('sisp.invoice.path', 'billing/pdfs');
     config()->set('filesystems.disks.public.driver', 'local');
     config()->set('filesystems.disks.public.root', storage_path('app/public'));
 
@@ -35,6 +35,8 @@ it('reports healthy storage and invoices on public disk', function (): void {
     expect($code)->toBe(0)
         ->and($output)->toContain('Configuration Check:')
         ->and($output)->toContain('Disk: ')
+        ->and($output)->toContain('Path: ')
+        ->and($output)->toContain('billing/pdfs')
         ->and($output)->toContain('Driver: ')
         ->and($output)->toContain('Root: ')
         ->and($output)->toContain('Storage disk is accessible')

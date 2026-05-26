@@ -84,7 +84,10 @@ SISP_INVOICE_TEMPLATE=modern       # modern, minimal, or branded
 SISP_INVOICE_NUMBER_FORMAT=date-based
 SISP_INVOICE_NUMBER_PREFIX=INV
 SISP_INVOICE_DISK=public           # Storage disk for PDFs
+SISP_INVOICE_PATH=invoices         # Directory inside the disk for PDFs
 ```
+
+`SISP_INVOICE_PATH` is relative to the configured filesystem disk. With the default `public` disk it resolves under `storage/app/public`. With S3 it is used as the object key prefix.
 
 ## Rendering Engine Configuration
 

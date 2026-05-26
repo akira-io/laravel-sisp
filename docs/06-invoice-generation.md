@@ -92,7 +92,7 @@ Result: `INV-20250101-001`, `INV-20250101-002`, etc.
 
 ## PDF Storage
 
-PDFs are stored in `storage/app/public/invoices/` with UUID filenames:
+By default, PDFs are stored on the `public` disk under the `invoices` directory with UUID filenames:
 
 ```php
 echo $invoice->pdf_path;  // 'invoices/550e8400-e29b-41d4-a716-446655440000.pdf'
@@ -176,10 +176,14 @@ Configure where invoices are stored:
 ```env
 # Local storage (default)
 SISP_INVOICE_DISK=public
+SISP_INVOICE_PATH=invoices
 
 # Or S3 storage
 SISP_INVOICE_DISK=s3
+SISP_INVOICE_PATH=invoices
 ```
+
+`SISP_INVOICE_DISK` selects the Laravel filesystem disk. `SISP_INVOICE_PATH` selects the directory inside that disk. With the default local `public` disk, the path resolves to `storage/app/public/invoices`. With S3, the same value is used as the object key prefix, for example `invoices/uuid.pdf`.
 
 ### S3 Temporary URL Expiration
 

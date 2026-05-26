@@ -74,7 +74,8 @@ final readonly class GenerateInvoicePdfAction
 
         $filename = Str::uuid().'.pdf';
         $storageDisk = $this->config->getInvoiceStorageDisk();
-        $relativePath = "invoices/$filename";
+        $storagePath = mb_trim((string) config('sisp.invoice.path', 'invoices'), '/') ?: 'invoices';
+        $relativePath = "{$storagePath}/{$filename}";
 
         Storage::disk($storageDisk)->put($relativePath, $pdfContent);
 

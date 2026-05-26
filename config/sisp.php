@@ -273,6 +273,7 @@ return [
     | - 'number_format': Format for invoice numbers (date-based, sequential, etc.)
     | - 'prefix': Prefix to add to invoice numbers (e.g., 'INV-')
     | - 'disk': Laravel filesystem disk for storing invoices
+    | - 'path': Directory inside the configured disk for generated PDFs
     | - 'template': Template style for invoice generation (branded, minimal, etc.)
     | - 'temporary_url_expiration_hours': Hours for S3 temporary URL expiration (default: 24)
     | - 'company_*': Company information displayed on invoices
@@ -282,6 +283,7 @@ return [
         'number_format' => env('SISP_INVOICE_NUMBER_FORMAT', 'date-based'),
         'prefix' => env('SISP_INVOICE_NUMBER_PREFIX', 'INV'),
         'disk' => env('SISP_INVOICE_DISK', 'public'),
+        'path' => env('SISP_INVOICE_PATH', 'invoices'),
         'template' => env('SISP_INVOICE_TEMPLATE', 'branded'),
         'temporary_url_expiration_hours' => env('SISP_INVOICE_TEMPORARY_URL_EXPIRATION_HOURS', 24),
         'company_name' => env('SISP_COMPANY_NAME', ''),
