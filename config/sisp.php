@@ -166,6 +166,7 @@ return [
         'request_metadata' => env('SISP_TABLE_REQUEST_METADATA', 'sisp_request_metadata'),
         'rate_limits' => env('SISP_TABLE_RATE_LIMITS', 'sisp_rate_limits'),
         'blacklist' => env('SISP_TABLE_BLACKLIST', 'sisp_blacklist'),
+        'transaction_logs' => env('SISP_TABLE_TRANSACTION_LOGS', 'sisp_transaction_logs'),
     ],
 
     /*

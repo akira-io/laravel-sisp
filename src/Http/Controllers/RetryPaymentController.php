@@ -8,6 +8,7 @@ use Akira\Sisp\Actions\RenderPaymentFormBasedOnConfigAction;
 use Akira\Sisp\Actions\RetryPaymentAction;
 use Akira\Sisp\Http\Requests\RetryPaymentRequest;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\TransactionLogContext;
 
 final readonly class RetryPaymentController
 {
@@ -22,7 +23,10 @@ final readonly class RetryPaymentController
 
         $paymentRequest = $this->retryPayment->handle($transaction);
 
-        $transaction->update(['merchant_session' => $paymentRequest->merchantSession]);
+        TransactionLogContext::run(
+            'retry',
+            fn (): bool => $transaction->update(['merchant_session' => $paymentRequest->merchantSession])
+        );
 
         return $this->renderForm->handle($paymentRequest, $transaction->locale);
     }

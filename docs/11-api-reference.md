@@ -102,6 +102,7 @@ $transaction->formatted_amount    // "1000,00 ECV"
 ```php
 $transaction->items()             // HasMany TransactionItem
 $transaction->invoice()           // HasOne Invoice
+$transaction->logs()              // HasMany TransactionLog
 ```
 
 #### Scopes
@@ -113,6 +114,29 @@ Transaction::where('customer_email', 'test@example.com')
 Transaction::whereBetween('created_at', [$start, $end])
 Transaction::with('items', 'invoice')
 Transaction::paginate(15)
+```
+
+### TransactionLog
+
+Append-only history record for transaction updates.
+
+#### Attributes
+
+```php
+$log->id                          // Primary key
+$log->transaction_id              // FK to Transaction
+$log->source                      // callback, refund, cancel, retry, reconciliation, customer-data, or model
+$log->changed_attributes          // Changed attributes (array)
+$log->old_values                  // Values before the update (array)
+$log->new_values                  // Values after the update (array)
+$log->created_at                  // Created timestamp
+$log->updated_at                  // Updated timestamp
+```
+
+#### Relations
+
+```php
+$log->transaction()               // BelongsTo Transaction
 ```
 
 ### TransactionItem
@@ -1037,6 +1061,7 @@ config('sisp.tables.invoices')
 config('sisp.tables.request_metadata')
 config('sisp.tables.rate_limits')
 config('sisp.tables.blacklist')
+config('sisp.tables.transaction_logs')
 ```
 
 ## Next Steps

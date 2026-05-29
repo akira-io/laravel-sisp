@@ -92,6 +92,32 @@ if ($invoice) {
 }
 ```
 
+## Transaction Change History
+
+Every transaction update is recorded in `sisp_transaction_logs`.
+
+```php
+$logs = $transaction->logs()->latest()->get();
+
+foreach ($logs as $log) {
+    echo $log->source;
+    dump($log->changed_attributes);
+    dump($log->old_values);
+    dump($log->new_values);
+}
+```
+
+Each log stores:
+
+- `transaction_id` - Transaction that changed
+- `source` - Flow that changed the transaction, such as `callback`, `refund`, `cancel`, `retry`, `reconciliation`, `customer-data`, or `model`
+- `changed_attributes` - Changed column names
+- `old_values` - Values before the update
+- `new_values` - Values after the update
+- `created_at` - When the change was recorded
+
+Timestamp-only updates are ignored. Encrypted payload values are stored in decrypted array form so the history remains inspectable.
+
 ## Cancel Transaction
 
 Cancel a pending or failed transaction:

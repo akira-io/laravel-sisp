@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Akira\Sisp\Actions\LogTransactionChangesAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Traits\EncryptsAttributes;
@@ -74,6 +75,18 @@ final class Transaction extends Model
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class, 'transaction_id');
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(TransactionLog::class, 'transaction_id');
+    }
+
+    protected static function booted(): void
+    {
+        self::updated(static function (Transaction $transaction): void {
+            resolve(LogTransactionChangesAction::class)->handle($transaction);
+        });
     }
 
     protected function casts(): array
