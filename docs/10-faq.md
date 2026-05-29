@@ -208,11 +208,10 @@ Your `APP_KEY` is used for encryption. Never change it after storing data, or en
 
 The package provides several tools:
 
-1. **Rate limiting** - Limit requests per IP/merchant/user
-2. **Blacklist** - Block suspicious IPs/emails
-3. **VPN/Proxy detection** - Identify risky connections
-4. **Risk scoring** - Calculate fraud likelihood
-5. **Metadata collection** - Analyze device fingerprints, geolocation
+1. **Rate limiting** - Limit requests per IP, merchant, or user.
+2. **Blacklist** - Block suspicious IPs and emails.
+3. **Metadata collection** - Store device fingerprints and geolocation data.
+4. **Application extensions** - Add custom middleware for VPN detection, proxy detection, whitelist checks, or risk scoring.
 
 ### What data is collected?
 
@@ -221,8 +220,8 @@ Request metadata includes:
 - IP address, user agent, browser, OS
 - Device type and fingerprint
 - Geolocation (country, city, coordinates)
-- VPN/Proxy detection
-- Risk score calculation
+- Reserved VPN and proxy flags for application integrations
+- Reserved risk score fields for application integrations
 
 Disable collection if not needed:
 
@@ -230,16 +229,17 @@ Disable collection if not needed:
 SISP_COLLECT_METADATA=false
 ```
 
-### Can I block VPN/Proxy users?
+### Can I block VPN and proxy users?
 
-Yes:
+Not with package defaults. The package does not perform VPN or proxy detection
+by itself. Use custom middleware or an application service to detect those
+requests, then add the IP to the blacklist or block the request before payment
+creation.
 
 ```env
-SISP_DETECT_VPN=true
-SISP_BLOCK_VPN_PROXY=true
+SISP_DETECT_VPN=false
+SISP_BLOCK_VPN_PROXY=false
 ```
-
-When enabled, VPN/proxy requests return HTTP 403.
 
 ### How are callbacks verified?
 

@@ -352,28 +352,30 @@ return [
     |--------------------------------------------------------------------------
     |
     | Advanced security settings for payment transaction protection.
-    | Configure fraud detection, VPN/proxy blocking, and transaction limits.
+    | The package enforces blacklist and rate-limit controls. VPN detection,
+    | proxy detection, risk scoring, country blocking, and whitelist checks are
+    | reserved for application-level integrations or future package features.
     |
     | - 'collect_metadata': Collect device and browser metadata for fraud detection
-    | - 'detect_vpn': Detect and flag transactions from VPN services
-    | - 'detect_proxy': Detect and flag transactions from proxy services
-    | - 'calculate_risk_score': Calculate risk score for each transaction
+    | - 'detect_vpn': Planned flag for external VPN detection integrations
+    | - 'detect_proxy': Planned flag for external proxy detection integrations
+    | - 'calculate_risk_score': Planned flag for external risk scoring
     | - 'max_amount_per_day': Maximum transaction amount allowed per day (null = unlimited)
     | - 'max_amount_per_month': Maximum transaction amount allowed per month (null = unlimited)
-    | - 'block_new_country_payments': Block payments from countries where user hasn't transacted before
-    | - 'block_vpn_proxy': Block transactions from detected VPN/proxy services
-    | - 'require_whitelist': Require IP addresses to be whitelisted before payment
+    | - 'block_new_country_payments': Planned country-blocking control
+    | - 'block_vpn_proxy': Planned VPN and proxy blocking control
+    | - 'require_whitelist': Planned IP whitelist control
     |
     */
     'security' => [
         'collect_metadata' => env('SISP_COLLECT_METADATA', true),
-        'detect_vpn' => env('SISP_DETECT_VPN', true),
-        'detect_proxy' => env('SISP_DETECT_PROXY', true),
-        'calculate_risk_score' => env('SISP_CALCULATE_RISK_SCORE', true),
+        'detect_vpn' => env('SISP_DETECT_VPN', false),
+        'detect_proxy' => env('SISP_DETECT_PROXY', false),
+        'calculate_risk_score' => env('SISP_CALCULATE_RISK_SCORE', false),
         'max_amount_per_day' => env('SISP_MAX_AMOUNT_PER_DAY'),
         'max_amount_per_month' => env('SISP_MAX_AMOUNT_PER_MONTH'),
         'block_new_country_payments' => env('SISP_BLOCK_NEW_COUNTRY_PAYMENTS', false),
-        'block_vpn_proxy' => env('SISP_BLOCK_VPN_PROXY', true),
+        'block_vpn_proxy' => env('SISP_BLOCK_VPN_PROXY', false),
         'require_whitelist' => env('SISP_REQUIRE_WHITELIST', false),
     ],
 

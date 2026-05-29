@@ -82,6 +82,15 @@ it('reads boolean flags for features and security', function (): void {
         ->and($this->cfg->getGeolocationProvider())->toBe('ip2location');
 });
 
+it('defaults unsupported advanced security controls to disabled', function (): void {
+    expect($this->cfg->isMetadataCollectionEnabled())->toBeTrue()
+        ->and($this->cfg->isVpnDetectionEnabled())->toBeFalse()
+        ->and($this->cfg->isProxyDetectionEnabled())->toBeFalse()
+        ->and($this->cfg->isRiskScoringEnabled())->toBeFalse()
+        ->and($this->cfg->shouldBlockVpnProxy())->toBeFalse()
+        ->and($this->cfg->shouldBlockNewCountryPayments())->toBeFalse();
+});
+
 it('uses configured merchant identifier generators', function (): void {
     app()->singleton('sisp.test.merchantReference', fn (): object => new class
     {
