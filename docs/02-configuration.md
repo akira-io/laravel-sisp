@@ -277,6 +277,8 @@ SISP_TABLE_RATE_LIMITS=sisp_rate_limits
 SISP_TABLE_BLACKLIST=sisp_blacklist
 ```
 
+The transaction model and retry request validation read `SISP_TABLE_TRANSACTIONS`, so retry links continue to validate correctly when the transaction table is renamed.
+
 ## Configuration via Code
 
 You can also configure programmatically in a service provider:

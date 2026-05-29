@@ -343,6 +343,8 @@ SISP_TABLE_TRANSACTIONS=my_transactions
 SISP_TABLE_INVOICES=my_invoices
 ```
 
+The package models and retry validation use the configured transaction table name.
+
 ### How do I backup transaction data?
 
 Use Laravel's backup tools or database backups. Include these tables:
