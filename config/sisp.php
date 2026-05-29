@@ -411,6 +411,8 @@ return [
     |
     */
     'middleware' => [
+        'payment' => [Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class],
+        'retry' => [],
         'refund' => ['web', 'auth'],
     ],
 
