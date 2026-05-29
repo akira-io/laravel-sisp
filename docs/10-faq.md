@@ -174,7 +174,7 @@ SISP_INVOICE_TEMPLATE=modern
 
 ### Where are PDF files stored?
 
-PDFs are stored in `storage/app/public/invoices/`. Make sure this directory is writable.
+By default, PDFs are stored in `storage/app/public/invoices/`. Configure `SISP_INVOICE_DISK` and `SISP_INVOICE_PATH` to store them on another Laravel filesystem disk or directory.
 
 ### Can I attach invoices to emails?
 

@@ -18,18 +18,15 @@ final class DoctorCommand extends Command
 
     public function handle(): int
     {
-        $this->info('🔍 Diagnosing Invoice PDF Issues...');
+        $this->info('Diagnosing Invoice PDF Issues...');
         $this->newLine();
 
-        // Check configuration
         $this->checkConfiguration();
         $this->newLine();
 
-        // Check storage
         $this->checkStorage();
         $this->newLine();
 
-        // Check invoices
         $this->checkInvoices();
         $this->newLine();
 
@@ -38,12 +35,12 @@ final class DoctorCommand extends Command
 
     private function checkConfiguration(): void
     {
-        $this->info('📋 Configuration Check:');
+        $this->info('Configuration Check:');
 
         $disk = config('sisp.invoice.disk', 'public');
         $this->line("  Disk: <info>{$disk}</info>");
 
-        $path = config('sisp.invoice.path', 'invoices');
+        $path = $this->invoiceStoragePath();
         $this->line("  Path: <info>{$path}</info>");
 
         $driver = config("filesystems.disks.{$disk}.driver");
@@ -62,43 +59,41 @@ final class DoctorCommand extends Command
 
     private function checkStorage(): void
     {
-        $this->info('💾 Storage Check:');
+        $this->info('Storage Check:');
 
         $disk = config('sisp.invoice.disk', 'public');
 
         try {
             $exists = Storage::disk($disk)->exists('');
             $this->line($exists
-                ? '  ✅ Storage disk is accessible'
-                : '  ❌ Storage disk is not accessible');
+                ? '  Storage disk is accessible'
+                : '  Storage disk is not accessible');
         } catch (Throwable $e) {
-            $this->error("  ❌ Error accessing storage: {$e->getMessage()}");
+            $this->error("  Error accessing storage: {$e->getMessage()}");
         }
 
-        // Check if directory is writable
-        $path = config('sisp.invoice.path', 'invoices');
+        $path = $this->invoiceStoragePath();
 
         try {
             Storage::disk($disk)->makeDirectory($path);
-            $this->line('  ✅ Invoice directory exists or was created');
+            $this->line('  Invoice directory exists or was created');
         } catch (Throwable $e) {
-            $this->error("  ❌ Cannot create invoice directory: {$e->getMessage()}");
+            $this->error("  Cannot create invoice directory: {$e->getMessage()}");
         }
 
-        // Try to write a test file
         try {
             $testFile = $path.'/test.txt';
             Storage::disk($disk)->put($testFile, 'test');
             Storage::disk($disk)->delete($testFile);
-            $this->line('  ✅ Can write to invoice directory');
+            $this->line('  Can write to invoice directory');
         } catch (Throwable $e) {
-            $this->error("  ❌ Cannot write to invoice directory: {$e->getMessage()}");
+            $this->error("  Cannot write to invoice directory: {$e->getMessage()}");
         }
     }
 
     private function checkInvoices(): void
     {
-        $this->info('📄 Invoice Status:');
+        $this->info('Invoice Status:');
 
         $totalInvoices = Invoice::query()->count();
         $this->line("  Total invoices: <info>{$totalInvoices}</info>");
@@ -114,9 +109,8 @@ final class DoctorCommand extends Command
             ->count();
 
         if ($paidWithoutPdf > 0) {
-            $this->warn("  ⚠️  {$paidWithoutPdf} paid invoices are missing PDFs");
+            $this->warn("  {$paidWithoutPdf} paid invoices are missing PDFs");
 
-            // Show sample
             $sample = Invoice::with('transaction')
                 ->where('status', InvoiceStatus::paid->value)
                 ->whereNull('pdf_path')
@@ -133,9 +127,14 @@ final class DoctorCommand extends Command
             }
 
             $this->newLine();
-            $this->line('  💡 Run <info>php artisan sisp:regenerate-pdfs</info> to generate missing PDFs');
+            $this->line('  Run <info>php artisan sisp:regenerate-pdfs</info> to generate missing PDFs');
         } else {
-            $this->line('  ✅ All paid invoices have PDFs');
+            $this->line('  All paid invoices have PDFs');
         }
+    }
+
+    private function invoiceStoragePath(): string
+    {
+        return mb_trim((string) config('sisp.invoice.path', 'invoices'), '/') ?: 'invoices';
     }
 }

@@ -55,3 +55,19 @@ it('passes due date to invoice builder when due date is present', function (): v
     expect($pdfGenerator->lastInvoice)->not->toBeNull()
         ->and($pdfGenerator->lastInvoice?->dueAt?->toDateString())->toBe($invoice->due_date?->toDateString());
 });
+
+it('stores generated invoice pdfs in the configured path', function (): void {
+    $pdfGenerator = new CapturingPdfGenerator();
+    app()->instance(PdfGeneratorContract::class, $pdfGenerator);
+    Storage::fake('public');
+    config()->set('sisp.invoice.path', 'billing/pdfs');
+
+    $transaction = Transaction::factory()->create();
+    $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
+
+    $relativePath = resolve(GenerateInvoicePdfAction::class)->handle($invoice);
+
+    Storage::disk('public')->assertExists($relativePath);
+    expect(str_starts_with($relativePath, 'billing/pdfs/'))->toBeTrue()
+        ->and($invoice->refresh()->pdf_path)->toBe($relativePath);
+});
