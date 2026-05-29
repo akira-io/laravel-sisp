@@ -75,7 +75,7 @@ Only ECV (Cape Verde Escudo) is supported currently.
 
 ### What's the minimum payment amount?
 
-The minimum is 0.01 ECV. Amounts are stored in cents in the database.
+The minimum is 0.01 ECV. The public `amount` value is decimal CVE for backward compatibility, and `amount_cents` stores the canonical integer cents value.
 
 ### Can I charge fees?
 

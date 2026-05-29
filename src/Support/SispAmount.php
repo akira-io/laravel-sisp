@@ -6,6 +6,11 @@ namespace Akira\Sisp\Support;
 
 final readonly class SispAmount
 {
+    public static function toCents(float|int|string $amount): int
+    {
+        return (int) round(self::toThousandths($amount) / 10);
+    }
+
     public static function toThousandths(float|int|string $amount): int
     {
         $decimal = self::decimalString($amount);
@@ -41,7 +46,9 @@ final readonly class SispAmount
         if (str_starts_with($decimal, '-')) {
             $sign = -1;
             $decimal = mb_substr($decimal, 1);
-        } elseif (str_starts_with($decimal, '+')) {
+        }
+
+        if (str_starts_with($decimal, '+')) {
             $decimal = mb_substr($decimal, 1);
         }
 

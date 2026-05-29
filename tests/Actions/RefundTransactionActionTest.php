@@ -19,6 +19,19 @@ it('refunds a completed transaction for the full original amount', function (): 
         ->and($updated->merchant_response)->toBe('customer_request::100');
 });
 
+it('compares decimal refund amounts using canonical cents', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 8.03,
+    ]);
+
+    $updated = resolve(RefundTransactionAction::class)->handle($t, 8.03, 'decimal_refund');
+
+    expect($updated->status->value)->toBe('refunded')
+        ->and($updated->amount)->toBe(8.03)
+        ->and($updated->amount_cents)->toBe(803);
+});
+
 it('does not allow partial refund amounts', function (): void {
     $t = Transaction::factory()->create([
         'status' => TransactionStatus::completed->value,

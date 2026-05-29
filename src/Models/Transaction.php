@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Akira\Sisp\Models;
 
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Traits\EncryptsAttributes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,21 +27,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string $customer_city
  * @property-read  string $customer_address
  * @property-read  int|float $amount
+ * @property-read  int $amount_cents
  */
 final class Transaction extends Model
 {
     use EncryptsAttributes;
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    /** @var list<string> */
     protected $fillable = [
         'merchant_ref',
         'merchant_session',
         'amount',
+        'amount_cents',
         'currency',
         'status',
         'transaction_code',
@@ -80,6 +80,7 @@ final class Transaction extends Model
     {
         return [
             'amount' => 'float',
+            'amount_cents' => 'integer',
             'status' => TransactionStatus::class,
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -100,5 +101,24 @@ final class Transaction extends Model
         return [
             'payload',
         ];
+    }
+
+    protected function amount(): Attribute
+    {
+        return Attribute::make(
+            set: fn (float|int|string $amount): array => [
+                'amount' => (float) $amount,
+                'amount_cents' => SispAmount::toCents($amount),
+            ],
+        );
+    }
+
+    protected function amountCents(): Attribute
+    {
+        return Attribute::make(
+            get: fn (mixed $amountCents, array $attributes): int => $amountCents !== null
+                ? (int) $amountCents
+                : SispAmount::toCents($attributes['amount'] ?? 0),
+        );
     }
 }

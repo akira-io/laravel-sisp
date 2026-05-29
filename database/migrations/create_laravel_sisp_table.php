@@ -46,6 +46,7 @@ return new class extends Migration
             $table->string('merchant_ref');
             $table->string('merchant_session');
             $table->float('amount');
+            $table->bigInteger('amount_cents')->default(0);
             $table->string('currency')->default('132');
             $table->string('status')->default('pending');
             $table->string('transaction_code')->nullable();
@@ -56,7 +57,6 @@ return new class extends Migration
             $table->text('fingerprint')->nullable();
             $table->longText('payload')->nullable();
 
-            // Client information
             $table->string('customer_name')->nullable();
             $table->string('customer_email')->nullable();
             $table->string('customer_phone')->nullable();
@@ -112,7 +112,6 @@ return new class extends Migration
             $table->date('due_date')->nullable();
             $table->string('status')->default('pending');
 
-            // Customer information (denormalized from transaction)
             $table->string('customer_name')->nullable();
             $table->string('customer_email')->nullable();
             $table->string('customer_city')->nullable();
