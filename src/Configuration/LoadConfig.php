@@ -49,21 +49,17 @@ final readonly class LoadConfig
 
     public function getMerchantReference(): string
     {
-        $generator = $this->config->get('sisp.generators.merchantReference');
-
-        return resolve($generator)();
+        return resolve($this->config->get('sisp.generators.merchantReference'))();
     }
 
     public function getMerchantSession(): string
     {
-        $generator = $this->config->get('sisp.generators.merchantSession');
-
-        return resolve($generator)();
+        return resolve($this->config->get('sisp.generators.merchantSession'))();
     }
 
     public function getTimeStamp(): string
     {
-        return date('Y-m-d H:i:s');
+        return resolve($this->config->get('sisp.generators.timeStamp'))();
     }
 
     public function getCurrency(): string
@@ -93,9 +89,7 @@ final readonly class LoadConfig
 
     public function getUrlMerchantResponse(): string
     {
-        $configured = $this->config->get('sisp.url_merchant_response');
-
-        return $configured ?? route('sisp.callback');
+        return $this->config->get('sisp.url_merchant_response') ?? route('sisp.callback');
     }
 
     public function getLanguageMessages(): string
