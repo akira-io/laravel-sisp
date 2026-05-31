@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/akira-io/laravel-sisp/compare/v0.6.4...v0.7.0) (2026-05-31)
+
+### Bug Fixes
+
+- **fingerprint:** Normalize SISP amounts safely ([d9935ea](https://github.com/akira-io/laravel-sisp/commit/d9935eaec483c86adeb3ab64e9b76e8a30582292))
+- **security:** Clarify unsupported controls ([a5b2b94](https://github.com/akira-io/laravel-sisp/commit/a5b2b94cb47fb51676bbed7c24f9a9aca643ae1e))
+- **config:** Publish middleware defaults ([6625764](https://github.com/akira-io/laravel-sisp/commit/662576448c294f2b192e9f0fd93a90b3737fe2e2))
+- **invoice:** Honor configured pdf path ([c1afdd5](https://github.com/akira-io/laravel-sisp/commit/c1afdd54c9013471c11821202384184ed0e9eecd))
+- **retry:** Honor configured transaction table ([a07279e](https://github.com/akira-io/laravel-sisp/commit/a07279e2e13b15e8e78b18e519d1c292a03ec784))
+- **config:** Use timestamp generator ([6a373fd](https://github.com/akira-io/laravel-sisp/commit/6a373fd209190b7d4383a0f49495768beb9bf487))
+- **deps:** Update vulnerable pnpm transitive dependencies ([500e361](https://github.com/akira-io/laravel-sisp/commit/500e361349903492e1dfc8b400c9ca80ca821d62))
+
+
+### Features
+
+- **transaction:** Store canonical amount cents ([c7a75e8](https://github.com/akira-io/laravel-sisp/commit/c7a75e814e049eadb2164e54d25b1f8008c9ce2d))
+- **status:** Expose reconciliation facade api ([590ee68](https://github.com/akira-io/laravel-sisp/commit/590ee68f5532c29e06b6f7b18e52d11c3b6f695a))
+- **transaction:** Add audit logs ([1415eff](https://github.com/akira-io/laravel-sisp/commit/1415effebf5e8bfb9c406810aa63a83c3709933f))
+- **refund:** Support partial refunds ([39d893b](https://github.com/akira-io/laravel-sisp/commit/39d893b611aa4dd9699234c05a68445f164a7877))
+
 ## [0.6.4](https://github.com/akira-io/laravel-sisp/compare/v0.6.3...v0.6.4) (2026-05-24)
 
 ### Bug Fixes
