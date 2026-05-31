@@ -9,6 +9,8 @@ use Akira\Sisp\Sisp;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 
 it('scoped sisp uses credentials and restores resolver', function (): void {
     config()->set('sisp.merchant_ref', 'CFG-REF');
@@ -122,4 +124,48 @@ it('scoped sisp handles sandbox callbacks and transactions', function (): void {
 
     expect($updated->status->value)->toBe('completed')
         ->and($updated->id)->toBe($transaction->id);
+});
+
+it('scoped sisp queries and reconciles transaction status with explicit credentials', function (): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+
+    Http::fake([
+        '*' => Http::response([
+            'result' => true,
+            'transactionSuccess' => true,
+            'transactionStatusDescription' => 'C-SUCESSO',
+            'msg' => 'Approved',
+        ]),
+    ]);
+
+    $credentials = SispCredentials::from([
+        'pos_id' => 'SCOPED_STATUS_POS',
+        'pos_aut_code' => 'SCOPED_STATUS_AUT',
+        'currency' => '132',
+        'merchant_id' => 'MID3',
+        'url' => 'https://scoped.example.com',
+        'language_messages' => 'EN',
+        'fingerprint_version' => '1',
+        'is_3d_sec' => '0',
+        'sandbox' => true,
+        'url_merchant_response' => null,
+    ]);
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-SCOPED-STATUS',
+        'status' => 'pending',
+    ]);
+
+    $scoped = resolve(Sisp::class)->forCredentials($credentials);
+
+    $response = $scoped->queryTransactionStatus($transaction);
+    $updated = $scoped->reconcileTransactionStatus($transaction);
+
+    expect($response->paymentStatus()->value)->toBe('completed')
+        ->and($updated->status->value)->toBe('completed');
+
+    Http::assertSent(fn (Request $request): bool => $request['posID'] === 'SCOPED_STATUS_POS'
+        && $request['posAuthCode'] === 'SCOPED_STATUS_AUT'
+        && $request['merchantRef'] === 'MR-SCOPED-STATUS');
 });

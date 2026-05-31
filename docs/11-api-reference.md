@@ -305,6 +305,24 @@ Blacklist::bySeverity('high')
 
 ## Value Objects
 
+### TransactionStatusResponse
+
+Result returned by the SISP transaction status API wrapper.
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$response = Sisp::queryTransactionStatus($transaction);
+
+$response->result;                       // true when the SISP status API returned a usable result
+$response->transactionSuccess;           // true when SISP reports the payment succeeded
+$response->transactionStatusDescription; // SISP status text
+$response->message;                      // SISP API message or package failure message
+$response->paymentStatus();              // TransactionStatus enum
+```
+
+`result=false` means the status lookup failed and must not be treated as a payment failure.
+
 ### PaymentRequestData
 
 Container for payment request fields and 3D Secure customer data.
@@ -431,6 +449,32 @@ InvoiceStatus::paid               // Payment confirmed
 InvoiceStatus::overdue            // Past due date
 InvoiceStatus::cancelled          // Cancelled
 ```
+
+## Facade API
+
+### Transaction Status
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$response = Sisp::queryTransactionStatus($transaction);
+$response = Sisp::queryTransactionStatus('R20260523235959');
+
+$updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
+```
+
+`queryTransactionStatus()` accepts a local `Transaction` or merchant reference and returns `TransactionStatusResponse`. `reconcileTransactionStatus()` accepts a local `Transaction` and returns the refreshed transaction after applying any definitive SISP result.
+
+For multi-merchant integrations:
+
+```php
+$sisp = Sisp::forCredentials($credentials);
+
+$response = $sisp->queryTransactionStatus($transaction);
+$updatedTransaction = $sisp->reconcileTransactionStatus($transaction);
+```
+
+Use `sisp:transaction-status` and `sisp:reconcile-pending` for operational workflows. Use the facade methods inside application code for explicit transaction checks.
 
 ## Actions
 

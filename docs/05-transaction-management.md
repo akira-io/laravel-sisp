@@ -166,6 +166,32 @@ The update rules are:
 - `result=true` and `transactionSuccess=true`: status becomes `completed`
 - `result=true` and `transactionSuccess=false`: status becomes `failed`
 
+### Public Status API
+
+Use the `Sisp` facade to query or reconcile a specific transaction from application code:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$response = Sisp::queryTransactionStatus($transaction);
+$response = Sisp::queryTransactionStatus($transaction->merchant_ref);
+
+$updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
+```
+
+`queryTransactionStatus()` returns `TransactionStatusResponse` and never writes to the database. `reconcileTransactionStatus()` returns a `Transaction` and only updates pending transactions when the SISP status API returns `result=true`.
+
+For multi-merchant flows, scope the call with explicit credentials:
+
+```php
+$sisp = Sisp::forCredentials($credentials);
+
+$response = $sisp->queryTransactionStatus($transaction);
+$updatedTransaction = $sisp->reconcileTransactionStatus($transaction);
+```
+
+Use the command for manual operations or scheduled monitoring. Use the facade API when the application already has a specific transaction and needs an immediate check.
+
 ### Automatic Scheduled Reconciliation
 
 Enable the feature:

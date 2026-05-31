@@ -8,6 +8,8 @@ use Akira\Sisp\Actions\BuildRequestPayloadAction;
 use Akira\Sisp\Actions\BuildSandboxPayloadAction;
 use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
+use Akira\Sisp\Actions\QueryTransactionStatusAction;
+use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Commands\DoctorCommand;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
@@ -62,6 +64,8 @@ final class SispServiceProvider extends PackageServiceProvider
             validateFingerprint: $app->make(ValidatePaymentResponseFingerprintAction::class),
             createTransaction: $app->make(CreateTransactionAction::class),
             handleCallback: $app->make(HandleCallbackAction::class),
+            queryTransactionStatus: $app->make(QueryTransactionStatusAction::class),
+            reconcileTransactionStatus: $app->make(ReconcileTransactionStatusAction::class),
             loadConfig: $app->make(LoadConfig::class),
         ));
     }

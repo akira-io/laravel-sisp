@@ -8,6 +8,8 @@ use Akira\Sisp\Actions\BuildRequestPayloadAction;
 use Akira\Sisp\Actions\BuildSandboxPayloadAction;
 use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
+use Akira\Sisp\Actions\QueryTransactionStatusAction;
+use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Models\Transaction;
@@ -17,6 +19,7 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
+use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 
 final readonly class Sisp
 {
@@ -26,6 +29,8 @@ final readonly class Sisp
         private ValidatePaymentResponseFingerprintAction $validateFingerprint,
         private CreateTransactionAction $createTransaction,
         private HandleCallbackAction $handleCallback,
+        private QueryTransactionStatusAction $queryTransactionStatus,
+        private ReconcileTransactionStatusAction $reconcileTransactionStatus,
         private LoadConfig $loadConfig,
     ) {}
 
@@ -56,6 +61,16 @@ final readonly class Sisp
     public function handlePaymentCallback(CallbackPayload $payload): Transaction
     {
         return $this->handleCallback->handle($payload);
+    }
+
+    public function queryTransactionStatus(Transaction|string $transaction): TransactionStatusResponse
+    {
+        return $this->queryTransactionStatus->handle($transaction);
+    }
+
+    public function reconcileTransactionStatus(Transaction $transaction): Transaction
+    {
+        return $this->reconcileTransactionStatus->handle($transaction);
     }
 
     public function generateSandboxPayload(PaymentRequestData $data, string $status = 'success'): CallbackPayload
