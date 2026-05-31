@@ -12,6 +12,8 @@ it('refunds a completed transaction and returns json', function (): void {
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -38,6 +40,8 @@ it('returns 400 when refund amount exceeds transaction', function (): void {
         'status' => 'completed',
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -56,11 +60,13 @@ it('returns 400 when refund amount exceeds transaction', function (): void {
     expect($response->getStatusCode())->toBe(400);
 });
 
-it('returns 400 when refund amount is below transaction total', function (): void {
+it('allows partial refund amounts', function (): void {
     $t = Transaction::factory()->create([
         'status' => 'completed',
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -74,9 +80,9 @@ it('returns 400 when refund amount is below transaction total', function (): voi
     });
 
     $response = $controller($t, $request);
-    expect($response->getStatusCode())->toBe(400)
-        ->and($response->getData(true)['message'])->toContain('SISP only supports full-amount refunds')
-        ->and($t->refresh()->amount)->toBe(100.0);
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->getData(true)['success'])->toBeTrue()
+        ->and($t->refresh()->payload['refunds'][0]['request']['transactionCode'])->toBe('8');
 });
 
 it('returns 403 when user is not authorized for the transaction', function (): void {
@@ -84,6 +90,8 @@ it('returns 403 when user is not authorized for the transaction', function (): v
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -110,6 +118,8 @@ it('returns 403 when customer email matches but user lacks refund ability', func
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -136,6 +146,8 @@ it('returns 403 when no authenticated user is present', function (): void {
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -153,6 +165,8 @@ it('returns 403 when user has no email and no refund ability', function (): void
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);
@@ -177,6 +191,8 @@ it('allows authorized users through can refund ability', function (): void {
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
         'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
     ]);
 
     $controller = resolve(RefundTransactionController::class);

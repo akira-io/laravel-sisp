@@ -29,7 +29,7 @@ final readonly class RefundTransactionController
         $reason = $request->input('reason', 'user_refund');
 
         try {
-            $this->refundTransaction->handle($transaction, $refundAmount, $reason);
+            $transaction = $this->refundTransaction->handle($transaction, $refundAmount, $reason);
 
             return response()->json([
                 'success' => true,
