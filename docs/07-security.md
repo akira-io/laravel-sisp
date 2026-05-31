@@ -238,12 +238,12 @@ All callbacks from SISP are automatically verified using cryptographic signature
 
 The package:
 1. Validates the SISP signature on every callback
-2. Rejects any callbacks with invalid signatures
+2. Redirects invalid callback requests to `config('sisp.redirect_url', '/')`
 3. Prevents status tampering
 
 No manual configuration needed.
 
-Invalid signatures raise `InvalidSignatureException` inside the callback handler.
+Invalid POST callbacks are rejected by `CallbackController` before transaction lookup or duplicate checks. Signed callbacks are then checked for required merchant reference and merchant session values before processing.
 
 ## Data Encryption
 

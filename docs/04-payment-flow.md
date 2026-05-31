@@ -26,12 +26,15 @@ SISP Gateway (Real or Sandbox)
     v
 GET|POST /sisp/callback
     |
-    ├─ Prevent Duplicate Callback
     ├─ Validate Fingerprint
-    ├─ Find Transaction
+    ├─ Require Merchant Ref and Session
+    ├─ Check Duplicate Callback
+    ├─ Find or Create Transaction
+    ├─ Reconcile Callback Details
     ├─ Parse Error Response (if failed)
     ├─ Update Status
     ├─ Store Callback Response
+    ├─ Store Callback Metadata
     ├─ Generate Invoice (if configured)
     ├─ Dispatch Event
     |
@@ -151,44 +154,82 @@ After payment, SISP POSTs to `/sisp/callback` with:
 
 `CallbackController` with `HandleCallbackAction`:
 
-### 9.1 Duplicate Prevention
-Uses `PreventDuplicateCallback` middleware to:
-- Check if callback already processed for this transaction
-- Prevent double-charging from duplicate callback requests
-- Redirect already-processed callbacks to response page
-
-### 9.2 Fingerprint Validation
+### 9.1 Fingerprint Validation
 `ValidatePaymentResponseFingerprintAction` validates:
 - SHA512 hash of callback fields with pos auth code
 - Verifies data integrity from SISP
 - Prevents callback tampering or spoofing
 - Fields included: messageType, amount, reference, timestamp, and 13+ others
 
-### 9.3 Error Response Parsing
+Invalid POST callbacks are redirected to `config('sisp.redirect_url', '/')` before any transaction lookup.
+
+### 9.2 Required Callback Keys
+After the fingerprint passes, the callback must include:
+
+- `merchantRespMerchantRef`
+- `merchantRespMerchantSession`
+
+If either value is missing, the request is redirected to `config('sisp.redirect_url', '/')`.
+
+### 9.3 Duplicate Prevention
+Duplicate callback detection happens inside `CallbackController` after signature validation.
+
+The controller:
+- Looks up the transaction by merchant reference and merchant session
+- Treats it as already processed when the local `transaction_id` is already set
+- Redirects to `config('sisp.redirect_url', '/')` with an `info` flash message
+
+This keeps invalid unsigned traffic from triggering database lookups.
+
+### 9.4 Transaction Lookup and Reconciliation
+`HandleCallbackAction` finds or creates the transaction, then reconciles the signed callback against the stored transaction.
+
+The callback must match:
+
+- Merchant reference
+- Merchant session
+- Amount
+- Currency
+- Transaction code
+- POS ID
+
+If any value does not match, the transaction is marked `failed` with `merchant_response` set to `callback_details_mismatch`.
+
+### 9.5 Error Response Parsing
 `GetPaymentErrorResponseAction` transforms error codes into structured responses:
 - Maps error code (e.g., "6") to human-readable label
 - Categorizes error: card, funds, security, validation, system, issuer
 - Suggests action: contact-issuer, use-different-card, retry, etc.
 - Provides translated messages for EN and PT
 
-### 9.4 Transaction Lookup
-- Finds transaction by merchant reference
-- Returns 404 if transaction not found
-- Validates transaction state
-
-### 9.5 Status Update
+### 9.6 Status Update
 - Sets status: `completed`, `failed`, or `pending`
 - Stores SISP response data
 - Records error code and response details
 
-### 9.6 Invoice Generation (if enabled)
+### 9.7 Callback Metadata
+The controller stores request metadata for the signed callback before updating invoice status.
+
+### 9.8 Invoice Status Update
+The controller updates the linked invoice status after the transaction is updated.
+
+### 9.9 Invoice Generation (if enabled)
 - Generates PDF invoice
 - Stores path in database
 
-### 9.7 Event Dispatch
+### 9.10 Event Dispatch
 - `PaymentCompleted` - Payment successful
 - `PaymentFailed` - Payment rejected
 - `PaymentPending` - Still processing
+
+### 9.11 Response Rendering
+The POST callback redirects to:
+
+```php
+route('sisp.callback', ['ref' => $transaction->merchant_ref])
+```
+
+The GET callback renders the payment response for the `ref` query parameter. Missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
 
 ## Step 10: Timeout Reconciliation
 
@@ -293,7 +334,7 @@ TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 ### Security Errors
 - **Rate Limit** - Returns 429 (Too Many Requests)
 - **Blacklist** - Returns 403 (Forbidden) for blacklisted IP/email
-- **Duplicate Callback** - Returns 409 if callback already processed
+- **Duplicate Callback** - Redirects to `config('sisp.redirect_url', '/')` with an `info` flash message
 
 ### Callback/Payment Errors
 Payment failures return structured error information:
@@ -312,9 +353,9 @@ Payment failures return structured error information:
 These error responses are shown to user with retry option if configured.
 
 ### Fingerprint Validation Errors
-- Returns 403 if fingerprint validation fails
+- Redirects to `config('sisp.redirect_url', '/')` if fingerprint validation fails
 - Indicates potential tampering or replay attack
-- Callback is not processed
+- Callback is not processed and no transaction lookup is performed by the controller
 
 ### Invoice Generation Errors
 - Logs error but doesn't fail payment
