@@ -7,6 +7,7 @@ namespace Akira\Sisp\Actions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionCancelled;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\TransactionLogContext;
 use LogicException;
 
 final readonly class CancelTransactionAction
@@ -20,12 +21,15 @@ final readonly class CancelTransactionAction
             );
         }
 
-        $transaction->update([
-            'status' => TransactionStatus::cancelled->value,
-            'message_type' => 'cancelled',
-            'merchant_response' => $reason,
-            'cancelled_at' => now(),
-        ]);
+        TransactionLogContext::run(
+            'cancel',
+            fn (): bool => $transaction->update([
+                'status' => TransactionStatus::cancelled->value,
+                'message_type' => 'cancelled',
+                'merchant_response' => $reason,
+                'cancelled_at' => now(),
+            ])
+        );
 
         event(new TransactionCancelled($transaction, $reason));
 

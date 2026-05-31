@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -49,11 +50,14 @@ final readonly class ReconcileTransactionStatusAction
         $payload = is_array($payload) ? $payload : [];
         $payload['transaction_status_response'] = $response->raw;
 
-        $transaction->update([
-            'status' => $status->value,
-            'merchant_response' => $response->transactionStatusDescription ?: $response->message,
-            'payload' => $payload,
-        ]);
+        TransactionLogContext::run(
+            'reconciliation',
+            fn (): bool => $transaction->update([
+                'status' => $status->value,
+                'merchant_response' => $response->transactionStatusDescription ?: $response->message,
+                'payload' => $payload,
+            ])
+        );
 
         $this->updateInvoiceStatus->handle($transaction, $status);
 

@@ -15,6 +15,7 @@ use Akira\Sisp\Events\PaymentPending;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\SispAmount;
+use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class HandleCallbackAction
@@ -81,14 +82,17 @@ final readonly class HandleCallbackAction
 
     private function failTransaction(Transaction $transaction, CallbackPayload $payload): void
     {
-        $transaction->update([
-            'transaction_id' => $payload->transactionID,
-            'message_type' => $payload->messageType,
-            'merchant_response' => 'callback_details_mismatch',
-            'response_code' => $payload->merchantRespCp,
-            'fingerprint' => $payload->fingerprint,
-            'status' => TransactionStatus::failed,
-        ]);
+        TransactionLogContext::run(
+            'callback',
+            fn (): bool => $transaction->update([
+                'transaction_id' => $payload->transactionID,
+                'message_type' => $payload->messageType,
+                'merchant_response' => 'callback_details_mismatch',
+                'response_code' => $payload->merchantRespCp,
+                'fingerprint' => $payload->fingerprint,
+                'status' => TransactionStatus::failed,
+            ])
+        );
     }
 
     private function transactionAmount(Transaction $transaction): float|int|string

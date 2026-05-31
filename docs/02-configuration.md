@@ -302,6 +302,7 @@ SISP_TABLE_INVOICES=sisp_invoices
 SISP_TABLE_REQUEST_METADATA=sisp_request_metadata
 SISP_TABLE_RATE_LIMITS=sisp_rate_limits
 SISP_TABLE_BLACKLIST=sisp_blacklist
+SISP_TABLE_TRANSACTION_LOGS=sisp_transaction_logs
 ```
 
 The transaction model and retry request validation read `SISP_TABLE_TRANSACTIONS`, so retry links continue to validate correctly when the transaction table is renamed.

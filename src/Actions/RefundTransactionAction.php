@@ -8,6 +8,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\SispAmount;
+use Akira\Sisp\Support\TransactionLogContext;
 use LogicException;
 
 final readonly class RefundTransactionAction
@@ -31,11 +32,14 @@ final readonly class RefundTransactionAction
             );
         }
 
-        $transaction->update([
-            'status' => TransactionStatus::refunded->value,
-            'merchant_response' => "{$reason}::{$refundAmount}",
-            'refunded_at' => now(),
-        ]);
+        TransactionLogContext::run(
+            'refund',
+            fn (): bool => $transaction->update([
+                'status' => TransactionStatus::refunded->value,
+                'merchant_response' => "{$reason}::{$refundAmount}",
+                'refunded_at' => now(),
+            ])
+        );
 
         event(new TransactionRefunded($transaction, $refundAmount, $reason));
 

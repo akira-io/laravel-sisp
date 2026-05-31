@@ -35,6 +35,7 @@ final class SispServiceProvider extends PackageServiceProvider
             ->hasMigrations([
                 'create_laravel_sisp_table',
                 'update_laravel_sisp_transactions_add_amount_cents',
+                'create_sisp_transaction_logs_table',
             ])
             ->hasTranslations()
             ->hasRoutes('web')
