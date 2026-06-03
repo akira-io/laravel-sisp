@@ -87,3 +87,18 @@ it('blocks retry when retry is disabled by configuration', function (): void {
 
     expect($canRetry)->toBeFalse();
 });
+
+it('blocks retry when transaction is not failed', function (): void {
+    config([
+        'sisp.allow_retry' => true,
+        'sisp.is_3dsec' => '0',
+    ]);
+
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+    ]);
+
+    $canRetry = resolve(CanRetryPaymentAction::class)->handle($transaction);
+
+    expect($canRetry)->toBeFalse();
+});

@@ -7,7 +7,6 @@ use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
-use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
@@ -24,22 +23,6 @@ function callback_controller_payload(Transaction $transaction, array $overrides 
         'transactionCode' => $transaction->transaction_code ?? '1',
     ], $overrides)))->toArray();
 }
-
-function callback_query_reads_transactions_table(string $query): bool
-{
-    $normalizedQuery = str_replace(['`', '"', '[', ']'], '', mb_strtolower($query));
-
-    return preg_match('/\bfrom\s+(?:[a-z0-9_]+\.)?transactions\b/', $normalizedQuery) === 1;
-}
-
-it('detects transaction table lookups across database grammars', function (string $query): void {
-    expect(callback_query_reads_transactions_table($query))->toBeTrue();
-})->with([
-    'sqlite quoted table' => ['select * from "transactions" where "merchant_ref" = ?'],
-    'mysql quoted table' => ['select * from `transactions` where `merchant_ref` = ?'],
-    'unquoted table' => ['select * from transactions where merchant_ref = ?'],
-    'qualified quoted table' => ['select * from `main`.`transactions` where `merchant_ref` = ?'],
-]);
 
 it('redirects when user cancelled flag present', function (): void {
     config()->set('sisp.redirect_url', '/home');
@@ -92,12 +75,13 @@ it('handles POST callback and redirects to GET with ref', function (): void {
         ->and($t->fingerprint)->toBe($payload->fingerprint);
 });
 
-it('rejects invalid callback payload before transaction lookups', function (): void {
-    config()->set('sisp.redirect_url', '/home');
-
-    Transaction::factory()->create([
+it('records callbacks with invalid fingerprints as failed and redirects to response page', function (): void {
+    $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-G3',
         'merchant_session' => 'MS-G3',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
     ]);
 
     $payload = Sisp::generateSandboxPayload(PaymentRequestData::from([
@@ -110,17 +94,31 @@ it('rejects invalid callback payload before transaction lookups', function (): v
     ]))->toArray();
     $payload['resultFingerPrint'] = 'invalid-fingerprint';
 
-    DB::flushQueryLog();
-    DB::enableQueryLog();
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G3']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('invalid_callback_fingerprint')
+        ->and($transaction->fingerprint)->toBe('invalid-fingerprint');
+});
+
+it('redirects invalid callbacks with unknown transaction keys', function (): void {
+    config()->set('sisp.redirect_url', '/home');
+
+    $payload = Sisp::generateSandboxPayload(PaymentRequestData::from([
+        'amount' => 20,
+        'merchantRef' => 'MR-UNKNOWN',
+        'merchantSession' => 'MS-UNKNOWN',
+        'timeStamp' => '2024-01-01 00:00:00',
+        'currency' => '132',
+        'transactionCode' => '1',
+    ]))->toArray();
+    $payload['resultFingerPrint'] = 'invalid-fingerprint';
 
     $this->post(route('sisp.callback'), $payload)
         ->assertRedirect('/home');
-
-    $queries = collect(DB::getQueryLog())->pluck('query');
-
-    expect($queries->filter(
-        fn (string $query): bool => callback_query_reads_transactions_table($query)
-    ))->toHaveCount(0);
 });
 
 it('skips duplicate lookup when callback payload has no transaction keys', function (): void {

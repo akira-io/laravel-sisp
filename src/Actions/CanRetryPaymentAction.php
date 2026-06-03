@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 
 final readonly class CanRetryPaymentAction
@@ -14,6 +15,10 @@ final readonly class CanRetryPaymentAction
     public function handle(Transaction $transaction): bool
     {
         if (! $this->config->isRetryAllowed()) {
+            return false;
+        }
+
+        if ($transaction->status !== TransactionStatus::failed) {
             return false;
         }
 

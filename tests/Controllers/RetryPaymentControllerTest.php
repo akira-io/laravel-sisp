@@ -25,6 +25,11 @@ it('updates merchant_session on transaction so callback can find it', function (
         'merchant_session' => 'MS-OLD',
         'amount' => 50.0,
         'currency' => '132',
+        'transaction_id' => 'OLD-TID',
+        'message_type' => '13',
+        'merchant_response' => 'old failure',
+        'response_code' => '13',
+        'fingerprint' => 'old-fingerprint',
     ]);
 
     $this->post(signedRetryUrl($t))
@@ -34,7 +39,41 @@ it('updates merchant_session on transaction so callback can find it', function (
 
     expect($t->merchant_session)
         ->not->toBe('MS-OLD')
-        ->not->toBeEmpty();
+        ->not->toBeEmpty()
+        ->and($t->status->value)->toBe('pending')
+        ->and($t->transaction_id)->toBeNull()
+        ->and($t->message_type)->toBeNull()
+        ->and($t->merchant_response)->toBeNull()
+        ->and($t->response_code)->toBeNull()
+        ->and($t->fingerprint)->toBeNull();
+});
+
+it('does not reset completed transactions through signed retry links', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => 'completed',
+        'merchant_ref' => 'MR-COMPLETED',
+        'merchant_session' => 'MS-COMPLETED',
+        'amount' => 50.0,
+        'currency' => '132',
+        'transaction_id' => 'PAID-TID',
+        'message_type' => '8',
+        'merchant_response' => 'paid',
+        'response_code' => '00',
+        'fingerprint' => 'paid-fingerprint',
+    ]);
+
+    $this->postJson(signedRetryUrl($t))
+        ->assertJsonValidationErrors(['transaction']);
+
+    $t->refresh();
+
+    expect($t->status->value)->toBe('completed')
+        ->and($t->merchant_session)->toBe('MS-COMPLETED')
+        ->and($t->transaction_id)->toBe('PAID-TID')
+        ->and($t->message_type)->toBe('8')
+        ->and($t->merchant_response)->toBe('paid')
+        ->and($t->response_code)->toBe('00')
+        ->and($t->fingerprint)->toBe('paid-fingerprint');
 });
 
 it('returns validation error without triggering after callback when transaction does not exist', function (): void {

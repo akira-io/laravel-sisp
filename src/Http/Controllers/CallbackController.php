@@ -10,6 +10,7 @@ use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -61,10 +62,6 @@ final readonly class CallbackController
     {
         $payload = CallbackPayload::from($request->all());
 
-        if (! Sisp::validateCallback($payload)) {
-            return redirect(config('sisp.redirect_url', '/'));
-        }
-
         if ($payload->merchantRef === '' || $payload->merchantSession === '') {
             return redirect(config('sisp.redirect_url', '/'));
         }
@@ -73,7 +70,11 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'))->with('info', 'This payment has already been processed.');
         }
 
-        $transaction = Sisp::handlePaymentCallback($payload);
+        try {
+            $transaction = Sisp::handlePaymentCallback($payload);
+        } catch (ModelNotFoundException) {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
 
         $this->storeMetadata->handle($request, $transaction);
 
