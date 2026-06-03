@@ -33,15 +33,15 @@ final readonly class HandleCallbackAction
         $transaction = $this->findOrCreateTransaction->handle($payload);
 
         if (! Sisp::validateCallback($payload)) {
-            event(new PaymentFailed($transaction, $payload));
+            $this->failTransaction($transaction, $payload, 'invalid_callback_fingerprint');
 
-            $this->updateTransaction->handle($transaction, $payload);
+            event(new PaymentFailed($transaction, $payload));
 
             return $transaction;
         }
 
         if (! $this->matchesTransaction($transaction, $payload)) {
-            $this->failTransaction($transaction, $payload);
+            $this->failTransaction($transaction, $payload, 'callback_details_mismatch');
 
             event(new PaymentFailed($transaction, $payload));
 
@@ -80,14 +80,14 @@ final readonly class HandleCallbackAction
         return SispAmount::toThousandths($expected) === SispAmount::toThousandths($actual);
     }
 
-    private function failTransaction(Transaction $transaction, CallbackPayload $payload): void
+    private function failTransaction(Transaction $transaction, CallbackPayload $payload, string $merchantResponse): void
     {
         TransactionLogContext::run(
             'callback',
             fn (): bool => $transaction->update([
                 'transaction_id' => $payload->transactionID,
                 'message_type' => $payload->messageType,
-                'merchant_response' => 'callback_details_mismatch',
+                'merchant_response' => $merchantResponse,
                 'response_code' => $payload->merchantRespCp,
                 'fingerprint' => $payload->fingerprint,
                 'status' => TransactionStatus::failed,

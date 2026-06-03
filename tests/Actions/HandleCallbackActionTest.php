@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\HandleCallbackAction;
-use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
@@ -57,10 +56,11 @@ it('dispatches PaymentFailed and marks the transaction failed when fingerprint i
         'status' => TransactionStatus::pending,
     ]);
 
-    resolve(HandleCallbackAction::class)->handle(cb_payload(ErrorMessageType::invalidAmount->value));
+    resolve(HandleCallbackAction::class)->handle(cb_payload(SuccessMessageType::purchase->value));
 
     $transaction->refresh();
-    expect($transaction->status->value)->toBe('failed');
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('invalid_callback_fingerprint');
 
     Event::assertDispatched(PaymentFailed::class);
 });
