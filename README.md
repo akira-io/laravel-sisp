@@ -1,156 +1,120 @@
-# Laravel SISP Documentation
+<p align="center"><img src="assets/banner.svg" alt="Laravel SISP" width="768"></p>
 
-Welcome to **Laravel SISP** - a robust Laravel 12+ package for integrating SISP Cabo Verde payment gateway with
-comprehensive transaction management, invoice generation, and fraud detection.
+<p align="center">
+<a href="https://packagist.org/packages/akira/laravel-sisp"><img src="https://img.shields.io/packagist/v/akira/laravel-sisp.svg" alt="Packagist Version"></a>
+<a href="https://packagist.org/packages/akira/laravel-sisp"><img src="https://img.shields.io/packagist/dt/akira/laravel-sisp.svg" alt="downloads"></a>
+<a href="https://github.com/akira-io/laravel-sisp/actions/workflows/run-tests.yml"><img src="https://github.com/akira-io/laravel-sisp/actions/workflows/run-tests.yml/badge.svg" alt="tests"></a>
+<img src="https://img.shields.io/packagist/l/akira/laravel-sisp.svg" alt="license">
+<img src="https://img.shields.io/packagist/php-v/akira/laravel-sisp" alt="php">
+</p>
 
-## Quick Start
+Laravel SISP is a Laravel package for SISP Cabo Verde payment flows, with transaction management, invoice generation, callback validation, sandbox tooling, and multi-merchant credential support.
 
-```bash
+## Install
+
+```sh
 composer require akira/laravel-sisp
 php artisan laravel-sisp:install
 ```
 
-Configure your `.env`:
+```json
+{
+  "require": {
+    "akira/laravel-sisp": "^0.7"
+  }
+}
+```
+
+| Area | Included |
+| --- | --- |
+| Payments | Payment request building, SISP form rendering, callbacks, cancellation, retry, and refunds |
+| Transactions | Eloquent models, audit logs, reconciliation, and status queries |
+| Invoices | PDF invoice generation after approved payments |
+| Security | Fingerprint validation, signed retry and cancellation requests, rate limits, metadata collection, and blacklist support |
+| Frontend | Blade views and optional Inertia rendering |
+
+## Quick Start
 
 ```env
 SISP_URL=https://mc.vinti4net.cv/Client_VbV_v2/biz_vbv_clientdata.jsp
 SISP_POS_ID=your_pos_id
 SISP_POS_AUT_CODE=your_authorization_code
 SISP_MERCHANT_ID=your_merchant_id
+SISP_SANDBOX=true
 ```
 
-## Documentation Index
+```blade
+<form action="{{ route('sisp.payment') }}" method="POST">
+    @csrf
 
-### Getting Started
+    <input type="number" name="amount" required>
+    <input type="text" name="items[0][product_name]" required>
+    <input type="number" name="items[0][quantity]" required>
+    <input type="number" name="items[0][unit_price]" required>
+    <input type="number" name="items[0][total_price]" required>
+    <input type="email" name="customer_email">
 
-- [Installation](./01-installation.md) - Install and configure the package
-- [Configuration](./02-configuration.md) - Configure SISP credentials and options
-- [Quick Start Guide](./03-quick-start.md) - Create your first payment in 5 minutes
-
-### Core Concepts
-
-- [Payment Flow](./04-payment-flow.md) - Complete payment process overview
-- [Transaction Management](./05-transaction-management.md) - Create and manage transactions
-- [Invoice Generation](./06-invoice-generation.md) - Auto-generate PDF invoices after payments
-
-### Features & Security
-
-- [Security](./07-security.md) - Rate limiting, metadata collection, fraud detection
-
-### Learning & Reference
-
-- [Examples](./08-examples.md) - Real-world integration examples and code samples
-- [API Reference](./11-api-reference.md) - Complete API methods and classes
-- [FAQ](./10-faq.md) - Frequently asked questions
-- [Troubleshooting](./09-troubleshooting.md) - Common issues and solutions
-
-## Key Features
-
-- Multi-merchant/SaaS support with runtime credential injection
-- Payment form rendering (Blade or Inertia.js)
-- Automatic PDF invoice generation
-- Multi-item transaction support
-- Comprehensive rate limiting
-- Security metadata collection
-- Complete transaction audit trail
-- Webhook signature verification
-- Type-safe DTOs and builders
-
-## System Requirements
-
-- PHP 8.4 or higher
-- Laravel 12 or higher
-- PostgreSQL or MySQL database
-- Node.js for frontend assets (if using Inertia)
-
-## What's Included
-
-After installation, you get:
-
-- Service provider and service container bindings
-- Database migrations for transactions, invoices, and security tables
-- Payment routes and webhook handling
-- Blade views or Inertia.js components for payment forms
-- Invoice generation via Laravel PDF Invoices package
-- Rate limiting middleware
-- Security metadata collection
-
-## Package Structure
-
-```
-laravel-sisp/
-├── src/
-│   ├── Actions/              # Business logic
-│   ├── Controllers/          # HTTP controllers
-│   ├── DTO/                  # Data transfer objects
-│   ├── Models/               # Eloquent models
-│   ├── Facades/              # Facade classes
-│   ├── Middleware/           # HTTP middleware
-│   └── Providers/            # Service providers
-├── database/
-│   ├── migrations/           # Database migrations
-│   └── factories/            # Model factories
-├── resources/
-│   ├── views/                # Blade templates
-│   └── components/           # Vue/React components
-├── config/
-│   └── sisp.php             # Package configuration
-└── docs/                     # This documentation
+    <button type="submit">Pay</button>
+</form>
 ```
 
-## Next Steps
+Use the facade when application code needs lower-level package operations:
 
-1. Start with [Installation](./01-installation.md)
-2. Follow [Configuration](./02-configuration.md) for your setup
-3. Try the [Quick Start Guide](./03-quick-start.md)
-4. Read [Payment Flow](./04-payment-flow.md) to understand the process
+```php
+use Akira\Sisp\Facades\Sisp;
 
-## Support
+$transaction = Sisp::reconcileTransactionStatus($transaction);
+$countries = Sisp::countries();
+```
 
-For issues or questions:
+## Documentation
 
-- Check [Troubleshooting](./09-troubleshooting.md)
-- Review [Examples](./08-examples.md)
-- Read [API Reference](./11-api-reference.md)
-- Visit [FAQ](./10-faq.md) for common questions
+- [Roadmap](docs/00-roadmap.md)
+- [Installation](docs/01-installation.md)
+- [Configuration](docs/02-configuration.md)
+- [Quick Start](docs/03-quick-start.md)
+- [Payment Flow](docs/04-payment-flow.md)
+- [Transaction Management](docs/05-transaction-management.md)
+- [Invoice Generation](docs/06-invoice-generation.md)
+- [Security](docs/07-security.md)
+- [Examples](docs/08-examples.md)
+- [Troubleshooting](docs/09-troubleshooting.md)
+- [FAQ](docs/10-faq.md)
+- [API Reference](docs/11-api-reference.md)
+
+Reference documentation is maintained in this repository under [`docs`](docs).
+
+## Testing
+
+```sh
+composer test
+```
+
+Additional focused checks are available through Composer scripts:
+
+```sh
+composer test:coverage
+composer test:type-coverage
+composer test:types
+composer test:lint
+```
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history. Releases are generated with `git-cliff`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, test expectations, commit style, and pull request guidance.
+
+## Security
+
+Report security issues through the process documented in [SECURITY.md](SECURITY.md).
+
+## Credits
+
+Laravel SISP is maintained by [Kidiatoliny](https://github.com/Kidiatoliny) and the Akira team. Contributor recognition is managed through [All Contributors](https://allcontributors.org).
 
 ## License
 
-MIT License. See LICENSE file for details.
-
-## Testing & Coverage
-
-- Run full test suite with code coverage at exactly 100%:
-
-  - `vendor/bin/pest --parallel --coverage --compact --exactly=100`
-
-- Enforce 100% type coverage:
-
-  - `vendor/bin/pest --type-coverage --min=100`
-
-### Driving sisp:install in tests (no TTY, no mocks)
-
-In tests, interactive prompts for `sisp:install` are controlled by config flags under `sisp.tests.*`. These flags are only read when `app()->runningUnitTests()` is true. In normal usage the command remains fully interactive.
-
-Available toggles (bool):
-
-- `sisp.tests.publish_config` / `sisp.tests.force_config`
-- `sisp.tests.publish_migrations` / `sisp.tests.force_migrations`
-- `sisp.tests.publish_inertia` / `sisp.tests.force_inertia`
-- `sisp.tests.publish_blade` / `sisp.tests.force_blade`
-- `sisp.tests.run_migrations` – whether to run migrations step
-- `sisp.tests.fake_migrate` – short-circuit actual `migrate` call in tests (defaults to true)
-- `sisp.tests.give_star` – whether to show the “give a star” note
-
-Example (Pest test):
-
-```php
-config()->set('sisp.tests.publish_config', true);
-config()->set('sisp.tests.publish_migrations', true);
-config()->set('sisp.tests.run_migrations', true);
-config()->set('sisp.tests.fake_migrate', true); // don’t run real migrations again
-config()->set('sisp.tests.publish_inertia', false); // avoid vendor:publish in CI
-config()->set('sisp.tests.publish_blade', false);
-```
-
-This keeps tests stable and fast in parallel CI runs while allowing full branch coverage without using mocks.
+Laravel SISP is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). Unless you state otherwise, contributions are licensed under both licenses.

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024" role="img" aria-label="Laravel SISP">
+  <defs>
+    <linearGradient id="purple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9a7df5"/>
+      <stop offset="100%" stop-color="#5b3acb"/>
+    </linearGradient>
+    <linearGradient id="foldDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1726"/>
+      <stop offset="100%" stop-color="#0e0b18"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="100%" y1="0%" x2="40%" y2="80%">
+      <stop offset="0%" stop-color="#7c5cf0" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#7c5cf0" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#7c5cf0" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="cardClip">
+      <path d="M 24 360 Q 24 332 52 332 L 1484 332 Q 1512 332 1512 360 L 1512 1024 L 24 1024 Z"/>
+    </clipPath>
+    <style>
+      .title { font: 800 100px ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; fill: #ffffff; text-anchor: middle; }
+      .subtitle { font: 400 36px ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; fill: #ffffff; fill-opacity: 0.65; text-anchor: middle; }
+      .wordmark { font: 800 132px ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; fill: #7c5cf0; text-anchor: middle; }
+      .icon { fill: none; stroke: #7c5cf0; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect width="1536" height="1024" fill="url(#purple)"/>
+  <polygon points="0,0 760,0 0,560" fill="url(#foldDark)"/>
+  <text class="title" x="768" y="180">Laravel SISP</text>
+  <text class="subtitle" x="768" y="270">Laravel package for SISP payment flows</text>
+  <g clip-path="url(#cardClip)">
+    <rect x="24" y="332" width="1488" height="692" fill="url(#card)"/>
+    <rect x="24" y="332" width="1488" height="692" fill="url(#sheen)"/>
+  </g>
+  <g transform="translate(768, 590)">
+    <path class="icon" d="M 0 -72 L 60 -48 L 60 16 Q 60 60 0 80 Q -60 60 -60 16 L -60 -48 Z"/>
+    <polyline class="icon" points="-24,4 -4,24 32,-12"/>
+  </g>
+  <text class="wordmark" x="768" y="820">SISP</text>
+</svg>
