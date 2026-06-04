@@ -70,9 +70,9 @@ final readonly class HandleCallbackAction
         return $this->transactionString($transaction, 'merchant_ref') === $payload->merchantRef
             && $this->transactionString($transaction, 'merchant_session') === $payload->merchantSession
             && $this->amountMatches($this->transactionAmount($transaction), $payload->amount)
-            && $this->transactionString($transaction, 'currency') === $payload->currency
-            && $this->transactionCode($transaction) === $payload->transactionCode
-            && $this->credentialsResolver->resolve()->posId === $payload->posID;
+            && (! $payload->currencyProvided || $this->transactionString($transaction, 'currency') === $payload->currency)
+            && (! $payload->transactionCodeProvided || $this->transactionCode($transaction) === $payload->transactionCode)
+            && (! $payload->posIDProvided || $this->credentialsResolver->resolve()->posId === $payload->posID);
     }
 
     private function amountMatches(float|int|string $expected, float|int|string $actual): bool

@@ -18,6 +18,34 @@ it('retries payment and renders form', function (): void {
     $response->assertStatus(200);
 });
 
+it('opens signed retry links with get requests without mutating transactions', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => 'failed',
+        'merchant_ref' => 'MR-GET',
+        'merchant_session' => 'MS-GET-OLD',
+        'amount' => 30.0,
+        'currency' => '132',
+        'transaction_id' => 'OLD-TID',
+        'message_type' => '13',
+        'merchant_response' => 'old failure',
+        'response_code' => '13',
+        'fingerprint' => 'old-fingerprint',
+    ]);
+
+    $this->get(signedRetryUrl($t))
+        ->assertStatus(200);
+
+    $t->refresh();
+
+    expect($t->merchant_session)->toBe('MS-GET-OLD')
+        ->and($t->status->value)->toBe('failed')
+        ->and($t->transaction_id)->toBe('OLD-TID')
+        ->and($t->message_type)->toBe('13')
+        ->and($t->merchant_response)->toBe('old failure')
+        ->and($t->response_code)->toBe('13')
+        ->and($t->fingerprint)->toBe('old-fingerprint');
+});
+
 it('updates merchant_session on transaction so callback can find it', function (): void {
     $t = Transaction::factory()->create([
         'status' => 'failed',

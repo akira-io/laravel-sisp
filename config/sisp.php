@@ -287,6 +287,7 @@ return [
         'path' => env('SISP_INVOICE_PATH', 'invoices'),
         'template' => env('SISP_INVOICE_TEMPLATE', 'branded'),
         'temporary_url_expiration_hours' => env('SISP_INVOICE_TEMPORARY_URL_EXPIRATION_HOURS', 24),
+        'pdf_url_generator' => null,
         'company_name' => env('SISP_COMPANY_NAME', ''),
         'company_address' => env('SISP_COMPANY_ADDRESS', ''),
         'company_code' => env('SISP_COMPANY_CODE', ''),

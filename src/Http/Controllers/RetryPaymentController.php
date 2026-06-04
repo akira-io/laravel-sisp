@@ -22,6 +22,13 @@ final readonly class RetryPaymentController
     {
         $transaction = Transaction::query()->findOrFail($request->integer('transaction'));
 
+        if ($request->isMethod('get')) {
+            return $this->renderForm->handle(
+                $this->retryPayment->handle($transaction, rotateMerchantSession: false),
+                $transaction->locale,
+            );
+        }
+
         $paymentRequest = $this->retryPayment->handle($transaction);
 
         TransactionLogContext::run(

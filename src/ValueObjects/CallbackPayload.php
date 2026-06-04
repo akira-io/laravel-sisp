@@ -28,6 +28,9 @@ final readonly class CallbackPayload
         public string $additionalErrorMessage = '',
         public string $merchantRespCp = '',
         public string $reloadCode = '',
+        public bool $currencyProvided = true,
+        public bool $transactionCodeProvided = true,
+        public bool $posIDProvided = true,
     ) {}
 
     public static function from(array $data): self
@@ -54,6 +57,9 @@ final readonly class CallbackPayload
             additionalErrorMessage: $data['merchantRespAdditionalErrorMessage'] ?? '',
             merchantRespCp: $data['merchantRespCP'] ?? '',
             reloadCode: $data['reloadCode'] ?? '',
+            currencyProvided: array_key_exists('currency', $data),
+            transactionCodeProvided: array_key_exists('transactionCode', $data),
+            posIDProvided: array_key_exists('posID', $data),
         );
     }
 

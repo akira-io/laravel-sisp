@@ -75,6 +75,77 @@ it('handles POST callback and redirects to GET with ref', function (): void {
         ->and($t->fingerprint)->toBe($payload->fingerprint);
 });
 
+it('accepts successful callbacks when the signed response omits transaction code', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-NO-TRANSACTION-CODE',
+        'merchant_session' => 'MS-NO-TRANSACTION-CODE',
+        'amount' => 1500,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+    unset($payload['transactionCode']);
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-NO-TRANSACTION-CODE']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('completed')
+        ->and($transaction->message_type)->toBe('8')
+        ->and($transaction->merchant_response)->not->toBe('callback_details_mismatch');
+});
+
+it('accepts successful callbacks when optional unsigned response fields are omitted', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-OPTIONAL-UNSIGNED-FIELDS',
+        'merchant_session' => 'MS-OPTIONAL-UNSIGNED-FIELDS',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+    unset($payload['currency'], $payload['transactionCode'], $payload['posID']);
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-OPTIONAL-UNSIGNED-FIELDS']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('completed')
+        ->and($transaction->message_type)->toBe('8')
+        ->and($transaction->transaction_id)->not->toBeNull()
+        ->and($transaction->merchant_response)->not->toBe('callback_details_mismatch');
+});
+
+it('rejects callbacks when optional unsigned response fields are present but empty', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-EMPTY-UNSIGNED-FIELDS',
+        'merchant_session' => 'MS-EMPTY-UNSIGNED-FIELDS',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+    $payload['currency'] = '';
+    $payload['transactionCode'] = '';
+    $payload['posID'] = '';
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-EMPTY-UNSIGNED-FIELDS']));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
+});
+
 it('records callbacks with invalid fingerprints as failed and redirects to response page', function (): void {
     $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-G3',

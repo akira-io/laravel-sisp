@@ -29,6 +29,56 @@ it('stores request metadata with basic fields', function (): void {
         ->and(is_string($meta->browser))->toBeTrue();
 });
 
+it('stores sanitized request payload for diagnostics', function (): void {
+    $action = resolve(StoreRequestMetadataAction::class);
+    $transaction = Transaction::factory()->create();
+
+    $request = Request::create(
+        uri: '/sisp/callback?ref=MR-DIAG',
+        method: 'POST',
+        parameters: [
+            'merchantRespMerchantRef' => 'MR-DIAG',
+            'merchantRespMerchantSession' => 'MS-DIAG',
+            'merchantRespPurchaseAmount' => '10',
+            'resultFingerPrint' => 'signed-fingerprint',
+            'card_number' => '4111111111111111',
+            'api_key' => 'api-secret',
+            'pin' => '1234',
+            'nested' => [
+                'token' => 'secret-token',
+                'safe' => 'visible',
+            ],
+        ],
+        server: [
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_AUTHORIZATION' => 'Bearer secret',
+            'HTTP_USER_AGENT' => 'Mozilla/5.0',
+        ],
+    );
+
+    $meta = $action->handle($request, $transaction);
+
+    expect($meta->custom_metadata)->toMatchArray([
+        'method' => 'POST',
+        'path' => 'sisp/callback',
+        'query' => ['ref' => 'MR-DIAG'],
+        'payload' => [
+            'merchantRespMerchantRef' => 'MR-DIAG',
+            'merchantRespMerchantSession' => 'MS-DIAG',
+            'merchantRespPurchaseAmount' => '10',
+            'resultFingerPrint' => 'signed-fingerprint',
+            'card_number' => '[redacted]',
+            'api_key' => '[redacted]',
+            'pin' => '[redacted]',
+            'nested' => [
+                'token' => '[redacted]',
+                'safe' => 'visible',
+            ],
+        ],
+    ])
+        ->and($meta->custom_metadata['headers']['authorization'])->toBe('[redacted]');
+});
+
 it('detects browser/OS/device/mobile flags from user-agent variants', function (): void {
     $action = resolve(StoreRequestMetadataAction::class);
 
