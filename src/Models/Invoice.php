@@ -7,6 +7,7 @@ namespace Akira\Sisp\Models;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -81,6 +82,12 @@ final class Invoice extends Model
             return null;
         }
 
+        $configuredUrl = $this->configuredPdfUrl();
+
+        if ($configuredUrl !== null) {
+            return $configuredUrl;
+        }
+
         $disk = config('sisp.invoice.disk', 'public');
 
         if ($disk === 's3') {
@@ -90,5 +97,27 @@ final class Invoice extends Model
         }
 
         return Storage::disk($disk)->url($this->pdf_path);
+    }
+
+    private function configuredPdfUrl(): ?string
+    {
+        $generator = config('sisp.invoice.pdf_url_generator');
+
+        if (is_string($generator) && $generator !== '') {
+            try {
+                $generator = resolve($generator);
+            } catch (BindingResolutionException) {
+                return null;
+            }
+        }
+
+        if (! is_callable($generator)) {
+            return null;
+        }
+
+        /** @var callable(self): mixed $generator */
+        $url = $generator($this);
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 }

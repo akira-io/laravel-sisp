@@ -41,6 +41,41 @@ it('computes pdf_url from public disk and respects table config', function (): v
         ->and($invoice->pdf_url)->not->toBeNull();
 });
 
+it('uses configured pdf url generator when present', function (): void {
+    config()->set('sisp.invoice.pdf_url_generator', fn (Invoice $invoice): string => "https://billing.test/invoices/{$invoice->id}/download");
+
+    $t = Transaction::factory()->create();
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $t->id,
+        'invoice_number' => 'INV-2B',
+        'invoice_date' => now(),
+        'status' => 'pending',
+        'pdf_path' => 'invoices/test.pdf',
+    ]);
+
+    expect($invoice->pdf_url)->toBe("https://billing.test/invoices/{$invoice->id}/download");
+});
+
+it('falls back when configured pdf url generator cannot be resolved', function (): void {
+    Storage::fake('public');
+    config()->set('sisp.invoice.disk', 'public');
+    config()->set('sisp.invoice.pdf_url_generator', 'Missing\\InvoicePdfUrlGenerator');
+
+    Storage::disk('public')->put('invoices/test.pdf', 'PDF');
+
+    $t = Transaction::factory()->create();
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $t->id,
+        'invoice_number' => 'INV-2C',
+        'invoice_date' => now(),
+        'status' => 'pending',
+        'pdf_path' => 'invoices/test.pdf',
+    ]);
+
+    expect($invoice->pdf_url)->not->toBeNull()
+        ->and($invoice->toArray())->toHaveKey('pdf_url');
+});
+
 it('items relation proxies transaction items', function (): void {
     $t = Transaction::factory()->create();
     // Criar um item

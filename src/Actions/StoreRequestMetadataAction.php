@@ -40,7 +40,60 @@ final readonly class StoreRequestMetadataAction
                 'is_mobile' => $this->isMobileDevice($request),
                 'risk_score' => 0,
                 'risk_reason' => null,
+                'custom_metadata' => $this->customMetadata($request),
             ]);
+    }
+
+    /**
+     * @return array{
+     *     method: string,
+     *     path: string,
+     *     query: array<string, mixed>,
+     *     payload: array<string, mixed>,
+     *     headers: array<string, mixed>
+     * }
+     */
+    private function customMetadata(Request $request): array
+    {
+        return [
+            'method' => $request->method(),
+            'path' => $request->path(),
+            'query' => $this->redactSensitiveData($request->query()),
+            'payload' => $this->redactSensitiveData($request->request->all()),
+            'headers' => $this->redactSensitiveData($request->headers->all()),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function redactSensitiveData(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if ($this->isSensitiveKey((string) $key)) {
+                $data[$key] = '[redacted]';
+
+                continue;
+            }
+
+            if (is_array($value)) {
+                /** @var array<string, mixed> $value */
+                $data[$key] = $this->redactSensitiveData($value);
+            }
+        }
+
+        return $data;
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        $key = mb_strtolower($key);
+
+        return array_any(
+            ['authorization', 'cookie', 'password', 'passwd', 'secret', 'token', 'card', 'cvv', 'cvc', 'key', 'pin'],
+            fn (string $sensitiveKey): bool => str_contains($key, $sensitiveKey),
+        );
     }
 
     private function generateDeviceFingerprint(Request $request): string

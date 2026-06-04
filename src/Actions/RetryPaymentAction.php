@@ -14,19 +14,19 @@ final readonly class RetryPaymentAction
 
     public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
 
-    public function handle(Transaction $transaction): PaymentRequest
+    public function handle(Transaction $transaction, bool $rotateMerchantSession = true): PaymentRequest
     {
-        $paymentRequestData = $this->extractFromTransaction($transaction);
+        $paymentRequestData = $this->extractFromTransaction($transaction, $rotateMerchantSession);
 
         return $this->buildRequestPayload->handle($paymentRequestData);
     }
 
-    private function extractFromTransaction(Transaction $transaction): PaymentRequestData
+    private function extractFromTransaction(Transaction $transaction, bool $rotateMerchantSession): PaymentRequestData
     {
         return new PaymentRequestData(
             amount: $transaction->amount,
             merchantRef: $transaction->merchant_ref,
-            merchantSession: null,
+            merchantSession: $rotateMerchantSession ? null : $this->merchantSession($transaction),
             timeStamp: null,
             currency: $transaction->currency,
             transactionCode: $transaction->transaction_code,
@@ -48,5 +48,12 @@ final readonly class RetryPaymentAction
         $postalCode = $transaction->getAttribute('customer_postal_code');
 
         return is_string($postalCode) && $postalCode !== '' ? $postalCode : self::FALLBACK_POSTAL_CODE;
+    }
+
+    private function merchantSession(Transaction $transaction): ?string
+    {
+        $merchantSession = $transaction->getAttribute('merchant_session');
+
+        return is_string($merchantSession) && $merchantSession !== '' ? $merchantSession : null;
     }
 }

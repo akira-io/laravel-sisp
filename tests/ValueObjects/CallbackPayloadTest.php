@@ -60,3 +60,25 @@ it('withoutFingerprint removes fingerprint key from array', function (): void {
         ->and($arr['merchantRespMerchantRef'])->toBe('R2')
         ->and($arr['merchantRespTid'])->toBe('T2');
 });
+
+it('tracks whether optional unsigned fields were provided', function (): void {
+    $missing = CallbackPayload::from([
+        'merchantRespMerchantRef' => 'R3',
+        'merchantRespMerchantSession' => 'S3',
+    ]);
+
+    $empty = CallbackPayload::from([
+        'merchantRespMerchantRef' => 'R4',
+        'merchantRespMerchantSession' => 'S4',
+        'currency' => '',
+        'transactionCode' => '',
+        'posID' => '',
+    ]);
+
+    expect($missing->currencyProvided)->toBeFalse()
+        ->and($missing->transactionCodeProvided)->toBeFalse()
+        ->and($missing->posIDProvided)->toBeFalse()
+        ->and($empty->currencyProvided)->toBeTrue()
+        ->and($empty->transactionCodeProvided)->toBeTrue()
+        ->and($empty->posIDProvided)->toBeTrue();
+});
