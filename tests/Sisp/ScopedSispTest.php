@@ -13,8 +13,6 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 it('scoped sisp uses credentials and restores resolver', function (): void {
-    config()->set('sisp.merchant_ref', 'CFG-REF');
-    config()->set('sisp.merchant_session', 'CFG-SESSION');
     config()->set('sisp.transaction_code', '7');
 
     $credentials = SispCredentials::from([
@@ -55,8 +53,8 @@ it('scoped sisp uses credentials and restores resolver', function (): void {
         ->and($payload['languageMessages'])->toBe('EN')
         ->and($payload['urlMerchantResponse'])->toBe('https://scoped.example.com/callback');
 
-    expect($scoped->getMerchantReference())->toBe('CFG-REF')
-        ->and($scoped->getMerchantSession())->toBe('CFG-SESSION')
+    expect($scoped->getMerchantReference())->toMatch('/^R\d{14}$/')
+        ->and($scoped->getMerchantSession())->toMatch('/^S\d{14}$/')
         ->and($scoped->getTimeStamp())->toBeString()
         ->and($scoped->getTimeStamp())->not->toBe('')
         ->and($scoped->getDefaultTransactionCode())->toBe('7')

@@ -57,8 +57,7 @@ final class Blacklist extends Model
     #[Scope]
     protected function expired(Builder $query): Builder
     {
-        return $query->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now());
+        return $query->where('expires_at', '<=', now());
     }
 
     #[Scope]

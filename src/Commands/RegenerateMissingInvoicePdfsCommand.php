@@ -24,7 +24,7 @@ final class RegenerateMissingInvoicePdfsCommand extends Command
         $query = Invoice::query()
             ->with(['transaction.items'])
             ->where('status', InvoiceStatus::paid->value)
-            ->whereNull('pdf_path');
+            ->where('pdf_path');
 
         if ($limit = $this->option('limit')) {
             $query->limit((int) $limit);

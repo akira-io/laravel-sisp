@@ -29,6 +29,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string $customer_address
  * @property-read  int|float $amount
  * @property-read  int $amount_cents
+ * @property-read  string $formatted_amount
+ * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionItem> $items
+ * @property-read  Invoice|null $invoice
  */
 final class Transaction extends Model
 {

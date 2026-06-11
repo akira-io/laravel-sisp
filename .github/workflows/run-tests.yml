@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ 1.x ]
+    branches: [ 1.x, 2.x ]
   pull_request:
-    branches: [ 1.x ]
+    branches: [ 1.x, 2.x ]
 
 jobs:
   test:
@@ -13,12 +13,10 @@ jobs:
       fail-fast: true
       matrix:
         os: [ ubuntu-latest ]
-        php: [ 8.4, 8.5 ]
-        laravel: [ 12.*, 13.* ]
+        php: [ 8.5 ]
+        laravel: [ 13.* ]
         stability: [ prefer-lowest, prefer-stable ]
         include:
-          - laravel: 12.*
-            testbench: ^10.0
           - laravel: 13.*
             testbench: ^11.0
 
@@ -45,5 +43,8 @@ jobs:
           composer require "illuminate/contracts:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-progress --no-interaction
 
-      - name: Run tests (Pest)
+      - name: Run static analysis and quality gates (Pest)
         run: composer test
+
+      - name: Run test suite (Pest)
+        run: vendor/bin/pest --compact

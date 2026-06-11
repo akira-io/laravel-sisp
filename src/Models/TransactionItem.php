@@ -8,6 +8,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property-read  int $id
+ * @property-read  int $transaction_id
+ * @property-read  string|null $product_id
+ * @property-read  string $product_name
+ * @property-read  int $quantity
+ * @property-read  int $unit_price_cents
+ * @property-read  int $total_price_cents
+ * @property-read  float $unit_price
+ * @property-read  float $total_price
+ * @property-read  string|null $description
+ * @property-read  array|null $metadata
+ */
 final class TransactionItem extends Model
 {
     use HasFactory;

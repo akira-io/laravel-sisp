@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property-read  \Illuminate\Support\Carbon $reset_at
+ */
 final class RateLimit extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -1,30 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\RateLimit\:\:\$reset_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/CheckRateLimitAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$quantity\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$unit_price_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$created_at\.$#'
 			identifier: property.notFound
 			count: 2
@@ -126,14 +102,3 @@ parameters:
 			count: 1
 			path: src/Models/RateLimit.php
 
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$total_price_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Models/TransactionItem.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$unit_price_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Models/TransactionItem.php

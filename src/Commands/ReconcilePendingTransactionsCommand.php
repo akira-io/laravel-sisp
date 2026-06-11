@@ -30,13 +30,15 @@ final class ReconcilePendingTransactionsCommand extends Command
         $olderThan = (int) ($this->option('older-than') ?: $config->get('sisp.transaction_status.reconcile_after_minutes', 5));
         $limit = (int) ($this->option('limit') ?: $config->get('sisp.transaction_status.reconcile_limit', 50));
 
-        $transactions = Transaction::query()
+        $query = Transaction::query()
             ->where('status', TransactionStatus::pending->value)
-            ->whereNull('message_type')
+            ->where('message_type')
             ->where('created_at', '<=', now()->subMinutes($olderThan))
-            ->oldest()
-            ->limit($limit)
-            ->get();
+            ->oldest();
+
+        $query->limit($limit);
+
+        $transactions = $query->get();
 
         if ($transactions->isEmpty()) {
             $this->info('No pending SISP transactions require reconciliation.');

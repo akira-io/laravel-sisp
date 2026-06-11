@@ -24,7 +24,7 @@ trait EncryptsAttributes
 
     public function getAttribute($key): mixed
     {
-        if (array_key_exists($key, $this->decryptedAttributesCache)) {
+        if (array_key_exists((string) $key, $this->decryptedAttributesCache)) {
             return $this->decryptedAttributesCache[$key];
         }
 
