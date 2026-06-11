@@ -3,6 +3,14 @@
 This roadmap outlines future enhancements and improvements for Laravel SISP based on the current architecture and
 extension points.
 
+## Delivered in v2
+
+- Laravel 13 and PHP 8.5 baseline, with native framework attributes throughout (`#[Fillable]`, `#[UseFactory]`, `#[Scope]`, `#[Signature]`, `#[Description]`, `#[Bind]`, `#[Singleton]`)
+- Driver pattern: `SispManager` with `production` and `sandbox` drivers behind the `SispDriver` contract, extensible via `SispManager::extend()`
+- Builder pattern: fluent `Sisp::payment()` and `Sisp::refund()` builders
+- Pipeline pattern: configurable payment and callback pipelines with single-purpose pipes (custom action hooks at key lifecycle points)
+- Contract-driven internals (`CallbackFingerprintValidator`, `SispCredentialsResolver`, `SispDriver`) for replaceable service implementations
+
 ## Transaction Features
 
 **Enhanced Transaction Management**

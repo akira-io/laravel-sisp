@@ -255,16 +255,28 @@ Include multiple products in a single payment.
 
 Create and process payments programmatically without a form.
 
+Build a signed payment request with the fluent builder:
+
 ```php
-use Akira\Sisp\Actions\CreateAndStorePaymentTransactionAction;
-use Akira\Sisp\Actions\PreparePaymentAction;
+use Akira\Sisp\Facades\Sisp;
+
+$paymentRequest = Sisp::payment()
+    ->amount(100.00)
+    ->currency('132')
+    ->customerEmail('customer@example.com')
+    ->locale('pt')
+    ->build(); // signed PaymentRequest value object
+```
+
+Or run the full payment pipeline (blacklist, rate limits, request building, persistence, metadata) exactly as the HTTP flow does:
+
+```php
+use Akira\Sisp\Pipelines\Payment\PaymentContext;
+use Akira\Sisp\Pipelines\Payment\ProcessPaymentPipeline;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Http\Request;
 
-$action = app(CreateAndStorePaymentTransactionAction::class);
-
-// Create a fake request object with payment data
-$request = new Request([
+$request = Request::create('/sisp/payment', 'POST', [
     'amount' => 100.00,
     'items' => [
         [
@@ -272,18 +284,20 @@ $request = new Request([
             'quantity' => 1,
             'unit_price' => 100.00,
             'total_price' => 100.00,
-        ]
+        ],
     ],
     'customer_email' => 'customer@example.com',
     'customer_name' => 'John Doe',
-    'locale' => 'pt', // Optional: customer language preference
+    'locale' => 'pt',
 ]);
 
-// Create transaction
-$transaction = $action->handle(
-    PaymentRequestData::from($request->all()),
-    $request
-);
+$context = app(ProcessPaymentPipeline::class)->run(new PaymentContext(
+    data: PaymentRequestData::from($request->all()),
+    request: $request,
+));
+
+$transaction = $context->transaction();
+$paymentRequest = $context->paymentRequest();
 
 echo "Transaction created: " . $transaction->id;
 ```
@@ -478,20 +492,17 @@ try {
 Refund a completed transaction.
 
 ```php
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 
 $transaction = Transaction::find($id);
 $refundAmount = $transaction->amount;
 
-$action = app(RefundTransactionAction::class);
-
 try {
-    $action->handle(
-        transaction: $transaction,
-        refundAmount: $refundAmount,
-        reason: 'customer_request'
-    );
+    Sisp::refund($transaction)
+        ->full()
+        ->reason('customer_request')
+        ->process();
 
     return response()->json([
         'success' => true,
@@ -718,6 +729,88 @@ it('processes payments for different merchants', function () {
     expect($requestA->toArray()['posID'])->toBe('TEST_A')
         ->and($requestB->toArray()['posID'])->toBe('TEST_B');
 });
+```
+
+## Custom Payment Pipe (v2)
+
+Add your own stage to the payment pipeline.
+
+```php
+namespace App\Sisp\Pipes;
+
+use Akira\Sisp\Contracts\PaymentPipe;
+use Akira\Sisp\Pipelines\Payment\PaymentContext;
+use Closure;
+use Illuminate\Support\Facades\Log;
+
+final readonly class LogPaymentAttempt implements PaymentPipe
+{
+    public function handle(PaymentContext $context, Closure $next): PaymentContext
+    {
+        Log::info('SISP payment attempt', [
+            'amount' => $context->data->amount,
+            'ip' => $context->request->ip(),
+        ]);
+
+        return $next($context);
+    }
+}
+```
+
+Register it in `config/sisp.php`:
+
+```php
+'pipelines' => [
+    'payment' => [
+        Akira\Sisp\Pipelines\Payment\Pipes\EnsureIpIsNotBlacklisted::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\EnforceRateLimits::class,
+        App\Sisp\Pipes\LogPaymentAttempt::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\BuildPaymentRequest::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\PersistTransaction::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\CaptureRequestMetadata::class,
+    ],
+],
+```
+
+## Custom Gateway Driver (v2)
+
+Register an additional gateway driver and select it by config.
+
+```php
+namespace App\Sisp;
+
+use Akira\Sisp\Contracts\SispDriver;
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\TransactionStatusResponse;
+
+final readonly class StagingDriver implements SispDriver
+{
+    public function name(): string
+    {
+        return 'staging';
+    }
+
+    public function paymentEndpoint(): string
+    {
+        return 'https://staging.gateway.example.com/pay';
+    }
+
+    public function queryTransactionStatus(Transaction|string $transaction): TransactionStatusResponse
+    {
+        // Delegate to your staging status API...
+    }
+}
+```
+
+```php
+// In a service provider:
+use Akira\Sisp\Drivers\SispManager;
+
+resolve(SispManager::class)->extend('staging', fn () => new \App\Sisp\StagingDriver());
+```
+
+```env
+SISP_DRIVER=staging
 ```
 
 ## Next Steps

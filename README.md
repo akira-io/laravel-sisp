@@ -143,6 +143,8 @@ The package also uses native Laravel 13 syntax throughout: `#[Fillable]`, `#[Use
 - [Troubleshooting](docs/09-troubleshooting.md)
 - [FAQ](docs/10-faq.md)
 - [API Reference](docs/11-api-reference.md)
+- [Architecture (v2)](docs/12-architecture.md)
+- [Upgrade Guide (v2)](docs/13-upgrade-v2.md)
 
 Reference documentation is maintained in this repository under [`docs`](docs).
 

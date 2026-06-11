@@ -67,12 +67,27 @@ If `SISP_IS_3D_SEC=1`, these fields become required:
 
 1. User submits form to `/sisp/payment`
 2. Package validates data
-3. Creates transaction in database
+3. The payment pipeline runs: blacklist check → rate limits → request building → transaction persistence → metadata capture (see [Payment Flow](./04-payment-flow.md))
 4. Renders SISP payment form
-5. User redirected to SISP gateway
+5. User redirected to SISP gateway (resolved by the active driver: production or sandbox)
 6. After payment, redirected to `/sisp/callback`
-7. Package validates and stores response
-8. Transaction status updated (approved/failed)
+7. The callback pipeline validates the fingerprint and the transaction details
+8. Transaction status updated (approved/failed) and events dispatched
+
+## Programmatic Payments (Builder)
+
+Instead of the HTTP form, you can build a payment request in code with the fluent builder:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$paymentRequest = Sisp::payment()
+    ->amount(1500.0)
+    ->currency('132')
+    ->customerEmail('buyer@example.cv')
+    ->locale('pt')
+    ->build(); // returns a signed PaymentRequest value object
+```
 
 ## Test in Sandbox
 

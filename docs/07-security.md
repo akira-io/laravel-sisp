@@ -2,6 +2,8 @@
 
 Built-in security features to protect your payment system.
 
+Since v2, the blacklist and rate-limit checks run as the first pipes of the payment pipeline (`EnsureIpIsNotBlacklisted` and `EnforceRateLimits`). You can reorder or remove them — or insert your own security pipes — through `config('sisp.pipelines.payment')`. See [Configuration](./02-configuration.md#processing-pipelines-v2).
+
 ## Rate Limiting
 
 Prevent abuse by limiting payment requests per IP, merchant, or user.

@@ -128,7 +128,7 @@ you must provide:
 
 ### Can I refund a payment?
 
-Yes. Refund completed transactions using `RefundTransactionAction`. Current SISP specifications support total reversal and partial refund. The package validates that the requested amount does not exceed the refundable balance it knows locally.
+Yes. Refund completed transactions with the fluent builder — `Sisp::refund($transaction)->full()->process()` or `->amount(500.0)->process()` — or invoke `RefundTransactionAction` directly. Current SISP specifications support total reversal and partial refund. The package validates that the requested amount does not exceed the refundable balance it knows locally.
 
 ### Can I cancel a pending payment?
 
@@ -152,6 +152,24 @@ Event::listen(PaymentCompleted::class, function ($event) {
 ### Can I add custom data to transactions?
 
 Yes, transactions include metadata support. You can store custom data in the `payload` field.
+
+## Customization (v2)
+
+### Can I add my own steps to the payment flow?
+
+Yes. The payment and callback flows are Laravel pipelines. Implement `Akira\Sisp\Contracts\PaymentPipe` (or `CallbackPipe`) and register your class in `config('sisp.pipelines.payment')` or `config('sisp.pipelines.callback')`. Pipes run in the configured order.
+
+### Can I point the package at a different gateway?
+
+Yes. Implement `Akira\Sisp\Contracts\SispDriver` and register it with `SispManager::extend('name', fn () => new YourDriver())`, then set `SISP_DRIVER=name`. The built-in drivers are `production` and `sandbox`.
+
+### Can I replace the fingerprint validation?
+
+Yes. Bind your own implementation of `Akira\Sisp\Contracts\CallbackFingerprintValidator` in the container; the callback pipeline resolves the contract, not the concrete class.
+
+### Can I build payment requests without the HTTP form?
+
+Yes. Use the fluent builder: `Sisp::payment()->amount(100.0)->customerEmail('a@b.cv')->build()` returns a signed `PaymentRequest` value object.
 
 ## Invoices
 
@@ -393,11 +411,11 @@ Yes, when you have valid SISP credentials. Always test in sandbox mode first.
 
 ### What Laravel versions are supported?
 
-Laravel 12+
+Laravel 13+ (v2). Use the 1.x release line for Laravel 12.
 
 ### What PHP versions are supported?
 
-PHP 8.4+
+PHP 8.5+ (v2). Use the 1.x release line for PHP 8.4.
 
 ## Still Have Questions?
 
