@@ -20,7 +20,7 @@ php artisan laravel-sisp:install
 ```json
 {
   "require": {
-    "akira/laravel-sisp": "^0.7"
+    "akira/laravel-sisp": "^2.0"
   }
 }
 ```

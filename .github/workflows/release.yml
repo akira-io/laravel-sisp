@@ -31,9 +31,11 @@ jobs:
         run: |
           git config user.name "${GITHUB_ACTOR}"
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          BRANCH="$(git branch -r --contains "${{ github.ref_name }}" --format='%(refname:short)' | grep -E '^origin/[0-9]+\.x$' | head -n1 | sed 's|^origin/||')"
+          BRANCH="${BRANCH:-1.x}"
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "chore(changelog): ${{ github.ref_name }}"
-          git push origin HEAD:1.x || true
+          git push origin "HEAD:${BRANCH}" || true
 
       - name: Extract release notes
         id: notes

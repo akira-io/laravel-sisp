@@ -29,6 +29,8 @@ Upgrade your application to Laravel 13 and PHP 8.5 first, then:
 composer require akira/laravel-sisp:^2.0
 ```
 
+> **Note:** `^2.0` resolves once the `v2.0.0` tag is published. Before that, the development line is installable with `composer require akira/laravel-sisp:2.x-dev`.
+
 ### 1.2 Constructor signatures of public actions (action required if you resolve them with custom arguments)
 
 The following actions kept their **`handle()` signatures and behavior**, but their constructors changed. If you resolve them through the container (`app(...)`, `resolve(...)`, constructor injection) nothing breaks. If you instantiate them manually with `new`, update the arguments:
