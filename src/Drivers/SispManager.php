@@ -6,8 +6,10 @@ namespace Akira\Sisp\Drivers;
 
 use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Contracts\SispDriver;
+use Illuminate\Container\Attributes\Singleton;
 use Illuminate\Support\Manager;
 
+#[Singleton]
 final class SispManager extends Manager
 {
     public function getDefaultDriver(): string

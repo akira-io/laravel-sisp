@@ -6,8 +6,10 @@ namespace Akira\Sisp\Configuration;
 
 use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
 use Akira\Sisp\Pipelines\Payment\ProcessPaymentPipeline;
+use Illuminate\Container\Attributes\Singleton;
 use Illuminate\Contracts\Config\Repository;
 
+#[Singleton]
 final readonly class LoadConfig
 {
     public function __construct(

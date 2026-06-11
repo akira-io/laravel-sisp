@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'transaction_id',
+    'source',
+    'changed_attributes',
+    'old_values',
+    'new_values',
+])]
 final class TransactionLog extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'transaction_id',
-        'source',
-        'changed_attributes',
-        'old_values',
-        'new_values',
-    ];
 
     public function getTable(): string
     {

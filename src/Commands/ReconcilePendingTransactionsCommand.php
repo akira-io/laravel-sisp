@@ -7,18 +7,18 @@ namespace Akira\Sisp\Commands;
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 
-final class ReconcilePendingTransactionsCommand extends Command
-{
-    protected $signature = 'sisp:reconcile-pending
+#[Signature('sisp:reconcile-pending
                             {--older-than= : Minimum pending age in minutes}
                             {--limit= : Maximum transactions to reconcile}
-                            {--force : Run even when reconciliation is disabled in config}';
-
-    protected $description = 'Reconcile old pending SISP transactions using the POS transaction-status API';
-
+                            {--force : Run even when reconciliation is disabled in config}')]
+#[Description('Reconcile old pending SISP transactions using the POS transaction-status API')]
+final class ReconcilePendingTransactionsCommand extends Command
+{
     public function handle(Repository $config, ReconcileTransactionStatusAction $reconcile): int
     {
         if (! (bool) $config->get('sisp.transaction_status.reconciliation_enabled', false) && ! $this->option('force')) {

@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Akira\Sisp\Models;
 
 use Akira\Sisp\Actions\LogTransactionChangesAction;
+use Akira\Sisp\Database\Factories\TransactionFactory;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Traits\EncryptsAttributes;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,37 +36,36 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionItem> $items
  * @property-read  Invoice|null $invoice
  */
+#[UseFactory(TransactionFactory::class)]
+#[Fillable([
+    'merchant_ref',
+    'merchant_session',
+    'amount',
+    'amount_cents',
+    'currency',
+    'status',
+    'transaction_code',
+    'transaction_id',
+    'message_type',
+    'response_code',
+    'merchant_response',
+    'fingerprint',
+    'payload',
+    'customer_name',
+    'customer_email',
+    'customer_phone',
+    'customer_country',
+    'customer_city',
+    'customer_address',
+    'locale',
+    'cancelled_at',
+    'refunded_at',
+    'customer_postal_code',
+])]
 final class Transaction extends Model
 {
     use EncryptsAttributes;
     use HasFactory;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'merchant_ref',
-        'merchant_session',
-        'amount',
-        'amount_cents',
-        'currency',
-        'status',
-        'transaction_code',
-        'transaction_id',
-        'message_type',
-        'response_code',
-        'merchant_response',
-        'fingerprint',
-        'payload',
-        'customer_name',
-        'customer_email',
-        'customer_phone',
-        'customer_country',
-        'customer_city',
-        'customer_address',
-        'locale',
-        'cancelled_at',
-        'refunded_at',
-        'customer_postal_code',
-    ];
 
     public function getTable(): string
     {

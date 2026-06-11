@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Akira\Sisp\Database\Factories\TransactionItemFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,27 +24,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read  string|null $description
  * @property-read  array|null $metadata
  */
+#[UseFactory(TransactionItemFactory::class)]
+#[Fillable([
+    'transaction_id',
+    'product_id',
+    'product_name',
+    'quantity',
+    'unit_price_cents',
+    'total_price_cents',
+    'description',
+    'metadata',
+])]
 final class TransactionItem extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'transaction_id',
-        'product_id',
-        'product_name',
-        'quantity',
-        'unit_price_cents',
-        'total_price_cents',
-        'description',
-        'metadata',
-    ];
-
-    protected $casts = [
-        'quantity' => 'integer',
-        'unit_price_cents' => 'integer',
-        'total_price_cents' => 'integer',
-        'metadata' => 'array',
-    ];
 
     public function getTable(): string
     {
@@ -51,6 +47,16 @@ final class TransactionItem extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+            'unit_price_cents' => 'integer',
+            'total_price_cents' => 'integer',
+            'metadata' => 'array',
+        ];
     }
 
     protected function getUnitPriceAttribute(): float

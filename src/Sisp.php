@@ -25,7 +25,9 @@ use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Akira\Sisp\ValueObjects\TransactionData;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
+use Illuminate\Container\Attributes\Singleton;
 
+#[Singleton]
 final readonly class Sisp
 {
     public function __construct(
