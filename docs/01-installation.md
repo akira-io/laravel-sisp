@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- PHP 8.4 or higher
-- Laravel 12 or higher
+- PHP 8.5 or higher
+- Laravel 13 or higher
 - Composer
 - Database (PostgreSQL or MySQL)
 

@@ -500,6 +500,112 @@ $updatedTransaction = $sisp->reconcileTransactionStatus($transaction);
 
 Use `sisp:transaction-status` and `sisp:reconcile-pending` for operational workflows. Use the facade methods inside application code for explicit transaction checks.
 
+## Builders (v2)
+
+### PaymentBuilder
+
+Fluent composition of payment requests. Obtain it from the facade:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$builder = Sisp::payment();
+```
+
+| Method | Description |
+| --- | --- |
+| `amount(float $amount)` | Required. Total amount in CVE |
+| `merchantRef(string $ref)` | Optional. Defaults to the configured generator |
+| `merchantSession(string $session)` | Optional. Defaults to the configured generator |
+| `timeStamp(string $timeStamp)` | Optional. SISP format `Y-m-d H:i:s` |
+| `currency(string $currency)` | Optional. ISO 4217 numeric, defaults to config |
+| `transactionCode(TransactionCode\|string $code)` | Optional. Accepts the enum or raw code |
+| `token()` / `entityCode()` / `referenceNumber()` | Optional service-payment fields |
+| `locale(string $locale)` | Optional customer language |
+| `customerEmail()` / `customerCountry()` / `customerCity()` / `customerAddress()` / `customerPostalCode()` / `customerPhone()` | Optional 3DS customer data |
+| `toData(): PaymentRequestData` | Returns the value object; throws `LogicException` without a positive amount |
+| `build(): PaymentRequest` | Builds the signed request (fingerprint included) |
+
+### RefundBuilder
+
+```php
+$transaction = Sisp::refund($transaction)
+    ->amount(500.0)          // or ->full()
+    ->reason('user_refund')  // optional, defaults to user_refund
+    ->process();             // returns the updated Transaction
+```
+
+`process()` throws `LogicException` when no amount was set, when the transaction is not refundable, or when the amount exceeds the refundable balance.
+
+## Drivers (v2)
+
+### SispDriver Contract
+
+```php
+interface SispDriver
+{
+    public function name(): string;
+    public function paymentEndpoint(): string;
+    public function queryTransactionStatus(Transaction|string $transaction): TransactionStatusResponse;
+}
+```
+
+### SispManager
+
+Extends `Illuminate\Support\Manager`. Built-in drivers: `production` (gateway URL from the resolved credentials) and `sandbox` (local fake gateway route). The default driver follows `config('sisp.driver')`, falling back to the credentials' sandbox flag.
+
+```php
+use Akira\Sisp\Drivers\SispManager;
+use Akira\Sisp\Facades\Sisp;
+
+Sisp::driver();                 // active driver
+Sisp::driver('sandbox');        // specific driver
+resolve(SispManager::class)->extend('custom', fn () => new CustomDriver());
+resolve(Akira\Sisp\Contracts\SispDriver::class); // container contract, resolves the active driver
+```
+
+## Pipelines (v2)
+
+### ProcessPaymentPipeline
+
+```php
+use Akira\Sisp\Pipelines\Payment\PaymentContext;
+use Akira\Sisp\Pipelines\Payment\ProcessPaymentPipeline;
+
+$context = app(ProcessPaymentPipeline::class)->run(new PaymentContext($data, $request));
+
+$context->paymentRequest(); // PaymentRequest (throws LogicException before BuildPaymentRequest ran)
+$context->transaction();    // Transaction (throws LogicException before PersistTransaction ran)
+```
+
+Default pipes (configurable via `sisp.pipelines.payment`): `EnsureIpIsNotBlacklisted`, `EnforceRateLimits`, `BuildPaymentRequest`, `PersistTransaction`, `CaptureRequestMetadata`. Custom pipes implement `Akira\Sisp\Contracts\PaymentPipe`.
+
+### HandleCallbackPipeline
+
+```php
+use Akira\Sisp\Pipelines\Callback\CallbackContext;
+use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
+
+$context = app(HandleCallbackPipeline::class)->run(new CallbackContext($payload));
+
+$context->transaction();   // resolved Transaction
+$context->failed();        // bool
+$context->failureReason;   // 'invalid_callback_fingerprint' | 'callback_details_mismatch' | null
+```
+
+Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`, `ValidateFingerprint`, `EnsureCallbackMatchesTransaction`, `ApplyTransactionStatus`, `DispatchPaymentEvents`. Custom pipes implement `Akira\Sisp\Contracts\CallbackPipe`. Failing pipes mark the transaction `failed`, dispatch `PaymentFailed`, and short-circuit the pipeline.
+
+## Contracts (v2)
+
+| Contract | Default binding | Purpose |
+| --- | --- | --- |
+| `SispCredentialsResolver` | `EnvSispCredentialsResolver` (singleton) | Resolves the active merchant credentials |
+| `SispDriver` | Active driver via `SispManager` | Gateway interactions |
+| `CallbackFingerprintValidator` | `ValidatePaymentResponseFingerprintAction` | Callback fingerprint verification |
+| `PaymentPipe` / `CallbackPipe` | — | Pipeline stage contracts |
+
+Bindings are declared with Laravel 13 container attributes (`#[Bind]` on the contracts, `#[Singleton]` on services), so swapping an implementation is a standard container binding in your application.
+
 ## Actions
 
 Common actions for payment processing.
@@ -890,6 +996,10 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\TransactionData;
 
+Sisp::payment();                                       // PaymentBuilder (v2)
+Sisp::refund($transaction);                            // RefundBuilder (v2)
+Sisp::driver();                                        // SispDriver (v2)
+
 Sisp::getTransactions();                               // Builder
 Sisp::buildRequestPayload(PaymentRequestData::from([])); // PaymentRequest
 Sisp::validateCallback(CallbackPayload::from([]));     // bool
@@ -1120,4 +1230,4 @@ config('sisp.tables.transaction_logs')
 - Review [Examples](./08-examples.md) for code samples
 - Check [Troubleshooting](./09-troubleshooting.md) for solutions
 
-**Previous:** [FAQ](10-faq.md)
+**Previous:** [FAQ](10-faq.md) | **Next:** [Architecture](12-architecture.md)

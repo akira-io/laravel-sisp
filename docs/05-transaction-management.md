@@ -207,6 +207,12 @@ $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 
 `queryTransactionStatus()` returns `TransactionStatusResponse` and never writes to the database. `reconcileTransactionStatus()` returns a `Transaction` and only updates pending transactions when the SISP status API returns `result=true`.
 
+Since v2 the status query is routed through the active gateway driver. You can also call it on a specific driver directly:
+
+```php
+$response = Sisp::driver('production')->queryTransactionStatus($transaction);
+```
+
 For multi-merchant flows, scope the call with explicit credentials:
 
 ```php
@@ -242,23 +248,40 @@ The command reconciles only old indeterminate transactions:
 
 ## Refund Transaction
 
-Refund a completed transaction:
+Refund a completed transaction with the fluent builder (v2):
 
 ```php
-use Akira\Sisp\Actions\RefundTransactionAction;
-
-$action = app(RefundTransactionAction::class);
+use Akira\Sisp\Facades\Sisp;
 
 try {
-    $transaction = $action->handle(
-        transaction: $transaction,
-        refundAmount: 500.00,
-        reason: 'customer_request' // Optional reason
-    );
+    // Full refund
+    $transaction = Sisp::refund($transaction)
+        ->full()
+        ->reason('customer_request')
+        ->process();
+
+    // Partial refund
+    $transaction = Sisp::refund($transaction)
+        ->amount(500.00)
+        ->reason('partial_return')
+        ->process();
+
     echo "Refunded " . $transaction->formatted_amount;
 } catch (LogicException $e) {
     echo "Cannot refund: " . $e->getMessage();
 }
+```
+
+The underlying action remains available when you prefer direct invocation:
+
+```php
+use Akira\Sisp\Actions\RefundTransactionAction;
+
+$transaction = app(RefundTransactionAction::class)->handle(
+    transaction: $transaction,
+    refundAmount: 500.00,
+    reason: 'customer_request'
+);
 ```
 
 ### Refund Rules

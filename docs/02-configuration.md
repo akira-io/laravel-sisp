@@ -77,6 +77,51 @@ SISP_SANDBOX=true              # true for testing, false for production
 
 When enabled, uses the fake gateway instead of real SISP server for testing.
 
+### Gateway Driver (v2)
+
+```env
+SISP_DRIVER=                   # null (auto), production, sandbox, or a custom driver
+```
+
+Gateway interactions are routed through a driver resolved by `Akira\Sisp\Drivers\SispManager`. When `SISP_DRIVER` is empty, the driver is derived from the resolved credentials: `sandbox` when sandbox mode is enabled, `production` otherwise. Setting it explicitly overrides the sandbox flag.
+
+Custom drivers implement `Akira\Sisp\Contracts\SispDriver` and are registered in a service provider:
+
+```php
+use Akira\Sisp\Drivers\SispManager;
+
+resolve(SispManager::class)->extend('custom', fn () => new CustomDriver());
+```
+
+```env
+SISP_DRIVER=custom
+```
+
+### Processing Pipelines (v2)
+
+The payment and callback flows run through Laravel pipelines. Each stage is a single-purpose pipe class, configured in `config/sisp.php`:
+
+```php
+'pipelines' => [
+    'payment' => [
+        Akira\Sisp\Pipelines\Payment\Pipes\EnsureIpIsNotBlacklisted::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\EnforceRateLimits::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\BuildPaymentRequest::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\PersistTransaction::class,
+        Akira\Sisp\Pipelines\Payment\Pipes\CaptureRequestMetadata::class,
+    ],
+    'callback' => [
+        Akira\Sisp\Pipelines\Callback\Pipes\ResolveTransaction::class,
+        Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint::class,
+        Akira\Sisp\Pipelines\Callback\Pipes\EnsureCallbackMatchesTransaction::class,
+        Akira\Sisp\Pipelines\Callback\Pipes\ApplyTransactionStatus::class,
+        Akira\Sisp\Pipelines\Callback\Pipes\DispatchPaymentEvents::class,
+    ],
+],
+```
+
+You can reorder, remove, or append pipes. Payment pipes implement `Akira\Sisp\Contracts\PaymentPipe`; callback pipes implement `Akira\Sisp\Contracts\CallbackPipe`. See [Payment Flow](./04-payment-flow.md) for the responsibilities of each pipe.
+
 ## Invoice Configuration
 
 ### Company Information

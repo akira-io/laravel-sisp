@@ -48,6 +48,32 @@ Response View
     └─ Show Result
 ```
 
+## Pipelines (v2)
+
+Since v2, both halves of the flow are implemented as Laravel pipelines made of single-purpose pipes. The defaults live in `config/sisp.php` under `pipelines` and can be reordered or extended (see [Configuration](./02-configuration.md#processing-pipelines-v2)).
+
+**Payment pipeline** (`ProcessPaymentPipeline`, runs inside `PaymentController`):
+
+| Pipe | Responsibility |
+| --- | --- |
+| `EnsureIpIsNotBlacklisted` | Rejects blacklisted IPs |
+| `EnforceRateLimits` | Applies per-IP rate limits |
+| `BuildPaymentRequest` | Builds the signed `PaymentRequest` (fingerprint, 3DS payload) |
+| `PersistTransaction` | Stores the transaction, items, customer data, and pending invoice |
+| `CaptureRequestMetadata` | Records IP, device, and geolocation metadata |
+
+**Callback pipeline** (`HandleCallbackPipeline`, runs inside `HandleCallbackAction`):
+
+| Pipe | Responsibility |
+| --- | --- |
+| `ResolveTransaction` | Finds the transaction by merchant reference and session |
+| `ValidateFingerprint` | Verifies the SHA512 callback fingerprint; fails the transaction and short-circuits on mismatch |
+| `EnsureCallbackMatchesTransaction` | Reconciles amount, currency, transaction code, and POS ID |
+| `ApplyTransactionStatus` | Maps the SISP message type to a transaction status |
+| `DispatchPaymentEvents` | Dispatches `PaymentCompleted` / `PaymentFailed` / `PaymentPending` |
+
+The form action URL is resolved by the active gateway driver (`production` or `sandbox`) through `SispManager` — see [Configuration](./02-configuration.md#gateway-driver-v2).
+
 ## Step 1: Payment Form Submission
 
 User submits payment form with:
