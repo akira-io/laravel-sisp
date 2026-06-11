@@ -8,6 +8,7 @@ use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,32 +31,24 @@ use Illuminate\Support\Facades\Storage;
  * @property-read  string $customer_name
  * @property-read  CarbonInterface $updated_at
  */
+#[Fillable([
+    'transaction_id',
+    'invoice_number',
+    'invoice_date',
+    'due_date',
+    'status',
+    'customer_name',
+    'customer_email',
+    'customer_city',
+    'customer_address',
+    'customer_country',
+    'notes',
+    'pdf_path',
+    'metadata',
+])]
 final class Invoice extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
-
-    protected $fillable = [
-        'transaction_id',
-        'invoice_number',
-        'invoice_date',
-        'due_date',
-        'status',
-        'customer_name',
-        'customer_email',
-        'customer_city',
-        'customer_address',
-        'customer_country',
-        'notes',
-        'pdf_path',
-        'metadata',
-    ];
-
-    protected $casts = [
-        'invoice_date' => 'date',
-        'due_date' => 'date',
-        'status' => InvoiceStatus::class,
-        'metadata' => 'array',
-    ];
 
     protected $appends = [
         'pdf_url',
@@ -76,6 +69,16 @@ final class Invoice extends Model
         return $this->transaction->items();
     }
 
+    protected function casts(): array
+    {
+        return [
+            'invoice_date' => 'date',
+            'due_date' => 'date',
+            'status' => InvoiceStatus::class,
+            'metadata' => 'array',
+        ];
+    }
+
     protected function getPdfUrlAttribute(): ?string
     {
         if (! $this->pdf_path) {
@@ -89,14 +92,15 @@ final class Invoice extends Model
         }
 
         $disk = config('sisp.invoice.disk', 'public');
+        $storage = Storage::disk($disk);
 
         if ($disk === 's3') {
             $expirationHours = resolve(LoadConfig::class)->getInvoiceTemporaryUrlExpirationHours();
 
-            return Storage::disk($disk)->temporaryUrl($this->pdf_path, now()->addHours($expirationHours));
+            return $storage->temporaryUrl($this->pdf_path, now()->addHours($expirationHours));
         }
 
-        return Storage::disk($disk)->url($this->pdf_path);
+        return $storage->url($this->pdf_path);
     }
 
     private function configuredPdfUrl(): ?string

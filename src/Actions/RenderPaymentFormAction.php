@@ -21,10 +21,7 @@ final readonly class RenderPaymentFormAction
 
         $formAction = $this->buildFormAction($fields);
 
-        /** @var view-string $viewName */
-        $viewName = 'sisp::payment-form';
-
-        return view($viewName, [
+        return view('sisp::payment-form', [
             'formAction' => $formAction,
             'fields' => $fields,
         ]);

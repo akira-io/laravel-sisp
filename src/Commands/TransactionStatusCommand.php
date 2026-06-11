@@ -7,17 +7,17 @@ namespace Akira\Sisp\Commands;
 use Akira\Sisp\Actions\QueryTransactionStatusAction;
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-final class TransactionStatusCommand extends Command
-{
-    protected $signature = 'sisp:transaction-status
+#[Signature('sisp:transaction-status
                             {merchantRef? : Merchant reference to query}
                             {--transaction= : Local transaction ID to query}
-                            {--update : Update the local transaction status from the SISP response}';
-
-    protected $description = 'Query the SISP POS transaction-status API for a merchant reference';
-
+                            {--update : Update the local transaction status from the SISP response}')]
+#[Description('Query the SISP POS transaction-status API for a merchant reference')]
+final class TransactionStatusCommand extends Command
+{
     public function handle(QueryTransactionStatusAction $queryTransactionStatus, ReconcileTransactionStatusAction $reconcile): int
     {
         $transaction = $this->resolveTransaction();

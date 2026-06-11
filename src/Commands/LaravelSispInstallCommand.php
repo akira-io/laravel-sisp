@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Commands;
 
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -12,12 +14,10 @@ use function Laravel\Prompts\info;
 use function Laravel\Prompts\note;
 use function Laravel\Prompts\spin;
 
+#[Signature('sisp:install')]
+#[Description('Install and configure the Laravel SISP package.')]
 final class LaravelSispInstallCommand extends Command
 {
-    protected $signature = 'sisp:install';
-
-    protected $description = 'Install and configure the Laravel SISP package.';
-
     /**
      * Execute the console command.
      */

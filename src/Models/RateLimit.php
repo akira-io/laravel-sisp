@@ -4,34 +4,28 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property-read  \Illuminate\Support\Carbon $reset_at
+ */
+#[Fillable([
+    'identifier',
+    'limit_type',
+    'context',
+    'hits',
+    'limit',
+    'window_seconds',
+    'reset_at',
+    'is_blocked',
+    'blocked_until',
+])]
 final class RateLimit extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
-
-    protected $fillable = [
-        'identifier',
-        'limit_type',
-        'context',
-        'hits',
-        'limit',
-        'window_seconds',
-        'reset_at',
-        'is_blocked',
-        'blocked_until',
-    ];
-
-    protected $casts = [
-        'hits' => 'integer',
-        'limit' => 'integer',
-        'window_seconds' => 'integer',
-        'is_blocked' => 'boolean',
-        'reset_at' => 'datetime',
-        'blocked_until' => 'datetime',
-    ];
 
     public function getTable(): string
     {
@@ -72,6 +66,18 @@ final class RateLimit extends Model
         ]);
 
         return $this;
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'hits' => 'integer',
+            'limit' => 'integer',
+            'window_seconds' => 'integer',
+            'is_blocked' => 'boolean',
+            'reset_at' => 'datetime',
+            'blocked_until' => 'datetime',
+        ];
     }
 
     #[Scope]

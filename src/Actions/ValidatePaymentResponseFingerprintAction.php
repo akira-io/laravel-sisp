@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
-final readonly class ValidatePaymentResponseFingerprintAction
+final readonly class ValidatePaymentResponseFingerprintAction implements CallbackFingerprintValidator
 {
     public function __construct(private PaymentResponseFingerPrintAction $fingerPrint) {}
 

@@ -17,6 +17,50 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SISP Driver
+    |--------------------------------------------------------------------------
+    |
+    | The gateway driver used to talk to SISP. When null, the driver is
+    | derived from the resolved credentials: 'sandbox' when sandbox mode is
+    | enabled, 'production' otherwise. Custom drivers can be registered via
+    | SispManager::extend().
+    |
+    | Supported: null, 'production', 'sandbox'
+    |
+    */
+    'driver' => env('SISP_DRIVER'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Processing Pipelines
+    |--------------------------------------------------------------------------
+    |
+    | The payment and callback flows are processed through pipelines. Each
+    | pipe is a small, single-purpose class. You can reorder, remove, or add
+    | your own pipes here. Payment pipes implement
+    | Akira\Sisp\Contracts\PaymentPipe and callback pipes implement
+    | Akira\Sisp\Contracts\CallbackPipe.
+    |
+    */
+    'pipelines' => [
+        'payment' => [
+            Akira\Sisp\Pipelines\Payment\Pipes\EnsureIpIsNotBlacklisted::class,
+            Akira\Sisp\Pipelines\Payment\Pipes\EnforceRateLimits::class,
+            Akira\Sisp\Pipelines\Payment\Pipes\BuildPaymentRequest::class,
+            Akira\Sisp\Pipelines\Payment\Pipes\PersistTransaction::class,
+            Akira\Sisp\Pipelines\Payment\Pipes\CaptureRequestMetadata::class,
+        ],
+        'callback' => [
+            Akira\Sisp\Pipelines\Callback\Pipes\ResolveTransaction::class,
+            Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint::class,
+            Akira\Sisp\Pipelines\Callback\Pipes\EnsureCallbackMatchesTransaction::class,
+            Akira\Sisp\Pipelines\Callback\Pipes\ApplyTransactionStatus::class,
+            Akira\Sisp\Pipelines\Callback\Pipes\DispatchPaymentEvents::class,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Generators Configuration
     |--------------------------------------------------------------------------
     |

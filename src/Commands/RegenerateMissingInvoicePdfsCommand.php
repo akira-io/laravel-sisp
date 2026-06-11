@@ -7,16 +7,16 @@ namespace Akira\Sisp\Commands;
 use Akira\Sisp\Actions\GenerateInvoicePdfAction;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Models\Invoice;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Throwable;
 
+#[Signature('sisp:regenerate-pdfs
+                            {--limit= : Limit the number of invoices to process}')]
+#[Description('Regenerate PDFs for paid invoices that are missing PDF files')]
 final class RegenerateMissingInvoicePdfsCommand extends Command
 {
-    protected $signature = 'sisp:regenerate-pdfs
-                            {--limit= : Limit the number of invoices to process}';
-
-    protected $description = 'Regenerate PDFs for paid invoices that are missing PDF files';
-
     public function handle(GenerateInvoicePdfAction $generatePdf): int
     {
         $this->info('🔍 Searching for paid invoices without PDFs...');
@@ -24,7 +24,7 @@ final class RegenerateMissingInvoicePdfsCommand extends Command
         $query = Invoice::query()
             ->with(['transaction.items'])
             ->where('status', InvoiceStatus::paid->value)
-            ->whereNull('pdf_path');
+            ->where('pdf_path');
 
         if ($limit = $this->option('limit')) {
             $query->limit((int) $limit);

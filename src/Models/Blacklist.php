@@ -4,27 +4,23 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
+#[Fillable([
+    'type',
+    'value',
+    'reason',
+    'severity',
+    'notes',
+    'added_by',
+    'expires_at',
+])]
 final class Blacklist extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
-
-    protected $fillable = [
-        'type',
-        'value',
-        'reason',
-        'severity',
-        'notes',
-        'added_by',
-        'expires_at',
-    ];
-
-    protected $casts = [
-        'expires_at' => 'datetime',
-    ];
 
     public function getTable(): string
     {
@@ -45,6 +41,13 @@ final class Blacklist extends Model
         return ! $this->isActive();
     }
 
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'datetime',
+        ];
+    }
+
     #[Scope]
     protected function active(Builder $query): Builder
     {
@@ -57,8 +60,7 @@ final class Blacklist extends Model
     #[Scope]
     protected function expired(Builder $query): Builder
     {
-        return $query->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now());
+        return $query->where('expires_at', '<=', now());
     }
 
     #[Scope]

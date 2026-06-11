@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Contracts\SispCredentialsResolver;
+use Akira\Sisp\Drivers\SispManager;
 
 final readonly class DeterminePaymentEndpointAction
 {
-    public function __construct(private SispCredentialsResolver $resolver) {}
+    public function __construct(private SispManager $manager) {}
 
     public function handle(): string
     {
-        $credentials = $this->resolver->resolve();
-
-        if ($credentials->sandbox) {
-            return route('sisp.sandbox');
-        }
-
-        return $credentials->url;
+        return $this->manager->driver()->paymentEndpoint();
     }
 }

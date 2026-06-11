@@ -6,16 +6,16 @@ namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Models\Invoice;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
+#[Signature('sisp:doctor')]
+#[Description('Diagnose issues with invoice PDF generation')]
 final class DoctorCommand extends Command
 {
-    protected $signature = 'sisp:doctor';
-
-    protected $description = 'Diagnose issues with invoice PDF generation';
-
     public function handle(): int
     {
         $this->info('Diagnosing Invoice PDF Issues...');

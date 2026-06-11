@@ -67,6 +67,68 @@ $transaction = Sisp::reconcileTransactionStatus($transaction);
 $countries = Sisp::countries();
 ```
 
+## Requirements (v2)
+
+- PHP 8.5+
+- Laravel 13+
+
+## Architecture (v2)
+
+Version 2 is built on four explicit patterns. Each one is an extension point.
+
+### Builders
+
+Compose payment and refund requests fluently instead of assembling value objects by hand:
+
+```php
+use Akira\Sisp\Facades\Sisp;
+
+$paymentRequest = Sisp::payment()
+    ->amount(1500.0)
+    ->currency('132')
+    ->customerEmail('buyer@example.cv')
+    ->locale('pt')
+    ->build();
+
+$transaction = Sisp::refund($transaction)
+    ->amount(500.0)
+    ->reason('partial_return')
+    ->process();
+```
+
+### Drivers
+
+Gateway interactions go through a driver resolved by `SispManager`. The `production` driver targets the live Vinti4 gateway and the `sandbox` driver targets the local simulator. Selection follows `config('sisp.driver')`, falling back to the resolved credentials' sandbox flag. Register custom gateways with `SispManager::extend()`:
+
+```php
+use Akira\Sisp\Drivers\SispManager;
+
+resolve(SispManager::class)->extend('custom', fn () => new CustomDriver());
+```
+
+### Pipelines
+
+The payment and callback flows run through Laravel pipelines. Every stage is a small, single-purpose pipe, and the stages are configurable in `config/sisp.php` under `pipelines.payment` and `pipelines.callback`, so you can reorder, remove, or append your own pipes:
+
+```php
+'pipelines' => [
+    'payment' => [
+        EnsureIpIsNotBlacklisted::class,
+        EnforceRateLimits::class,
+        BuildPaymentRequest::class,
+        PersistTransaction::class,
+        CaptureRequestMetadata::class,
+        YourCustomPipe::class, // implements Akira\Sisp\Contracts\PaymentPipe
+    ],
+],
+```
+
+### Actions
+
+Every unit of work remains a dedicated, final, constructor-injected action class with a single `handle()` method. Pipes and builders delegate to actions, and actions depend on contracts, never on concrete infrastructure.
+
+The package also uses native Laravel 13 syntax throughout: `#[Fillable]`, `#[UseFactory]`, and `#[Scope]` attributes on Eloquent models, `#[Signature]` and `#[Description]` on console commands, and `#[Bind]`/`#[Singleton]` container attributes on contracts and services.
+
 ## Documentation
 
 - [Roadmap](docs/00-roadmap.md)

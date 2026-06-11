@@ -176,6 +176,8 @@ it('runs authorized full refund through the public route', function (): void {
         'status' => 'completed',
         'amount' => 90.0,
         'customer_email' => 'buyer@example.test',
+        'transaction_id' => 'TX-REFUND-1',
+        'response_code' => '001',
     ]);
 
     $this->actingAs(new RealSispFlowUser(1, 'agent@example.test'))
