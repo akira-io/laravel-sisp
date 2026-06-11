@@ -6,13 +6,14 @@ namespace Akira\Sisp\Database\Factories;
 
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Override;
 
 /**
  * @extends Factory<Transaction>
  */
 final class TransactionFactory extends Factory
 {
-    #[\Override]
+    #[Override]
     protected $model = Transaction::class;
 
     public function definition(): array

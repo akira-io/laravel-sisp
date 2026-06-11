@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Override;
 
 /**
  * @property string $customer_name
@@ -50,7 +51,7 @@ final class Invoice extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    #[\Override]
+    #[Override]
     protected $appends = [
         'pdf_url',
     ];

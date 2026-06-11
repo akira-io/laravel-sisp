@@ -7,19 +7,20 @@ use Akira\Sisp\Models\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Override;
 
 final class OrderWithSisp extends Model
 {
     use HasSispTransactions;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    #[\Override]
+    #[Override]
     public $timestamps = false;
 
-    #[\Override]
+    #[Override]
     protected $table = 'orders_with_sisp';
 
-    #[\Override]
+    #[Override]
     protected $fillable = ['sisp_transaction_id'];
 }
 

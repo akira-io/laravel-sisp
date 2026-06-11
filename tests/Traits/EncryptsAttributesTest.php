@@ -8,19 +8,20 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Override;
 
 final class TmpEncrypted extends Model
 {
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    #[\Override]
+    #[Override]
     public $timestamps = false;
 
-    #[\Override]
+    #[Override]
     protected $table = 'tmp_encrypts';
 
-    #[\Override]
+    #[Override]
     protected $fillable = ['secret'];
 
     protected function encryptable(): array
@@ -34,13 +35,13 @@ final class TmpEncryptedSelective extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    #[\Override]
+    #[Override]
     public $timestamps = false;
 
-    #[\Override]
+    #[Override]
     protected $table = 'tmp_encrypts_selective';
 
-    #[\Override]
+    #[Override]
     protected $fillable = ['secret', 'note'];
 
     protected function encryptable(): array
@@ -91,13 +92,13 @@ final class TmpEncryptAll extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    #[\Override]
+    #[Override]
     public $timestamps = false;
 
-    #[\Override]
+    #[Override]
     protected $table = 'tmp_encrypts_all';
 
-    #[\Override]
+    #[Override]
     protected $fillable = ['notes'];
 }
 
@@ -106,13 +107,13 @@ final class TmpEncryptedAccessor extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    #[\Override]
+    #[Override]
     public $timestamps = false;
 
-    #[\Override]
+    #[Override]
     protected $table = 'tmp_encrypts_accessor';
 
-    #[\Override]
+    #[Override]
     protected $fillable = ['secret'];
 
     protected function encryptable(): array
