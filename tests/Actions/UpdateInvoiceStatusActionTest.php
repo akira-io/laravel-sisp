@@ -9,6 +9,7 @@ use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 final class UpdateInvoiceStatusTestPdfGenerator implements PdfGeneratorContract
@@ -114,4 +115,33 @@ it('handles transaction without invoice gracefully', function (): void {
     $action->handle($transaction, TransactionStatus::pending);
 
     expect(true)->toBeTrue();
+});
+
+it('does not fail the payment flow when pdf generation throws', function (): void {
+    app()->instance(PdfGeneratorContract::class, new class implements PdfGeneratorContract
+    {
+        public function generate(DtoInvoiceData $invoice, string $template = 'modern'): string
+        {
+            throw new RuntimeException('headless browser unavailable');
+        }
+
+        public function save(DtoInvoiceData $invoice, string $template = 'modern', ?string $path = null): string
+        {
+            throw new RuntimeException('headless browser unavailable');
+        }
+    });
+
+    Log::shouldReceive('error')->once()->withArgs(
+        fn (string $message): bool => $message === 'SISP invoice PDF generation failed.'
+    );
+
+    $transaction = Transaction::factory()->create(['status' => 'completed']);
+    $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
+
+    resolve(UpdateInvoiceStatusAction::class)->handle($transaction->refresh(), TransactionStatus::completed);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::paid)
+        ->and($invoice->pdf_path)->toBeNull();
 });

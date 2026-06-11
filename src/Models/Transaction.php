@@ -21,15 +21,15 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  int $id
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
- * @property-read  string $customer_email
+ * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
  * @property-read  int $transaction_id
  * @property-read  string $locale
- * @property-read  string $customer_name
- * @property-read  string $customer_phone
- * @property-read  string $customer_country
- * @property-read  string $customer_city
- * @property-read  string $customer_address
+ * @property-read  string|null $customer_name
+ * @property-read  string|null $customer_phone
+ * @property-read  string|null $customer_country
+ * @property-read  string|null $customer_city
+ * @property-read  string|null $customer_address
  * @property-read  int|float $amount
  * @property-read  int $amount_cents
  * @property-read  string $formatted_amount

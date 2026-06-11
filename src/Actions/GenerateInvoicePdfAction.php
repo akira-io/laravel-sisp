@@ -35,9 +35,9 @@ final readonly class GenerateInvoicePdfAction
             ->build();
 
         $buyer = EntityBuilder::make()
-            ->name($invoice->customer_name ?? $transaction->customer_name)
-            ->email($invoice->customer_email ?? $transaction->customer_email)
-            ->address($invoice->customer_address ?? $transaction->customer_address)
+            ->name($invoice->customer_name ?? $transaction->customer_name ?? '')
+            ->email($invoice->customer_email ?? $transaction->customer_email ?? '')
+            ->address($invoice->customer_address ?? $transaction->customer_address ?? '')
             ->set('country', $invoice->customer_country ?? $transaction->customer_country)
             ->set('phone', $transaction->customer_phone)
             ->set('city', $invoice->customer_city ?? $transaction->customer_city)
