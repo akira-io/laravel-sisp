@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Facades;
 
+use Akira\Sisp\Builders\PaymentBuilder;
+use Akira\Sisp\Builders\RefundBuilder;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ScopedSisp;
@@ -18,6 +20,8 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static ScopedSisp forCredentials(SispCredentials $credentials)
+ * @method static PaymentBuilder payment()
+ * @method static RefundBuilder refund(Transaction $transaction)
  * @method static SispDriver driver(string|null $driver = null)
  * @method static Builder getTransactions()
  * @method static PaymentRequest buildRequestPayload(PaymentRequestData $data)
