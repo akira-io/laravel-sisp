@@ -12,6 +12,8 @@ use Akira\Sisp\Actions\QueryTransactionStatusAction;
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\SispDriver;
+use Akira\Sisp\Drivers\SispManager;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\Countries;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -41,6 +43,11 @@ final readonly class Sisp
             container: app(),
             credentials: $credentials,
         );
+    }
+
+    public function driver(?string $driver = null): SispDriver
+    {
+        return resolve(SispManager::class)->driver($driver);
     }
 
     public function getTransactions(): \Illuminate\Database\Eloquent\Builder

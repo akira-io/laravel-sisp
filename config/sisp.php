@@ -17,6 +17,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SISP Driver
+    |--------------------------------------------------------------------------
+    |
+    | The gateway driver used to talk to SISP. When null, the driver is
+    | derived from the resolved credentials: 'sandbox' when sandbox mode is
+    | enabled, 'production' otherwise. Custom drivers can be registered via
+    | SispManager::extend().
+    |
+    | Supported: null, 'production', 'sandbox'
+    |
+    */
+    'driver' => env('SISP_DRIVER'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Generators Configuration
     |--------------------------------------------------------------------------
     |

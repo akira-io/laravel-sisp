@@ -19,6 +19,8 @@ use Akira\Sisp\Commands\TransactionStatusCommand;
 use Akira\Sisp\Configuration\EnvSispCredentialsResolver;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
+use Akira\Sisp\Contracts\SispDriver;
+use Akira\Sisp\Drivers\SispManager;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\View\Compilers\BladeCompiler;
@@ -58,6 +60,10 @@ final class SispServiceProvider extends PackageServiceProvider
             SispCredentialsResolver::class,
             EnvSispCredentialsResolver::class
         );
+
+        $this->app->singleton(SispManager::class);
+
+        $this->app->bind(SispDriver::class, fn (Application $app): SispDriver => $app->make(SispManager::class)->driver());
 
         $this->app->singleton(Sisp::class, fn (Application $app): Sisp => new Sisp(
             buildRequestPayload: $app->make(BuildRequestPayloadAction::class),
