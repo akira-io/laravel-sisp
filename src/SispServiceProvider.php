@@ -18,6 +18,7 @@ use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
 use Akira\Sisp\Commands\TransactionStatusCommand;
 use Akira\Sisp\Configuration\EnvSispCredentialsResolver;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Drivers\SispManager;
@@ -62,6 +63,11 @@ final class SispServiceProvider extends PackageServiceProvider
         );
 
         $this->app->singleton(SispManager::class);
+
+        $this->app->bind(
+            CallbackFingerprintValidator::class,
+            ValidatePaymentResponseFingerprintAction::class
+        );
 
         $this->app->bind(SispDriver::class, fn (Application $app): SispDriver => $app->make(SispManager::class)->driver());
 

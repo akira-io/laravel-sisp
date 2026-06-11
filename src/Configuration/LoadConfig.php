@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Configuration;
 
+use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
+use Akira\Sisp\Pipelines\Payment\ProcessPaymentPipeline;
 use Illuminate\Contracts\Config\Repository;
 
 final readonly class LoadConfig
@@ -45,6 +47,22 @@ final readonly class LoadConfig
     public function isSandboxEnabled(): bool
     {
         return $this->config->get('sisp.sandbox', false);
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    public function getPaymentPipes(): array
+    {
+        return $this->config->get('sisp.pipelines.payment', ProcessPaymentPipeline::DEFAULT_PIPES);
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    public function getCallbackPipes(): array
+    {
+        return $this->config->get('sisp.pipelines.callback', HandleCallbackPipeline::DEFAULT_PIPES);
     }
 
     public function getMerchantReference(): string

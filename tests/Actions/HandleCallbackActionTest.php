@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\HandleCallbackAction;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentCompleted;
@@ -38,9 +39,9 @@ beforeEach(function (): void {
 });
 
 it('dispatches PaymentFailed and marks the transaction failed when fingerprint is invalid', function (): void {
-    app()->instance(Akira\Sisp\Sisp::class, new class
+    app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
     {
-        public function validateCallback(CallbackPayload $payload): bool
+        public function handle(CallbackPayload $payload): bool
         {
             return false;
         }
@@ -66,9 +67,9 @@ it('dispatches PaymentFailed and marks the transaction failed when fingerprint i
 });
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
-    app()->instance(Akira\Sisp\Sisp::class, new class
+    app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
     {
-        public function validateCallback(CallbackPayload $payload): bool
+        public function handle(CallbackPayload $payload): bool
         {
             return true;
         }
