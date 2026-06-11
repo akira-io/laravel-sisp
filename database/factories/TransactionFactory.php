@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 final class TransactionFactory extends Factory
 {
+    #[\Override]
     protected $model = Transaction::class;
 
     public function definition(): array

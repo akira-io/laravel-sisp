@@ -14,10 +14,13 @@ final class TmpEncrypted extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+    #[\Override]
     public $timestamps = false;
 
+    #[\Override]
     protected $table = 'tmp_encrypts';
 
+    #[\Override]
     protected $fillable = ['secret'];
 
     protected function encryptable(): array
@@ -31,10 +34,13 @@ final class TmpEncryptedSelective extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+    #[\Override]
     public $timestamps = false;
 
+    #[\Override]
     protected $table = 'tmp_encrypts_selective';
 
+    #[\Override]
     protected $fillable = ['secret', 'note'];
 
     protected function encryptable(): array
@@ -85,10 +91,13 @@ final class TmpEncryptAll extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+    #[\Override]
     public $timestamps = false;
 
+    #[\Override]
     protected $table = 'tmp_encrypts_all';
 
+    #[\Override]
     protected $fillable = ['notes'];
 }
 
@@ -97,10 +106,13 @@ final class TmpEncryptedAccessor extends Model
     use EncryptsAttributes;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+    #[\Override]
     public $timestamps = false;
 
+    #[\Override]
     protected $table = 'tmp_encrypts_accessor';
 
+    #[\Override]
     protected $fillable = ['secret'];
 
     protected function encryptable(): array

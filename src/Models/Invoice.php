@@ -50,6 +50,7 @@ final class Invoice extends Model
 {
     use \Illuminate\Database\Eloquent\Factories\HasFactory;
 
+    #[\Override]
     protected $appends = [
         'pdf_url',
     ];

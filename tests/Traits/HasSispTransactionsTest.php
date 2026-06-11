@@ -13,10 +13,13 @@ final class OrderWithSisp extends Model
     use HasSispTransactions;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+    #[\Override]
     public $timestamps = false;
 
+    #[\Override]
     protected $table = 'orders_with_sisp';
 
+    #[\Override]
     protected $fillable = ['sisp_transaction_id'];
 }
 

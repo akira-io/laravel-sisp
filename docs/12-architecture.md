@@ -73,6 +73,7 @@ The package uses framework attributes throughout:
 | Eloquent models | `#[Fillable]`, `#[UseFactory]`, `#[Scope]`, `casts()` method |
 | Console commands | `#[Signature]`, `#[Description]` |
 | Contracts/services | `#[Bind]`, `#[Singleton]` container attributes |
+| Overridden properties | PHP 8.5 `#[\Override]` attribute |
 
 The service provider's `register()` is reduced to the single driver-contract closure; everything else is declared where it lives. Note: `#[Bind]` requires the container's environment resolver, which full applications register during bootstrap — the provider mirrors it for lighter harnesses such as Testbench.
 
