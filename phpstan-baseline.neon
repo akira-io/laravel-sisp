@@ -13,18 +13,6 @@ parameters:
 			path: src/Actions/RenderPaymentResponseAction.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$merchant_session\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$message_type\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
 			identifier: property.notFound
 			count: 1
@@ -101,4 +89,3 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: src/Models/RateLimit.php
-

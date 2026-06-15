@@ -21,9 +21,16 @@ final readonly class ValidateFingerprint implements CallbackPipe
     public function handle(CallbackContext $context, Closure $next): CallbackContext
     {
         if (! $this->validateFingerprint->handle($context->payload)) {
-            $this->failTransaction->handle($context->transaction(), $context->payload, 'invalid_callback_fingerprint');
+            $context->transactionStatusPropagated = $this->failTransaction->handle(
+                $context->transaction(),
+                $context->payload,
+                'invalid_callback_fingerprint',
+                $context->attempt(),
+            );
 
-            event(new PaymentFailed($context->transaction(), $context->payload));
+            if ($context->transactionStatusPropagated) {
+                event(new PaymentFailed($context->transaction(), $context->payload));
+            }
 
             return $context->fail('invalid_callback_fingerprint');
         }

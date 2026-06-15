@@ -9,6 +9,7 @@ use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
@@ -85,6 +86,15 @@ final readonly class CallbackController
 
     private function isAlreadyProcessed(CallbackPayload $payload): bool
     {
+        $attempt = TransactionAttempt::query()
+            ->where('merchant_ref', $payload->merchantRef)
+            ->where('merchant_session', $payload->merchantSession)
+            ->first();
+
+        if ($attempt instanceof TransactionAttempt) {
+            return $attempt->gateway_transaction_id !== null;
+        }
+
         $transaction = Transaction::query()
             ->where('merchant_ref', $payload->merchantRef)
             ->where('merchant_session', $payload->merchantSession)

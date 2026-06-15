@@ -23,7 +23,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  array $payload
  * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
- * @property-read  int $transaction_id
+ * @property-read  string $merchant_session
+ * @property-read  string|null $transaction_id
+ * @property-read  string|null $message_type
+ * @property-read  string|null $response_code
+ * @property-read  string|null $merchant_response
+ * @property-read  string|null $fingerprint
  * @property-read  string $locale
  * @property-read  string|null $customer_name
  * @property-read  string|null $customer_phone
@@ -34,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  int $amount_cents
  * @property-read  string $formatted_amount
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionItem> $items
+ * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionAttempt> $attempts
+ * @property-read  TransactionAttempt|null $currentAttempt
  * @property-read  Invoice|null $invoice
  */
 #[UseFactory(TransactionFactory::class)]
@@ -75,6 +82,23 @@ final class Transaction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class, 'transaction_id');
+    }
+
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(TransactionAttempt::class, 'transaction_id');
+    }
+
+    public function paymentIntents(): HasMany
+    {
+        return $this->hasMany(PaymentIntent::class, 'transaction_id');
+    }
+
+    public function currentAttempt(): HasOne
+    {
+        return $this->hasOne(TransactionAttempt::class, 'transaction_id')
+            ->whereNull('superseded_at')
+            ->latestOfMany();
     }
 
     public function invoice(): HasOne

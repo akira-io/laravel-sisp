@@ -109,5 +109,6 @@ return [
         'invalid_payment_response' => 'Réponse de paiement invalide',
         'invalid_fingerprint' => 'Empreinte digitale de paiement invalide',
         'transaction_not_found' => 'Transaction introuvable',
+        'payment_in_progress' => 'Le paiement est déjà en cours de traitement.',
     ],
 ];

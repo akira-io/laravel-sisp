@@ -6,16 +6,36 @@ namespace Akira\Sisp\Actions\Transaction;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class FailTransactionAction
 {
-    public function handle(Transaction $transaction, CallbackPayload $payload, string $merchantResponse): void
-    {
+    public function __construct(private UpdateTransactionAttemptAction $updateAttempt) {}
+
+    public function handle(
+        Transaction $transaction,
+        CallbackPayload $payload,
+        string $merchantResponse,
+        ?TransactionAttempt $attempt = null,
+    ): bool {
+        if ($attempt instanceof TransactionAttempt) {
+            $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
+
+            if (! $attempt->isCurrent()) {
+                return false;
+            }
+        }
+
+        $merchantRef = $attempt instanceof TransactionAttempt ? $attempt->merchant_ref : $transaction->merchant_ref;
+        $merchantSession = $attempt instanceof TransactionAttempt ? $attempt->merchant_session : $transaction->merchant_session;
+
         TransactionLogContext::run(
             'callback',
             fn (): bool => $transaction->update([
+                'merchant_ref' => $merchantRef,
+                'merchant_session' => $merchantSession,
                 'transaction_id' => $payload->transactionID,
                 'message_type' => $payload->messageType,
                 'merchant_response' => $merchantResponse,
@@ -24,5 +44,7 @@ final readonly class FailTransactionAction
                 'status' => TransactionStatus::failed,
             ])
         );
+
+        return true;
     }
 }

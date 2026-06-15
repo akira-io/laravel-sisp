@@ -16,6 +16,10 @@ final readonly class DispatchPaymentEvents implements CallbackPipe
 {
     public function handle(CallbackContext $context, Closure $next): CallbackContext
     {
+        if (! $context->transactionStatusPropagated) {
+            return $next($context);
+        }
+
         $transaction = $context->transaction();
 
         match ($transaction->status) {
