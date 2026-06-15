@@ -8,6 +8,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property-read int $id
+ * @property-read int $transaction_id
+ * @property-read string|null $product_id
+ * @property-read string $product_name
+ * @property-read int $quantity
+ * @property-read int $unit_price_cents
+ * @property-read int $total_price_cents
+ * @property-read array<string, mixed>|null $metadata
+ */
 final class TransactionItem extends Model
 {
     use HasFactory;
@@ -35,6 +45,9 @@ final class TransactionItem extends Model
         return config('sisp.tables.transaction_items', 'sisp_transaction_items');
     }
 
+    /**
+     * @return BelongsTo<Transaction, $this>
+     */
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);

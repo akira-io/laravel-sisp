@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Controllers;
 
+use Akira\Sisp\Actions\CreateRetryPaymentAttemptAction;
 use Akira\Sisp\Actions\RenderPaymentFormBasedOnConfigAction;
 use Akira\Sisp\Actions\RetryPaymentAction;
-use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Http\Requests\RetryPaymentRequest;
 use Akira\Sisp\Models\Transaction;
-use Akira\Sisp\Support\TransactionLogContext;
 
 final readonly class RetryPaymentController
 {
     public function __construct(
         private RetryPaymentAction $retryPayment,
         private RenderPaymentFormBasedOnConfigAction $renderForm,
+        private CreateRetryPaymentAttemptAction $createRetryAttempt,
     ) {}
 
     public function __invoke(RetryPaymentRequest $request): mixed
@@ -29,20 +29,7 @@ final readonly class RetryPaymentController
             );
         }
 
-        $paymentRequest = $this->retryPayment->handle($transaction);
-
-        TransactionLogContext::run(
-            'retry',
-            fn (): bool => $transaction->update([
-                'merchant_session' => $paymentRequest->merchantSession,
-                'transaction_id' => null,
-                'message_type' => null,
-                'merchant_response' => null,
-                'response_code' => null,
-                'fingerprint' => null,
-                'status' => TransactionStatus::pending,
-            ])
-        );
+        $paymentRequest = $this->createRetryAttempt->handle($transaction);
 
         return $this->renderForm->handle($paymentRequest, $transaction->locale);
     }
