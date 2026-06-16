@@ -241,10 +241,16 @@ return [
     |--------------------------------------------------------------------------
     | Identifier Generation
     |--------------------------------------------------------------------------
+    |
+    | Merchant reference and merchant session generators are configurable and
+    | their generated values are treated as candidates. The package persists
+    | them only when database uniqueness constraints accept them.
+    | The default retry sleep is 1000000 microseconds, equal to 1 second.
+    |
     */
     'identifier_generation' => [
         'max_attempts' => env('SISP_IDENTIFIER_GENERATION_MAX_ATTEMPTS', 5),
-        'collision_retry_sleep_microseconds' => env('SISP_IDENTIFIER_GENERATION_COLLISION_SLEEP_MICROSECONDS', 1_000_000),
+        'collision_retry_sleep_microseconds' => env('SISP_IDENTIFIER_GENERATION_COLLISION_SLEEP_MICROSECONDS', 1000000),
     ],
 
     /*
