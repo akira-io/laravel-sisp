@@ -21,6 +21,7 @@ use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Support\Facades\DB;
 
 final readonly class HandleCallbackAction
 {
@@ -96,25 +97,27 @@ final readonly class HandleCallbackAction
 
     private function failTransaction(Transaction $transaction, TransactionAttempt $attempt, CallbackPayload $payload, string $merchantResponse): void
     {
-        $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
+        DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction): void {
+            $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
 
-        if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
-            return;
-        }
+            if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
+                return;
+            }
 
-        TransactionLogContext::run(
-            'callback',
-            fn (): bool => $transaction->update([
-                'merchant_ref' => $attempt->merchant_ref,
-                'merchant_session' => $attempt->merchant_session,
-                'transaction_id' => $payload->transactionID,
-                'message_type' => $payload->messageType,
-                'merchant_response' => $merchantResponse,
-                'response_code' => $payload->merchantRespCp,
-                'fingerprint' => $payload->fingerprint,
-                'status' => TransactionStatus::failed,
-            ])
-        );
+            TransactionLogContext::run(
+                'callback',
+                fn (): bool => $transaction->update([
+                    'merchant_ref' => $attempt->merchant_ref,
+                    'merchant_session' => $attempt->merchant_session,
+                    'transaction_id' => $payload->transactionID,
+                    'message_type' => $payload->messageType,
+                    'merchant_response' => $merchantResponse,
+                    'response_code' => $payload->merchantRespCp,
+                    'fingerprint' => $payload->fingerprint,
+                    'status' => TransactionStatus::failed,
+                ])
+            );
+        });
     }
 
     private function transactionAmount(Transaction $transaction): float|int|string
