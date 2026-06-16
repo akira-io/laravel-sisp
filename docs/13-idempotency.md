@@ -160,17 +160,9 @@ Because these generators are configurable, the package assumes they can collide.
 - attempt pair `merchant_ref` and `merchant_session`
 - attempt pair `transaction_id` and `attempt_number`
 
-When a collision happens during creation or retry, the package catches the unique-constraint failure and generates a new candidate up to:
+When a collision happens during creation or retry, the package catches the unique-constraint failure and generates a new candidate up to the value exposed by `LoadConfig::getIdentifierGenerationMaxAttempts()`.
 
-```php
-config('sisp.identifier_generation.max_attempts', 5)
-```
-
-Between attempts, it sleeps for:
-
-```php
-config('sisp.identifier_generation.collision_retry_sleep_microseconds', 1_000_000)
-```
+Between attempts, it sleeps for the value exposed by `LoadConfig::getIdentifierGenerationCollisionRetrySleepMicroseconds()`.
 
 If all candidates collide, the package throws `UnableToGenerateUniquePaymentIdentifiersException`.
 

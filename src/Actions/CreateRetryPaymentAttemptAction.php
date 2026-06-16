@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Exceptions\UnableToGenerateUniquePaymentIdentifiersException;
 use Akira\Sisp\Models\Transaction;
@@ -18,11 +19,12 @@ final readonly class CreateRetryPaymentAttemptAction
     public function __construct(
         private RetryPaymentAction $retryPayment,
         private CreateTransactionAttemptAction $createAttempt,
+        private LoadConfig $config,
     ) {}
 
     public function handle(Transaction $transaction): PaymentRequest
     {
-        $maxAttempts = max(1, (int) config('sisp.identifier_generation.max_attempts', 5));
+        $maxAttempts = $this->config->getIdentifierGenerationMaxAttempts();
         $lastException = null;
 
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
@@ -70,7 +72,7 @@ final readonly class CreateRetryPaymentAttemptAction
 
     private function waitForNextCandidate(): void
     {
-        $microseconds = max(0, (int) config('sisp.identifier_generation.collision_retry_sleep_microseconds', 1_000_000));
+        $microseconds = $this->config->getIdentifierGenerationCollisionRetrySleepMicroseconds();
 
         if ($microseconds > 0) {
             \Illuminate\Support\Sleep::usleep($microseconds);

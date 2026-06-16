@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Exceptions\DuplicatePaymentIdentifierException;
 use Akira\Sisp\Exceptions\UnableToGenerateUniquePaymentIdentifiersException;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
@@ -15,6 +16,7 @@ final readonly class CreateUniquePaymentTransactionAction
     public function __construct(
         private PreparePaymentAction $preparePayment,
         private CreateAndStorePaymentTransactionAction $createTransaction,
+        private LoadConfig $config,
     ) {}
 
     public function handle(PaymentRequestData $data, Request $request): PreparedPaymentTransaction
@@ -44,12 +46,12 @@ final readonly class CreateUniquePaymentTransactionAction
 
     private function maxAttempts(): int
     {
-        return max(1, (int) config('sisp.identifier_generation.max_attempts', 5));
+        return $this->config->getIdentifierGenerationMaxAttempts();
     }
 
     private function waitForNextCandidate(): void
     {
-        $microseconds = max(0, (int) config('sisp.identifier_generation.collision_retry_sleep_microseconds', 1_000_000));
+        $microseconds = $this->config->getIdentifierGenerationCollisionRetrySleepMicroseconds();
 
         if ($microseconds > 0) {
             \Illuminate\Support\Sleep::usleep($microseconds);
