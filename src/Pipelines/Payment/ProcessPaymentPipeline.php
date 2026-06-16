@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Pipelines\Payment;
 
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Pipelines\Payment\Pipes\ApplyPaymentIntent;
 use Akira\Sisp\Pipelines\Payment\Pipes\BuildPaymentRequest;
 use Akira\Sisp\Pipelines\Payment\Pipes\CaptureRequestMetadata;
 use Akira\Sisp\Pipelines\Payment\Pipes\EnforceRateLimits;
@@ -17,6 +18,7 @@ final readonly class ProcessPaymentPipeline
     public const array DEFAULT_PIPES = [
         EnsureIpIsNotBlacklisted::class,
         EnforceRateLimits::class,
+        ApplyPaymentIntent::class,
         BuildPaymentRequest::class,
         PersistTransaction::class,
         CaptureRequestMetadata::class,

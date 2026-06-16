@@ -17,6 +17,7 @@
             "js",
             "pnpm",
             "getters",
+            "idempotency",
             "roadmap",
             "addr",
             "pdfs",

@@ -109,5 +109,6 @@ return [
         'invalid_payment_response' => 'Invalid payment response',
         'invalid_fingerprint' => 'Invalid payment fingerprint',
         'transaction_not_found' => 'Transaction not found',
+        'payment_in_progress' => 'Payment is already being processed.',
     ],
 ];

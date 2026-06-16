@@ -26,6 +26,6 @@ final readonly class StorePaymentTransactionAction
             'locale' => $paymentRequest->locale,
         ]);
 
-        return $this->createTransaction->handle($transactionData);
+        return $this->createTransaction->handle($transactionData, $paymentRequest);
     }
 }

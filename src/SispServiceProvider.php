@@ -29,6 +29,8 @@ final class SispServiceProvider extends PackageServiceProvider
                 'create_laravel_sisp_table',
                 'update_laravel_sisp_transactions_add_amount_cents',
                 'create_sisp_transaction_logs_table',
+                'create_sisp_transaction_attempts_table',
+                'create_sisp_payment_intents_table',
             ])
             ->hasTranslations()
             ->hasRoutes('web')

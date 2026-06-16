@@ -145,6 +145,7 @@ The package also uses native Laravel 13 syntax throughout: `#[Fillable]`, `#[Use
 - [API Reference](docs/11-api-reference.md)
 - [Architecture (v2)](docs/12-architecture.md)
 - [Upgrade Guide (1.x → 2.0)](UPGRADE.md)
+- [Idempotency](docs/14-idempotency.md)
 
 Reference documentation is maintained in this repository under [`docs`](docs).
 

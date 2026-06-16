@@ -34,3 +34,22 @@ it('allows toggling retry via config', function (): void {
     config(['sisp.allow_retry' => true]);
     expect($this->config->isRetryAllowed())->toBeTrue();
 });
+
+it('returns identifier generation settings', function (): void {
+    expect($this->config->getIdentifierGenerationMaxAttempts())->toBe(5)
+        ->and($this->config->getIdentifierGenerationCollisionRetrySleepMicroseconds())->toBe(1000000);
+
+    config(['sisp.identifier_generation.max_attempts' => 3]);
+    config(['sisp.identifier_generation.collision_retry_sleep_microseconds' => 250000]);
+
+    expect($this->config->getIdentifierGenerationMaxAttempts())->toBe(3)
+        ->and($this->config->getIdentifierGenerationCollisionRetrySleepMicroseconds())->toBe(250000);
+});
+
+it('normalizes invalid identifier generation settings', function (): void {
+    config(['sisp.identifier_generation.max_attempts' => 0]);
+    config(['sisp.identifier_generation.collision_retry_sleep_microseconds' => -1]);
+
+    expect($this->config->getIdentifierGenerationMaxAttempts())->toBe(1)
+        ->and($this->config->getIdentifierGenerationCollisionRetrySleepMicroseconds())->toBe(0);
+});

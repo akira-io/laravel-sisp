@@ -262,6 +262,16 @@ final readonly class LoadConfig
         return $this->config->get('sisp.allow_retry', true);
     }
 
+    public function getIdentifierGenerationMaxAttempts(): int
+    {
+        return max(1, (int) $this->config->get('sisp.identifier_generation.max_attempts', 5));
+    }
+
+    public function getIdentifierGenerationCollisionRetrySleepMicroseconds(): int
+    {
+        return max(0, (int) $this->config->get('sisp.identifier_generation.collision_retry_sleep_microseconds', 1000000));
+    }
+
     public function getInvoiceTemporaryUrlExpirationHours(): int
     {
         return (int) $this->config->get('sisp.invoice.temporary_url_expiration_hours', 24);

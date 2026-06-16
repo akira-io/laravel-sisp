@@ -15,7 +15,15 @@ final readonly class ApplyTransactionStatus implements CallbackPipe
 
     public function handle(CallbackContext $context, Closure $next): CallbackContext
     {
-        $this->updateTransaction->handle($context->transaction(), $context->payload);
+        $context->transactionStatusPropagated = $this->updateTransaction->handle(
+            $context->transaction(),
+            $context->payload,
+            $context->attempt(),
+        );
+
+        if ($context->transactionStatusPropagated) {
+            $context->transaction()->refresh();
+        }
 
         return $next($context);
     }

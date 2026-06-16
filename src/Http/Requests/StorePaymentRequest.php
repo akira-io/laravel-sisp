@@ -34,6 +34,8 @@ final class StorePaymentRequest extends FormRequest
             'customer_address' => ['sometimes', 'string', 'max:255'],
             'customer_postal_code' => ['sometimes', 'string', 'max:20'],
             'locale' => ['sometimes', 'string', 'max:10'],
+            'idempotency_key' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'checkout_intent_id' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 
