@@ -7,13 +7,12 @@ namespace Akira\Sisp\Actions\Transaction;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
-final class FindOrCreateTransactionAction
+final readonly class FindOrCreateTransactionAction
 {
+    public function __construct(private FindTransactionAttemptAction $findAttempt) {}
+
     public function handle(CallbackPayload $payload): Transaction
     {
-        return Transaction::query()
-            ->where('merchant_ref', $payload->merchantRef)
-            ->where('merchant_session', $payload->merchantSession)
-            ->firstOrFail();
+        return $this->findAttempt->handle($payload)->transaction()->firstOrFail();
     }
 }

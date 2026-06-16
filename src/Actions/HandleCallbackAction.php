@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Actions\Transaction\FindOrCreateTransactionAction;
+use Akira\Sisp\Actions\Transaction\FindTransactionAttemptAction;
+use Akira\Sisp\Actions\Transaction\MapTransactionStatusAction;
+use Akira\Sisp\Actions\Transaction\ShouldPropagateAttemptCallbackAction;
 use Akira\Sisp\Actions\Transaction\UpdateTransactionAction;
+use Akira\Sisp\Actions\Transaction\UpdateTransactionAttemptAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Enums\TransactionStatus;
@@ -14,43 +17,55 @@ use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Support\Facades\DB;
 
 final readonly class HandleCallbackAction
 {
     public function __construct(
-        private FindOrCreateTransactionAction $findOrCreateTransaction,
+        private FindTransactionAttemptAction $findTransactionAttempt,
         private UpdateTransactionAction $updateTransaction,
+        private UpdateTransactionAttemptAction $updateAttempt,
+        private MapTransactionStatusAction $mapStatus,
+        private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
         private SispCredentialsResolver $credentialsResolver,
         private LoadConfig $config,
     ) {}
 
     public function handle(CallbackPayload $payload): Transaction
     {
+        $attempt = $this->findTransactionAttempt->handle($payload);
 
-        $transaction = $this->findOrCreateTransaction->handle($payload);
+        $transaction = $attempt->transaction()->firstOrFail();
 
         if (! Sisp::validateCallback($payload)) {
-            $this->failTransaction($transaction, $payload, 'invalid_callback_fingerprint');
+            $this->failTransaction($transaction, $attempt, $payload, 'invalid_callback_fingerprint');
 
             event(new PaymentFailed($transaction, $payload));
 
             return $transaction;
         }
 
-        if (! $this->matchesTransaction($transaction, $payload)) {
-            $this->failTransaction($transaction, $payload, 'callback_details_mismatch');
+        if (! $this->matchesTransaction($transaction, $attempt, $payload)) {
+            $this->failTransaction($transaction, $attempt, $payload, 'callback_details_mismatch');
 
             event(new PaymentFailed($transaction, $payload));
 
             return $transaction;
         }
 
-        $this->updateTransaction->handle($transaction, $payload);
+        $status = $this->mapStatus->handle($payload->messageType);
 
-        $this->dispatchEvent($transaction, $payload);
+        $this->updateTransaction->handle($transaction, $payload, $attempt);
+
+        if (! $this->shouldPropagateAttemptCallback->handle($attempt, $status)) {
+            return $transaction;
+        }
+
+        $this->dispatchEvent($transaction->refresh(), $payload);
 
         return $transaction;
     }
@@ -65,10 +80,10 @@ final readonly class HandleCallbackAction
         };
     }
 
-    private function matchesTransaction(Transaction $transaction, CallbackPayload $payload): bool
+    private function matchesTransaction(Transaction $transaction, TransactionAttempt $attempt, CallbackPayload $payload): bool
     {
-        return $this->transactionString($transaction, 'merchant_ref') === $payload->merchantRef
-            && $this->transactionString($transaction, 'merchant_session') === $payload->merchantSession
+        return $attempt->merchant_ref === $payload->merchantRef
+            && $attempt->merchant_session === $payload->merchantSession
             && $this->amountMatches($this->transactionAmount($transaction), $payload->amount)
             && (! $payload->currencyProvided || $this->transactionString($transaction, 'currency') === $payload->currency)
             && (! $payload->transactionCodeProvided || $this->transactionCode($transaction) === $payload->transactionCode)
@@ -80,19 +95,29 @@ final readonly class HandleCallbackAction
         return SispAmount::toThousandths($expected) === SispAmount::toThousandths($actual);
     }
 
-    private function failTransaction(Transaction $transaction, CallbackPayload $payload, string $merchantResponse): void
+    private function failTransaction(Transaction $transaction, TransactionAttempt $attempt, CallbackPayload $payload, string $merchantResponse): void
     {
-        TransactionLogContext::run(
-            'callback',
-            fn (): bool => $transaction->update([
-                'transaction_id' => $payload->transactionID,
-                'message_type' => $payload->messageType,
-                'merchant_response' => $merchantResponse,
-                'response_code' => $payload->merchantRespCp,
-                'fingerprint' => $payload->fingerprint,
-                'status' => TransactionStatus::failed,
-            ])
-        );
+        DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction): void {
+            $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
+
+            if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
+                return;
+            }
+
+            TransactionLogContext::run(
+                'callback',
+                fn (): bool => $transaction->update([
+                    'merchant_ref' => $attempt->merchant_ref,
+                    'merchant_session' => $attempt->merchant_session,
+                    'transaction_id' => $payload->transactionID,
+                    'message_type' => $payload->messageType,
+                    'merchant_response' => $merchantResponse,
+                    'response_code' => $payload->merchantRespCp,
+                    'fingerprint' => $payload->fingerprint,
+                    'status' => TransactionStatus::failed,
+                ])
+            );
+        });
     }
 
     private function transactionAmount(Transaction $transaction): float|int|string

@@ -6,19 +6,19 @@ namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\CheckBlacklistAction;
 use Akira\Sisp\Actions\CheckRateLimitAction;
-use Akira\Sisp\Actions\CreateAndStorePaymentTransactionAction;
-use Akira\Sisp\Actions\PreparePaymentAction;
+use Akira\Sisp\Actions\CreateIdempotentPaymentTransactionAction;
 use Akira\Sisp\Actions\RenderPaymentFormBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
+use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Http\Requests\StorePaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 final readonly class PaymentController
 {
     public function __construct(
-        private PreparePaymentAction $preparePayment,
-        private CreateAndStorePaymentTransactionAction $createTransaction,
+        private CreateIdempotentPaymentTransactionAction $createPayment,
         private RenderPaymentFormBasedOnConfigAction $renderForm,
         private CheckRateLimitAction $checkRateLimit,
         private CheckBlacklistAction $checkBlacklist,
@@ -40,12 +40,29 @@ final readonly class PaymentController
 
         $requestData = PaymentRequestData::from($request->validated());
 
-        $paymentRequest = $this->preparePayment->handle($requestData);
+        try {
+            $preparedPayment = $this->createPayment->handle($requestData, $request);
+        } catch (PaymentIntentAlreadyProcessingException) {
+            return $this->paymentIntentAlreadyProcessingResponse($request);
+        }
 
-        $transaction = $this->createTransaction->handle($paymentRequest, $request);
+        $paymentRequest = $preparedPayment->paymentRequest;
+        $transaction = $preparedPayment->transaction;
 
         $this->storeMetadata->handle($request, $transaction);
 
         return $this->renderForm->handle($paymentRequest, $transaction->locale);
+    }
+
+    private function paymentIntentAlreadyProcessingResponse(StorePaymentRequest $request): Response
+    {
+        $message = __('sisp::messages.validation.payment_in_progress');
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], 409);
+        }
+
+        return back(303)
+            ->withErrors(['payment' => $message]);
     }
 }

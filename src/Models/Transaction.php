@@ -13,22 +13,30 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * @property-read  int $id
  * @property-read  TransactionStatus $status
- * @property-read  array $payload
- * @property-read  string $customer_email
+ * @property-read  array<string, mixed> $payload
+ * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
- * @property-read  int $transaction_id
+ * @property-read  string $merchant_session
+ * @property-read  string|null $transaction_id
+ * @property-read  string|null $message_type
+ * @property-read  string|null $response_code
+ * @property-read  string|null $merchant_response
+ * @property-read  string|null $fingerprint
  * @property-read  string $locale
- * @property-read  string $customer_name
- * @property-read  string $customer_phone
- * @property-read  string $customer_country
- * @property-read  string $customer_city
- * @property-read  string $customer_address
+ * @property-read  string|null $customer_name
+ * @property-read  string|null $customer_phone
+ * @property-read  string|null $customer_country
+ * @property-read  string|null $customer_city
+ * @property-read  string|null $customer_address
  * @property-read  int|float $amount
  * @property-read  int $amount_cents
+ * @property-read  Carbon|null $created_at
+ * @property-read  Carbon|null $updated_at
  */
 final class Transaction extends Model
 {
@@ -67,19 +75,54 @@ final class Transaction extends Model
         return config('sisp.tables.transactions', 'sisp_transactions');
     }
 
+    /**
+     * @return HasMany<TransactionItem, $this>
+     */
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class, 'transaction_id');
     }
 
+    /**
+     * @return HasOne<Invoice, $this>
+     */
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class, 'transaction_id');
     }
 
+    /**
+     * @return HasMany<TransactionLog, $this>
+     */
     public function logs(): HasMany
     {
         return $this->hasMany(TransactionLog::class, 'transaction_id');
+    }
+
+    /**
+     * @return HasMany<TransactionAttempt, $this>
+     */
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(TransactionAttempt::class, 'transaction_id');
+    }
+
+    /**
+     * @return HasMany<PaymentIntent, $this>
+     */
+    public function paymentIntents(): HasMany
+    {
+        return $this->hasMany(PaymentIntent::class, 'transaction_id');
+    }
+
+    /**
+     * @return HasOne<TransactionAttempt, $this>
+     */
+    public function currentAttempt(): HasOne
+    {
+        return $this->hasOne(TransactionAttempt::class, 'transaction_id')
+            ->whereNull('superseded_at')
+            ->latestOfMany();
     }
 
     protected static function booted(): void
@@ -89,6 +132,9 @@ final class Transaction extends Model
         });
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

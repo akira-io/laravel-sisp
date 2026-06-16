@@ -81,6 +81,7 @@ $countries = Sisp::countries();
 - [Troubleshooting](docs/09-troubleshooting.md)
 - [FAQ](docs/10-faq.md)
 - [API Reference](docs/11-api-reference.md)
+- [Idempotency](docs/13-idempotency.md)
 
 Reference documentation is maintained in this repository under [`docs`](docs).
 

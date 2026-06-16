@@ -7,45 +7,9 @@ parameters:
 			path: src/Actions/CheckRateLimitAction.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$quantity\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$unit_price_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/GenerateInvoicePdfAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/Actions/Generators/InvoiceNumberGeneratorAction.php
-
-		-
 			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$currency\.$#'
 			identifier: property.notFound
 			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$merchant_session\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Actions/RenderPaymentResponseAction.php
-
-		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\Transaction\:\:\$message_type\.$#'
-			identifier: property.notFound
-			count: 2
 			path: src/Actions/RenderPaymentResponseAction.php
 
 		-
@@ -127,13 +91,11 @@ parameters:
 			path: src/Models/RateLimit.php
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$total_price_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Models/TransactionItem.php
+			identifier: typeCoverage.paramTypeCoverage
+			path: src/Models/Transaction.php
+			reportUnmatched: false
 
 		-
-			message: '#^Access to an undefined property Akira\\Sisp\\Models\\TransactionItem\:\:\$unit_price_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Models/TransactionItem.php
+			identifier: typeCoverage.paramTypeCoverage
+			path: src/Models/TransactionAttempt.php
+			reportUnmatched: false
