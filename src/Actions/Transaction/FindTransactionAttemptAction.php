@@ -16,11 +16,7 @@ final readonly class FindTransactionAttemptAction
 
     public function handle(CallbackPayload $payload): TransactionAttempt
     {
-        $attempt = TransactionAttempt::query()
-            ->with('transaction')
-            ->where('merchant_ref', $payload->merchantRef)
-            ->where('merchant_session', $payload->merchantSession)
-            ->first();
+        $attempt = $this->findAttempt($payload);
 
         if ($attempt instanceof TransactionAttempt) {
             return $attempt;
@@ -33,7 +29,27 @@ final readonly class FindTransactionAttemptAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            $attempt = $this->findAttempt($payload, lockForUpdate: true);
+
+            if ($attempt instanceof TransactionAttempt) {
+                return $attempt;
+            }
+
             return $this->createAttempt->createFromTransaction($transaction);
         });
+    }
+
+    private function findAttempt(CallbackPayload $payload, bool $lockForUpdate = false): ?TransactionAttempt
+    {
+        $query = TransactionAttempt::query()
+            ->with('transaction')
+            ->where('merchant_ref', $payload->merchantRef)
+            ->where('merchant_session', $payload->merchantSession);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
     }
 }
