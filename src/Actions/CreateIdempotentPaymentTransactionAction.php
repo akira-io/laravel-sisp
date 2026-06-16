@@ -84,11 +84,28 @@ final readonly class CreateIdempotentPaymentTransactionAction
 
     private function reserve(string $paymentIntentKey): bool
     {
-        return DB::table((new PaymentIntent)->getTable())->insertOrIgnore([
+        $table = (new PaymentIntent)->getTable();
+        $timestamp = now();
+
+        $reclaimed = DB::table($table)
+            ->where('idempotency_key', $paymentIntentKey)
+            ->where('status', 'failed')
+            ->whereNull('transaction_id')
+            ->update([
+                'status' => 'processing',
+                'failure_reason' => null,
+                'updated_at' => $timestamp,
+            ]);
+
+        if ($reclaimed === 1) {
+            return true;
+        }
+
+        return DB::table($table)->insertOrIgnore([
             'idempotency_key' => $paymentIntentKey,
             'status' => 'processing',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
         ]) === 1;
     }
 
