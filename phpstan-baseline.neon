@@ -93,7 +93,9 @@ parameters:
 		-
 			identifier: typeCoverage.paramTypeCoverage
 			path: src/Models/Transaction.php
+			reportUnmatched: false
 
 		-
 			identifier: typeCoverage.paramTypeCoverage
 			path: src/Models/TransactionAttempt.php
+			reportUnmatched: false
