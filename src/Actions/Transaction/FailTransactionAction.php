@@ -12,7 +12,10 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class FailTransactionAction
 {
-    public function __construct(private UpdateTransactionAttemptAction $updateAttempt) {}
+    public function __construct(
+        private UpdateTransactionAttemptAction $updateAttempt,
+        private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
+    ) {}
 
     public function handle(
         Transaction $transaction,
@@ -23,7 +26,7 @@ final readonly class FailTransactionAction
         if ($attempt instanceof TransactionAttempt) {
             $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
 
-            if (! $attempt->isCurrent()) {
+            if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
                 return false;
             }
         }

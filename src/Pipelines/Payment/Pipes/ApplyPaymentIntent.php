@@ -78,11 +78,28 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
     private function reserve(string $paymentIntentKey): bool
     {
-        return DB::table((new PaymentIntent)->getTable())->insertOrIgnore([
+        $table = (new PaymentIntent)->getTable();
+        $timestamp = now();
+
+        $reclaimed = DB::table($table)
+            ->where('idempotency_key', $paymentIntentKey)
+            ->where('status', 'failed')
+            ->whereNull('transaction_id')
+            ->update([
+                'status' => 'processing',
+                'failure_reason' => null,
+                'updated_at' => $timestamp,
+            ]);
+
+        if ($reclaimed === 1) {
+            return true;
+        }
+
+        return DB::table($table)->insertOrIgnore([
             'idempotency_key' => $paymentIntentKey,
             'status' => 'processing',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
         ]) === 1;
     }
 
@@ -120,10 +137,11 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
         $payload = $attempt instanceof TransactionAttempt ? $attempt->payload : null;
 
         if ($payload === null || $payload === []) {
-            $payload = $transaction->payload;
+            $transactionPayload = $transaction->getAttribute('payload');
+            $payload = is_array($transactionPayload) ? $transactionPayload : null;
         }
 
-        throw_if($payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
+        throw_if($payload === null || $payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
 
         return PaymentRequest::from($payload);
     }
