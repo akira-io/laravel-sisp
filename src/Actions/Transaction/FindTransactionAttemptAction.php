@@ -19,22 +19,19 @@ final readonly class FindTransactionAttemptAction
             return $attempt;
         }
 
-        $transaction = Transaction::query()
-            ->where('merchant_ref', $payload->merchantRef)
-            ->where('merchant_session', $payload->merchantSession)
-            ->firstOrFail();
+        return DB::transaction(function () use ($payload): TransactionAttempt {
+            /** @var Transaction $lockedTransaction */
+            $lockedTransaction = Transaction::query()
+                ->where('merchant_ref', $payload->merchantRef)
+                ->where('merchant_session', $payload->merchantSession)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        return DB::transaction(function () use ($payload, $transaction): TransactionAttempt {
-            $attempt = $this->findAttempt($payload);
+            $attempt = $this->findAttempt($payload, lockForUpdate: true);
 
             if ($attempt instanceof TransactionAttempt) {
                 return $attempt;
             }
-
-            /** @var Transaction $lockedTransaction */
-            $lockedTransaction = Transaction::query()
-                ->lockForUpdate()
-                ->findOrFail($transaction->id);
 
             return $lockedTransaction->attempts()->create([
                 'attempt_number' => ((int) $lockedTransaction->attempts()->max('attempt_number')) + 1,
@@ -53,11 +50,16 @@ final readonly class FindTransactionAttemptAction
         });
     }
 
-    private function findAttempt(CallbackPayload $payload): ?TransactionAttempt
+    private function findAttempt(CallbackPayload $payload, bool $lockForUpdate = false): ?TransactionAttempt
     {
-        return TransactionAttempt::query()
+        $query = TransactionAttempt::query()
             ->where('merchant_ref', $payload->merchantRef)
-            ->where('merchant_session', $payload->merchantSession)
-            ->first();
+            ->where('merchant_session', $payload->merchantSession);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
     }
 }
