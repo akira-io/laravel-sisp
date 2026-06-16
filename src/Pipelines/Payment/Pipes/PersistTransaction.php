@@ -28,14 +28,16 @@ final readonly class PersistTransaction implements PaymentPipe
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             try {
                 $context->transaction = $this->createTransaction->handle($context->paymentRequest(), $context->request);
-
-                return $next($context);
             } catch (DuplicatePaymentIdentifierException) {
                 throw_if($attempt >= $maxAttempts, UnableToGenerateUniquePaymentIdentifiersException::class, $maxAttempts);
 
                 $this->sleepBeforeRetry();
                 $context->paymentRequest = $this->preparePayment->handle($context->data);
+
+                continue;
             }
+
+            return $next($context);
         }
 
         throw new UnableToGenerateUniquePaymentIdentifiersException($maxAttempts);

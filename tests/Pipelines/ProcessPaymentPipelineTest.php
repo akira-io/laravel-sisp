@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Contracts\PaymentPipe;
+use Akira\Sisp\Exceptions\DuplicatePaymentIdentifierException;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Pipelines\Payment\PaymentContext;
 use Akira\Sisp\Pipelines\Payment\Pipes\BuildPaymentRequest;
@@ -62,6 +63,28 @@ it('runs custom pipes configured in sisp.pipelines.payment', function (): void {
 
     expect($witness::$ran)->toBeTrue()
         ->and($context->transaction()->amount)->toBe(30.0);
+});
+
+it('does not retry transaction creation when a downstream pipe reports duplicate identifiers', function (): void {
+    $failingPipe = new class implements PaymentPipe
+    {
+        public function handle(PaymentContext $context, Closure $next): PaymentContext
+        {
+            throw new DuplicatePaymentIdentifierException;
+        }
+    };
+
+    config()->set('sisp.pipelines.payment', [
+        BuildPaymentRequest::class,
+        PersistTransaction::class,
+        $failingPipe,
+    ]);
+
+    expect(fn () => resolve(ProcessPaymentPipeline::class)->run(payment_pipeline_context(35.0)))
+        ->toThrow(DuplicatePaymentIdentifierException::class);
+
+    expect(Transaction::query()->count())->toBe(1)
+        ->and(Transaction::query()->sole()->amount)->toBe(35.0);
 });
 
 it('throws when accessing the payment request before it is built', function (): void {
