@@ -137,7 +137,19 @@ return new class extends Migration
                 $table->unique('merchant_ref');
             });
         } catch (QueryException $exception) {
-            throw_unless(str_contains($exception->getMessage(), 'already exists'), $exception);
+            throw_unless($this->indexAlreadyExists($exception), $exception);
         }
+    }
+
+    private function indexAlreadyExists(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? '');
+        $driverCode = (int) ($exception->errorInfo[1] ?? 0);
+        $message = mb_strtolower($exception->getMessage());
+
+        return $sqlState === '42P07'
+            || ($sqlState === '42000' && $driverCode === 1061)
+            || ($sqlState === '42000' && str_contains($message, 'duplicate key name'))
+            || str_contains($message, 'already exists');
     }
 };

@@ -8,7 +8,7 @@ use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 
 it('reuses a backfilled legacy callback attempt', function (): void {
-    Transaction::factory()->create([
+    $transaction = Transaction::factory()->create([
         'merchant_ref' => 'R-LEGACY-CALLBACK',
         'merchant_session' => 'S-LEGACY-CALLBACK',
         'amount' => 30.0,
@@ -39,6 +39,8 @@ it('reuses a backfilled legacy callback attempt', function (): void {
 
     expect($secondAttempt->is($firstAttempt))->toBeTrue()
         ->and(TransactionAttempt::query()->count())->toBe(1)
+        ->and($firstAttempt->relationLoaded('transaction'))->toBeTrue()
+        ->and($firstAttempt->transaction->is($transaction))->toBeTrue()
         ->and($firstAttempt->merchant_ref)->toBe('R-LEGACY-CALLBACK')
         ->and($firstAttempt->merchant_session)->toBe('S-LEGACY-CALLBACK');
 });

@@ -35,7 +35,10 @@ final readonly class FindTransactionAttemptAction
                 return $attempt;
             }
 
-            return $this->createAttempt->createFromTransaction($transaction);
+            $attempt = $this->createAttempt->createFromTransaction($transaction);
+            $attempt->setRelation('transaction', $transaction);
+
+            return $attempt;
         });
     }
 
