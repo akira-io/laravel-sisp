@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Actions\Transaction\FindTransactionAttemptAction;
 use Akira\Sisp\Actions\Transaction\MapTransactionStatusAction;
+use Akira\Sisp\Actions\Transaction\ShouldPropagateAttemptCallbackAction;
 use Akira\Sisp\Actions\Transaction\UpdateTransactionAction;
 use Akira\Sisp\Actions\Transaction\UpdateTransactionAttemptAction;
 use Akira\Sisp\Configuration\LoadConfig;
@@ -28,6 +29,7 @@ final readonly class HandleCallbackAction
         private UpdateTransactionAction $updateTransaction,
         private UpdateTransactionAttemptAction $updateAttempt,
         private MapTransactionStatusAction $mapStatus,
+        private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
         private SispCredentialsResolver $credentialsResolver,
         private LoadConfig $config,
     ) {}
@@ -58,7 +60,7 @@ final readonly class HandleCallbackAction
 
         $this->updateTransaction->handle($transaction, $payload, $attempt);
 
-        if (! $this->shouldPropagateToTransaction($attempt, $status)) {
+        if (! $this->shouldPropagateAttemptCallback->handle($attempt, $status)) {
             return $transaction;
         }
 
@@ -96,7 +98,7 @@ final readonly class HandleCallbackAction
     {
         $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
 
-        if (! $this->shouldPropagateToTransaction($attempt, TransactionStatus::failed)) {
+        if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
             return;
         }
 
@@ -113,15 +115,6 @@ final readonly class HandleCallbackAction
                 'status' => TransactionStatus::failed,
             ])
         );
-    }
-
-    private function shouldPropagateToTransaction(TransactionAttempt $attempt, TransactionStatus $status): bool
-    {
-        if ($attempt->isCurrent()) {
-            return true;
-        }
-
-        return $status === TransactionStatus::completed;
     }
 
     private function transactionAmount(Transaction $transaction): float|int|string

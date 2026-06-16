@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions\Transaction;
 
-use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Support\TransactionLogContext;
@@ -15,6 +14,7 @@ final readonly class UpdateTransactionAction
     public function __construct(
         private MapTransactionStatusAction $mapStatus,
         private UpdateTransactionAttemptAction $updateAttempt,
+        private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
     ) {}
 
     public function handle(Transaction $transaction, CallbackPayload $payload, ?TransactionAttempt $attempt = null): bool
@@ -25,7 +25,7 @@ final readonly class UpdateTransactionAction
             $this->updateAttempt->handle($attempt, $payload, $status);
         }
 
-        if ($attempt instanceof TransactionAttempt && ! $this->shouldPropagateToTransaction($attempt, $status)) {
+        if ($attempt instanceof TransactionAttempt && ! $this->shouldPropagateAttemptCallback->handle($attempt, $status)) {
             return true;
         }
 
@@ -43,14 +43,5 @@ final readonly class UpdateTransactionAction
                 'status' => $status,
             ])
         );
-    }
-
-    private function shouldPropagateToTransaction(TransactionAttempt $attempt, TransactionStatus $status): bool
-    {
-        if ($attempt->isCurrent()) {
-            return true;
-        }
-
-        return $status === TransactionStatus::completed;
     }
 }

@@ -125,10 +125,11 @@ final readonly class CreateIdempotentPaymentTransactionAction
         $payload = $attempt instanceof TransactionAttempt ? $attempt->payload : null;
 
         if ($payload === null || $payload === []) {
-            $payload = $transaction->payload;
+            $transactionPayload = $transaction->getAttribute('payload');
+            $payload = is_array($transactionPayload) ? $transactionPayload : null;
         }
 
-        throw_if($payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
+        throw_if($payload === null || $payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
 
         return PaymentRequest::from($payload);
     }

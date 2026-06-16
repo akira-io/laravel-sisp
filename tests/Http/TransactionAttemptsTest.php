@@ -142,6 +142,36 @@ it('rejects a duplicate checkout intent while the first request is still being r
         ->and(TransactionAttempt::query()->count())->toBe(0);
 });
 
+it('returns a conflict when a submitted checkout intent has no reusable payment payload', function (): void {
+    $transaction = Transaction::factory()->create([
+        'payload' => null,
+        'status' => 'pending',
+    ]);
+
+    TransactionAttempt::factory()->create([
+        'transaction_id' => $transaction->id,
+        'merchant_ref' => $transaction->merchant_ref,
+        'merchant_session' => $transaction->merchant_session,
+        'payload' => null,
+    ]);
+
+    PaymentIntent::query()->create([
+        'idempotency_key' => 'checkout-intent-null-payload',
+        'transaction_id' => $transaction->id,
+        'status' => 'submitted',
+    ]);
+
+    $this->postJson(route('sisp.payment'), transaction_attempt_payment_payload([
+        'checkout_intent_id' => 'checkout-intent-null-payload',
+    ]))->assertConflict()
+        ->assertJson([
+            'message' => __('sisp::messages.validation.payment_in_progress'),
+        ]);
+
+    expect(Transaction::query()->count())->toBe(1)
+        ->and(TransactionAttempt::query()->count())->toBe(1);
+});
+
 it('fails without persisting a duplicate when custom generators keep colliding', function (): void {
     config([
         'sisp.generators.merchantReference' => ConstantMerchantReferenceGenerator::class,
