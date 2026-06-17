@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1](https://github.com/akira-io/laravel-sisp/compare/v1.0.0...v1.0.1) (2026-06-17)
+
+### Bug Fixes
+
+- **payments:** Add SISP payment intents ([b078807](https://github.com/akira-io/laravel-sisp/commit/b078807bafc85c6084aaf4ae81382199d142d55e))
+- **payments:** Address review feedback ([512e0cc](https://github.com/akira-io/laravel-sisp/commit/512e0cc827a2f2b526742947257bf18a391ac83b))
+- **payments:** Reclaim failed payment intents ([67a36fc](https://github.com/akira-io/laravel-sisp/commit/67a36fc30075a26805dcc25b34ad5ab55dbbcdfc))
+- **callback:** Lock legacy attempt lookup ([5e8ae97](https://github.com/akira-io/laravel-sisp/commit/5e8ae972434d485231946d9e2fbda9dd0ee2cbaf))
+- **callback:** Make attempt writes atomic ([9cf67a7](https://github.com/akira-io/laravel-sisp/commit/9cf67a72a7c2d1f69aa0cc4e504860bcb2e27bf7))
+- **config:** Centralize identifier generation settings ([bf5af14](https://github.com/akira-io/laravel-sisp/commit/bf5af1461c08cc3b3b7b38a5072d58924e11b4a9))
+- **payments:** Reserve merchant references ([811f7e6](https://github.com/akira-io/laravel-sisp/commit/811f7e655bd06ab410f34f4595c15f29b6ded13f))
+
 ## [0.7.2](https://github.com/akira-io/laravel-sisp/compare/v0.7.1...v0.7.2) (2026-06-04)
 
 ### Bug Fixes
