@@ -168,6 +168,7 @@ return [
         'blacklist' => env('SISP_TABLE_BLACKLIST', 'sisp_blacklist'),
         'transaction_logs' => env('SISP_TABLE_TRANSACTION_LOGS', 'sisp_transaction_logs'),
         'transaction_attempts' => env('SISP_TABLE_TRANSACTION_ATTEMPTS', 'sisp_transaction_attempts'),
+        'transaction_references' => env('SISP_TABLE_TRANSACTION_REFERENCES', 'sisp_transaction_references'),
         'payment_intents' => env('SISP_TABLE_PAYMENT_INTENTS', 'sisp_payment_intents'),
     ],
 

@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @property-read  int $id
@@ -127,6 +129,21 @@ final class Transaction extends Model
 
     protected static function booted(): void
     {
+        self::created(static function (Transaction $transaction): void {
+            $referencesTable = config('sisp.tables.transaction_references', 'sisp_transaction_references');
+
+            if (! Schema::hasTable($referencesTable)) {
+                return;
+            }
+
+            DB::table($referencesTable)->insert([
+                'merchant_ref' => $transaction->merchant_ref,
+                'transaction_id' => $transaction->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
         self::updated(static function (Transaction $transaction): void {
             resolve(LogTransactionChangesAction::class)->handle($transaction);
         });

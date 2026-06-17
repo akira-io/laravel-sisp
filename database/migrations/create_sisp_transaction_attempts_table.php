@@ -13,8 +13,14 @@ return new class extends Migration
     {
         $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
         $attemptsTable = config('sisp.tables.transaction_attempts', 'sisp_transaction_attempts');
+        $referencesTable = config('sisp.tables.transaction_references', 'sisp_transaction_references');
 
-        $this->guardAgainstExistingDuplicates($transactionsTable);
+        $this->createTransactionReferencesTable($referencesTable, $transactionsTable);
+        $this->backfillTransactionReferences($transactionsTable, $referencesTable);
+
+        if (Schema::hasTable($attemptsTable)) {
+            return;
+        }
 
         Schema::create($attemptsTable, function (Blueprint $table) use ($transactionsTable): void {
             $table->id();
@@ -46,50 +52,59 @@ return new class extends Migration
         });
 
         $this->backfillAttempts($transactionsTable, $attemptsTable);
-
-        Schema::table($transactionsTable, function (Blueprint $table): void {
-            $table->unique('merchant_ref');
-        });
     }
 
     public function down(): void
     {
-        $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
         $attemptsTable = config('sisp.tables.transaction_attempts', 'sisp_transaction_attempts');
+        $referencesTable = config('sisp.tables.transaction_references', 'sisp_transaction_references');
 
         Schema::dropIfExists($attemptsTable);
+        Schema::dropIfExists($referencesTable);
+    }
 
-        Schema::table($transactionsTable, function (Blueprint $table): void {
-            $table->dropUnique($table->getTable().'_merchant_ref_unique');
+    private function createTransactionReferencesTable(string $referencesTable, string $transactionsTable): void
+    {
+        if (Schema::hasTable($referencesTable)) {
+            return;
+        }
+
+        Schema::create($referencesTable, function (Blueprint $table) use ($transactionsTable): void {
+            $table->id();
+            $table->string('merchant_ref')->unique();
+            $table->foreignId('transaction_id')
+                ->nullable()
+                ->constrained($transactionsTable)
+                ->nullOnDelete();
+            $table->timestamps();
+
+            $table->index('transaction_id');
         });
     }
 
-    private function guardAgainstExistingDuplicates(string $transactionsTable): void
+    private function backfillTransactionReferences(string $transactionsTable, string $referencesTable): void
     {
-        throw_if($this->hasDuplicates($transactionsTable, ['merchant_ref']), RuntimeException::class, 'Cannot add SISP uniqueness constraints because duplicate merchant_ref values already exist.');
-
-        throw_if($this->hasDuplicates($transactionsTable, ['merchant_session']), RuntimeException::class, 'Cannot backfill SISP attempts because duplicate merchant_session values already exist.');
-    }
-
-    /**
-     * @param  list<string>  $columns
-     */
-    private function hasDuplicates(string $table, array $columns): bool
-    {
-        $query = DB::table($table)
-            ->select($columns)
-            ->whereNotNull($columns[0])
-            ->groupBy($columns);
-
-        foreach ($columns as $column) {
-            $query->where($column, '!=', '');
-        }
-
-        return $query->havingRaw('COUNT(*) > 1')->exists();
+        DB::table($transactionsTable)
+            ->selectRaw('merchant_ref, MIN(id) as transaction_id, MIN(created_at) as created_at, MAX(updated_at) as updated_at')
+            ->whereNotNull('merchant_ref')
+            ->where('merchant_ref', '!=', '')
+            ->groupBy('merchant_ref')
+            ->orderBy('merchant_ref')
+            ->cursor()
+            ->each(function (object $reference) use ($referencesTable): void {
+                DB::table($referencesTable)->insertOrIgnore([
+                    'merchant_ref' => $reference->merchant_ref,
+                    'transaction_id' => $reference->transaction_id,
+                    'created_at' => $reference->created_at ?? now(),
+                    'updated_at' => $reference->updated_at ?? now(),
+                ]);
+            });
     }
 
     private function backfillAttempts(string $transactionsTable, string $attemptsTable): void
     {
+        $usedMerchantSessions = [];
+
         DB::table($transactionsTable)
             ->orderBy('id')
             ->select([
@@ -106,13 +121,20 @@ return new class extends Migration
                 'created_at',
                 'updated_at',
             ])
-            ->chunkById(100, function ($transactions) use ($attemptsTable): void {
+            ->chunkById(100, function ($transactions) use ($attemptsTable, &$usedMerchantSessions): void {
                 foreach ($transactions as $transaction) {
+                    $merchantSession = $this->uniqueLegacyMerchantSession(
+                        (string) $transaction->merchant_session,
+                        (int) $transaction->id,
+                        $usedMerchantSessions,
+                    );
+                    $hasDuplicateSession = $merchantSession !== (string) $transaction->merchant_session;
+
                     DB::table($attemptsTable)->insert([
                         'transaction_id' => $transaction->id,
                         'attempt_number' => 1,
                         'merchant_ref' => $transaction->merchant_ref,
-                        'merchant_session' => $transaction->merchant_session,
+                        'merchant_session' => $merchantSession,
                         'status' => $transaction->status,
                         'gateway_transaction_id' => $transaction->transaction_id,
                         'message_type' => $transaction->message_type,
@@ -121,14 +143,46 @@ return new class extends Migration
                         'fingerprint' => $transaction->fingerprint,
                         'payload' => $transaction->payload,
                         'callback_payload' => null,
-                        'failure_reason' => null,
+                        'failure_reason' => $hasDuplicateSession ? 'Legacy duplicate merchant_session; original value remains on the transaction.' : null,
                         'submitted_at' => $transaction->created_at,
                         'callback_received_at' => $transaction->transaction_id !== null ? $transaction->updated_at : null,
-                        'superseded_at' => null,
+                        'superseded_at' => $hasDuplicateSession ? ($transaction->updated_at ?? now()) : null,
                         'created_at' => $transaction->created_at,
                         'updated_at' => $transaction->updated_at,
                     ]);
                 }
             });
+    }
+
+    /**
+     * @param  array<string, true>  $usedMerchantSessions
+     */
+    private function uniqueLegacyMerchantSession(string $merchantSession, int $transactionId, array &$usedMerchantSessions): string
+    {
+        if ($merchantSession !== '' && ! isset($usedMerchantSessions[$merchantSession])) {
+            $usedMerchantSessions[$merchantSession] = true;
+
+            return $merchantSession;
+        }
+
+        $base = $merchantSession !== '' ? $merchantSession : 'legacy-empty-session';
+        $candidate = $this->legacyIdentifier($base, $transactionId);
+        $counter = 1;
+
+        while (isset($usedMerchantSessions[$candidate])) {
+            $candidate = $this->legacyIdentifier($base, $transactionId.'-'.$counter);
+            $counter++;
+        }
+
+        $usedMerchantSessions[$candidate] = true;
+
+        return $candidate;
+    }
+
+    private function legacyIdentifier(string $value, int|string $suffix): string
+    {
+        $suffix = '-legacy-'.$suffix;
+
+        return mb_substr($value, 0, 255 - mb_strlen($suffix)).$suffix;
     }
 };

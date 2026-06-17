@@ -38,6 +38,18 @@ final class IncrementingMerchantSessionGenerator
     }
 }
 
+final class ReferenceCollisionMerchantSessionGenerator
+{
+    private static int $count = 0;
+
+    public function __invoke(): string
+    {
+        self::$count++;
+
+        return 'MS-REF-COLLISION-'.self::$count;
+    }
+}
+
 beforeEach(function (): void {
     config([
         'sisp.sandbox' => true,
@@ -176,6 +188,25 @@ it('fails without persisting a duplicate when custom generators keep colliding',
     config([
         'sisp.generators.merchantReference' => ConstantMerchantReferenceGenerator::class,
         'sisp.generators.merchantSession' => ConstantMerchantSessionGenerator::class,
+        'sisp.identifier_generation.max_attempts' => 2,
+    ]);
+
+    $this->post(route('sisp.payment'), transaction_attempt_payment_payload())
+        ->assertOk();
+
+    $this->withoutExceptionHandling();
+
+    expect(fn () => $this->post(route('sisp.payment'), transaction_attempt_payment_payload()))
+        ->toThrow(UnableToGenerateUniquePaymentIdentifiersException::class);
+
+    expect(Transaction::query()->count())->toBe(1)
+        ->and(TransactionAttempt::query()->count())->toBe(1);
+});
+
+it('fails without persisting a duplicate when only the merchant reference keeps colliding', function (): void {
+    config([
+        'sisp.generators.merchantReference' => ConstantMerchantReferenceGenerator::class,
+        'sisp.generators.merchantSession' => ReferenceCollisionMerchantSessionGenerator::class,
         'sisp.identifier_generation.max_attempts' => 2,
     ]);
 
