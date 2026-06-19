@@ -25,6 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('attempt_number');
             $table->string('merchant_ref');
             $table->string('merchant_session');
+            $table->string('attempt_session')->nullable();
             $table->string('status')->default('pending');
             $table->string('gateway_transaction_id')->nullable();
             $table->string('message_type')->nullable();
@@ -39,9 +40,9 @@ return new class extends Migration
             $table->timestamp('superseded_at')->nullable();
             $table->timestamps();
 
-            $table->unique('merchant_session');
-            $table->unique(['merchant_ref', 'merchant_session']);
             $table->unique(['transaction_id', 'attempt_number']);
+            $table->index(['merchant_ref', 'merchant_session']);
+            $table->index('attempt_session');
             $table->index(['transaction_id', 'status']);
             $table->index('gateway_transaction_id');
         });
@@ -73,14 +74,6 @@ return new class extends Migration
 
         throw_if($duplicateMerchantRef !== null, RuntimeException::class, "Cannot add SISP merchant_ref uniqueness; duplicate merchant_ref [{$duplicateMerchantRef}] already exists.");
 
-        $duplicateMerchantSession = DB::table($transactionsTable)
-            ->select('merchant_session')
-            ->whereNotNull('merchant_session')
-            ->groupBy('merchant_session')
-            ->havingRaw('COUNT(*) > 1')
-            ->value('merchant_session');
-
-        throw_if($duplicateMerchantSession !== null, RuntimeException::class, "Cannot backfill SISP attempts; duplicate merchant_session [{$duplicateMerchantSession}] already exists.");
     }
 
     private function backfillCurrentAttempts(string $transactionsTable, string $attemptsTable): void
@@ -111,6 +104,7 @@ return new class extends Migration
                         'attempt_number' => 1,
                         'merchant_ref' => $transaction->merchant_ref,
                         'merchant_session' => $transaction->merchant_session,
+                        'attempt_session' => $transaction->merchant_session,
                         'status' => $transaction->status,
                         'gateway_transaction_id' => $transaction->transaction_id,
                         'message_type' => $transaction->message_type,

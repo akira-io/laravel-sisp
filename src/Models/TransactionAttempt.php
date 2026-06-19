@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $attempt_number
  * @property string $merchant_ref
  * @property string $merchant_session
+ * @property string|null $attempt_session
  * @property TransactionStatus $status
  * @property string|null $gateway_transaction_id
  * @property string|null $message_type
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'attempt_number',
     'merchant_ref',
     'merchant_session',
+    'attempt_session',
     'status',
     'gateway_transaction_id',
     'message_type',

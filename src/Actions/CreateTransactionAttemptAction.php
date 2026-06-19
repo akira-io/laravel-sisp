@@ -11,11 +11,15 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 
 final readonly class CreateTransactionAttemptAction
 {
-    public function handle(Transaction $transaction, PaymentRequest $paymentRequest, bool $supersedeCurrent = false): TransactionAttempt
-    {
-        $attemptNumber = ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
-
+    public function handle(
+        Transaction $transaction,
+        PaymentRequest $paymentRequest,
+        bool $supersedeCurrent = false,
+        ?string $attemptSession = null,
+    ): TransactionAttempt {
         if ($supersedeCurrent) {
+            $this->ensureCurrentAttemptExists($transaction);
+
             $transaction->attempts()
                 ->whereNull('superseded_at')
                 ->update(['superseded_at' => now()]);
@@ -23,9 +27,10 @@ final readonly class CreateTransactionAttemptAction
 
         return TransactionAttempt::query()->create([
             'transaction_id' => $transaction->id,
-            'attempt_number' => $attemptNumber,
+            'attempt_number' => $this->nextAttemptNumber($transaction),
             'merchant_ref' => $paymentRequest->merchantRef,
             'merchant_session' => $paymentRequest->merchantSession,
+            'attempt_session' => $attemptSession ?? $paymentRequest->merchantSession,
             'status' => TransactionStatus::pending,
             'payload' => $paymentRequest->toArray(),
             'submitted_at' => now(),
@@ -34,13 +39,12 @@ final readonly class CreateTransactionAttemptAction
 
     public function createFromTransaction(Transaction $transaction): TransactionAttempt
     {
-        $attemptNumber = ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
-
         return TransactionAttempt::query()->create([
             'transaction_id' => $transaction->id,
-            'attempt_number' => $attemptNumber,
+            'attempt_number' => $this->nextAttemptNumber($transaction),
             'merchant_ref' => $transaction->merchant_ref,
             'merchant_session' => $transaction->merchant_session,
+            'attempt_session' => $transaction->merchant_session,
             'status' => $transaction->status,
             'gateway_transaction_id' => $transaction->transaction_id,
             'message_type' => $transaction->message_type,
@@ -50,5 +54,24 @@ final readonly class CreateTransactionAttemptAction
             'payload' => $transaction->payload,
             'submitted_at' => $transaction->created_at ?? now(),
         ]);
+    }
+
+    private function ensureCurrentAttemptExists(Transaction $transaction): void
+    {
+        $exists = $transaction->attempts()
+            ->where('merchant_ref', $transaction->merchant_ref)
+            ->where('merchant_session', $transaction->merchant_session)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        $this->createFromTransaction($transaction);
+    }
+
+    private function nextAttemptNumber(Transaction $transaction): int
+    {
+        return ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
     }
 }

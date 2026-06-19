@@ -10,9 +10,7 @@ use Akira\Sisp\Contracts\PaymentPipe;
 use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Models\PaymentIntent;
 use Akira\Sisp\Models\Transaction;
-use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Pipelines\Payment\PaymentContext;
-use Akira\Sisp\ValueObjects\PaymentRequest;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -124,26 +122,7 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
             return $context;
         }
 
-        $context->paymentRequest = $this->paymentRequestFrom($transaction, $paymentIntentKey);
-
-        return $context;
-    }
-
-    private function paymentRequestFrom(Transaction $transaction, string $paymentIntentKey): PaymentRequest
-    {
-        $attempt = $transaction->currentAttempt()->first()
-            ?? $transaction->attempts()->latest('attempt_number')->first();
-
-        $payload = $attempt instanceof TransactionAttempt ? $attempt->payload : null;
-
-        if ($payload === null || $payload === []) {
-            $transactionPayload = $transaction->getAttribute('payload');
-            $payload = is_array($transactionPayload) ? $transactionPayload : null;
-        }
-
-        throw_if($payload === null || $payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
-
-        return PaymentRequest::from($payload);
+        throw new PaymentIntentAlreadyProcessingException($paymentIntentKey);
     }
 
     private function submit(string $paymentIntentKey, Transaction $transaction): void

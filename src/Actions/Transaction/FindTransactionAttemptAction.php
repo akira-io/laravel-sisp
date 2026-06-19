@@ -47,7 +47,9 @@ final readonly class FindTransactionAttemptAction
         $query = TransactionAttempt::query()
             ->with('transaction')
             ->where('merchant_ref', $payload->merchantRef)
-            ->where('merchant_session', $payload->merchantSession);
+            ->where('merchant_session', $payload->merchantSession)
+            ->orderByRaw('callback_received_at is not null')
+            ->orderByDesc('attempt_number');
 
         if ($lockForUpdate) {
             $query->lockForUpdate();
