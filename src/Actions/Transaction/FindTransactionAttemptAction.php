@@ -44,6 +44,27 @@ final readonly class FindTransactionAttemptAction
 
     private function findAttempt(CallbackPayload $payload, bool $lockForUpdate = false): ?TransactionAttempt
     {
+        $gatewayTransactionId = (string) $payload->transactionID;
+
+        if ($gatewayTransactionId !== '') {
+            $query = TransactionAttempt::query()
+                ->with('transaction')
+                ->where('merchant_ref', $payload->merchantRef)
+                ->where('merchant_session', $payload->merchantSession)
+                ->where('gateway_transaction_id', $gatewayTransactionId)
+                ->orderByDesc('attempt_number');
+
+            if ($lockForUpdate) {
+                $query->lockForUpdate();
+            }
+
+            $attempt = $query->first();
+
+            if ($attempt instanceof TransactionAttempt) {
+                return $attempt;
+            }
+        }
+
         $query = TransactionAttempt::query()
             ->with('transaction')
             ->where('merchant_ref', $payload->merchantRef)

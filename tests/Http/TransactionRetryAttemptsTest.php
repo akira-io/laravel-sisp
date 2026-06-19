@@ -8,6 +8,7 @@ use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\URL;
 
 it('renders retry with the same SISP identifiers', function (): void {
@@ -79,6 +80,45 @@ it('persists every local retry while sending the original SISP transaction ident
         ->and($transaction->merchant_session)->toBe('S-SISP-ORIGINAL')
         ->and($transaction->status)->toBe(TransactionStatus::failed)
         ->and($transaction->transaction_id)->toBe('FAILED-GATEWAY-ID');
+});
+
+it('enforces unique local attempt sessions in the database', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::failed,
+        'merchant_ref' => 'R-UNIQUE-ATTEMPT-SESSION',
+        'merchant_session' => 'S-UNIQUE-SISP',
+        'amount' => 30.0,
+        'currency' => '132',
+    ]);
+
+    TransactionAttempt::factory()
+        ->forTransaction($transaction)
+        ->create([
+            'attempt_number' => 1,
+            'merchant_session' => 'S-UNIQUE-SISP',
+            'attempt_session' => 'S-DUPLICATE-LOCAL',
+        ]);
+
+    expect(fn (): TransactionAttempt => TransactionAttempt::factory()
+        ->forTransaction($transaction)
+        ->create([
+            'attempt_number' => 2,
+            'merchant_session' => 'S-UNIQUE-SISP',
+            'attempt_session' => 'S-DUPLICATE-LOCAL',
+        ]))->toThrow(QueryException::class);
+});
+
+it('suffixes duplicate legacy attempt sessions during backfill', function (): void {
+    $migration = require __DIR__.'/../../database/migrations/create_sisp_transaction_attempts_table.php';
+    $method = new ReflectionMethod($migration, 'uniqueLegacyAttemptSession');
+    $usedAttemptSessions = [];
+
+    $firstAttemptSession = $method->invokeArgs($migration, ['S-LEGACY-DUPLICATE', 1, &$usedAttemptSessions]);
+    $secondAttemptSession = $method->invokeArgs($migration, ['S-LEGACY-DUPLICATE', 2, &$usedAttemptSessions]);
+
+    expect($firstAttemptSession)->toBe('S-LEGACY-DUPLICATE')
+        ->and($secondAttemptSession)->toContain('S-LEGACY-DUPLICATE-legacy-')
+        ->and($secondAttemptSession)->not->toBe($firstAttemptSession);
 });
 
 it('allows a later successful callback for the same SISP transaction after a failed callback', function (): void {
