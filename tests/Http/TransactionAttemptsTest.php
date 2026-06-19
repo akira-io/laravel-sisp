@@ -26,18 +26,6 @@ final class ConstantMerchantSessionGenerator
     }
 }
 
-final class IncrementingMerchantSessionGenerator
-{
-    private static int $count = 0;
-
-    public function __invoke(): string
-    {
-        self::$count++;
-
-        return 'MS-INCREMENTING-'.self::$count;
-    }
-}
-
 final class ReferenceCollisionMerchantSessionGenerator
 {
     private static int $count = 0;
@@ -76,7 +64,7 @@ it('creates an auditable first attempt when a payment transaction is created', f
         ->and($attempt->payload)->toBeArray();
 });
 
-it('reuses an existing pending transaction when the checkout intent is posted twice', function (): void {
+it('rejects an existing pending transaction when the checkout intent is posted twice', function (): void {
     $payload = transaction_attempt_payment_payload([
         'checkout_intent_id' => 'checkout-intent-duplicate',
     ]);
@@ -86,9 +74,11 @@ it('reuses an existing pending transaction when the checkout intent is posted tw
 
     $transaction = Transaction::query()->sole();
 
-    $this->post(route('sisp.payment'), $payload)
-        ->assertOk()
-        ->assertSee($transaction->merchant_ref);
+    $this->postJson(route('sisp.payment'), $payload)
+        ->assertConflict()
+        ->assertJson([
+            'message' => __('sisp::messages.validation.payment_in_progress'),
+        ]);
 
     expect(Transaction::query()->count())->toBe(1)
         ->and(TransactionAttempt::query()->count())->toBe(1)
@@ -96,11 +86,7 @@ it('reuses an existing pending transaction when the checkout intent is posted tw
         ->and(PaymentIntent::query()->sole()->transaction_id)->toBe($transaction->id);
 });
 
-it('creates a retry attempt for the same transaction when a failed checkout intent is posted again', function (): void {
-    config([
-        'sisp.generators.merchantSession' => IncrementingMerchantSessionGenerator::class,
-    ]);
-
+it('reuses the same SISP identifiers when a failed checkout intent is posted again', function (): void {
     $payload = transaction_attempt_payment_payload([
         'idempotency_key' => 'checkout-intent-retry',
     ]);
@@ -109,6 +95,7 @@ it('creates a retry attempt for the same transaction when a failed checkout inte
         ->assertOk();
 
     $transaction = Transaction::query()->sole();
+    $oldRef = $transaction->merchant_ref;
     $oldSession = $transaction->merchant_session;
 
     $transaction->update([
@@ -121,20 +108,22 @@ it('creates a retry attempt for the same transaction when a failed checkout inte
     ]);
 
     $this->post(route('sisp.payment'), $payload)
-        ->assertOk();
+        ->assertOk()
+        ->assertSee($oldRef);
 
     $transaction->refresh();
     $attempts = $transaction->attempts()->orderBy('attempt_number')->get();
 
     expect(Transaction::query()->count())->toBe(1)
         ->and(PaymentIntent::query()->sole()->transaction_id)->toBe($transaction->id)
-        ->and($attempts)->toHaveCount(2)
+        ->and($attempts)->toHaveCount(1)
+        ->and($attempts[0]->merchant_ref)->toBe($oldRef)
         ->and($attempts[0]->merchant_session)->toBe($oldSession)
-        ->and($attempts[0]->superseded_at)->not->toBeNull()
-        ->and($attempts[1]->merchant_ref)->toBe($transaction->merchant_ref)
-        ->and($attempts[1]->merchant_session)->toBe($transaction->merchant_session)
-        ->and($transaction->status->value)->toBe('pending')
-        ->and($transaction->transaction_id)->toBeNull();
+        ->and($attempts[0]->superseded_at)->toBeNull()
+        ->and($transaction->merchant_ref)->toBe($oldRef)
+        ->and($transaction->merchant_session)->toBe($oldSession)
+        ->and($transaction->status->value)->toBe('failed')
+        ->and($transaction->transaction_id)->toBe('FAILED-GATEWAY-ID');
 });
 
 it('rejects a duplicate checkout intent while the first request is still being reserved', function (): void {
@@ -222,7 +211,7 @@ it('fails without persisting a duplicate when only the merchant reference keeps 
         ->and(TransactionAttempt::query()->count())->toBe(1);
 });
 
-it('creates a new attempt on retry while preserving the old session for audit', function (): void {
+it('renders retry with the same SISP identifiers', function (): void {
     $transaction = Transaction::factory()->create([
         'status' => 'failed',
         'merchant_ref' => 'MR-RETRY-ATTEMPT',
@@ -237,68 +226,43 @@ it('creates a new attempt on retry while preserving the old session for audit', 
     $transaction->refresh();
     $attempts = $transaction->attempts()->orderBy('attempt_number')->get();
 
-    expect($attempts)->toHaveCount(2)
+    expect($attempts)->toHaveCount(1)
+        ->and($transaction->merchant_ref)->toBe('MR-RETRY-ATTEMPT')
+        ->and($transaction->merchant_session)->toBe('MS-OLD-ATTEMPT')
+        ->and($attempts[0]->merchant_ref)->toBe('MR-RETRY-ATTEMPT')
         ->and($attempts[0]->merchant_session)->toBe('MS-OLD-ATTEMPT')
-        ->and($attempts[0]->superseded_at)->not->toBeNull()
-        ->and($attempts[1]->merchant_ref)->toBe('MR-RETRY-ATTEMPT')
-        ->and($attempts[1]->merchant_session)->toBe($transaction->merchant_session)
-        ->and($attempts[1]->superseded_at)->toBeNull();
+        ->and($attempts[0]->superseded_at)->toBeNull();
 });
 
-it('records a late failed callback for an old attempt without overwriting the current retry attempt', function (): void {
+it('allows a later successful callback for the same SISP transaction after a failed callback', function (): void {
+    config()->set('sisp.sandbox', true);
+
     $transaction = Transaction::factory()->create([
         'status' => 'failed',
-        'merchant_ref' => 'MR-LATE-FAILED',
-        'merchant_session' => 'MS-LATE-OLD',
+        'merchant_ref' => 'MR-SAME-SISP-RETRY',
+        'merchant_session' => 'MS-SAME-SISP-RETRY',
         'amount' => 30.0,
         'currency' => '132',
         'transaction_code' => '1',
+        'transaction_id' => 'FAILED-GATEWAY-ID',
+        'message_type' => '13',
     ]);
 
     $this->post(signed_attempt_retry_url($transaction))->assertOk();
 
-    $transaction->refresh();
-    $currentSession = $transaction->merchant_session;
-
-    $payload = transaction_attempt_callback_payload($transaction, 'MS-LATE-OLD', 'failed');
+    $payload = transaction_attempt_callback_payload($transaction->refresh(), 'MS-SAME-SISP-RETRY', 'success');
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-LATE-FAILED']));
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-SAME-SISP-RETRY']));
 
     $transaction->refresh();
-    $oldAttempt = $transaction->attempts()->where('merchant_session', 'MS-LATE-OLD')->firstOrFail();
+    $attempt = $transaction->attempts()->where('merchant_session', 'MS-SAME-SISP-RETRY')->firstOrFail();
 
-    expect($oldAttempt->status->value)->toBe('failed')
-        ->and($oldAttempt->gateway_transaction_id)->not->toBeNull()
-        ->and($transaction->status->value)->toBe('pending')
-        ->and($transaction->merchant_session)->toBe($currentSession)
-        ->and($transaction->transaction_id)->toBeNull();
-});
-
-it('promotes a late successful callback for an old attempt to the transaction', function (): void {
-    $transaction = Transaction::factory()->create([
-        'status' => 'failed',
-        'merchant_ref' => 'MR-LATE-SUCCESS',
-        'merchant_session' => 'MS-LATE-SUCCESS-OLD',
-        'amount' => 30.0,
-        'currency' => '132',
-        'transaction_code' => '1',
-    ]);
-
-    $this->post(signed_attempt_retry_url($transaction))->assertOk();
-
-    $payload = transaction_attempt_callback_payload($transaction, 'MS-LATE-SUCCESS-OLD', 'success');
-
-    $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-LATE-SUCCESS']));
-
-    $transaction->refresh();
-    $oldAttempt = $transaction->attempts()->where('merchant_session', 'MS-LATE-SUCCESS-OLD')->firstOrFail();
-
-    expect($oldAttempt->status->value)->toBe('completed')
+    expect($attempt->status->value)->toBe('completed')
         ->and($transaction->status->value)->toBe('completed')
-        ->and($transaction->merchant_session)->toBe('MS-LATE-SUCCESS-OLD')
-        ->and($transaction->transaction_id)->toBe($oldAttempt->gateway_transaction_id);
+        ->and($transaction->merchant_ref)->toBe('MR-SAME-SISP-RETRY')
+        ->and($transaction->merchant_session)->toBe('MS-SAME-SISP-RETRY')
+        ->and($transaction->transaction_id)->toBe($attempt->gateway_transaction_id);
 });
 
 function transaction_attempt_payment_payload(array $overrides = []): array

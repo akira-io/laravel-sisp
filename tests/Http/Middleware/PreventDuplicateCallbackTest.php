@@ -12,6 +12,7 @@ it('redirects duplicate callback requests after validation', function (): void {
     Transaction::factory()->create([
         'merchant_ref' => 'MR-CB-DUP',
         'merchant_session' => 'MS-CB-DUP',
+        'status' => 'completed',
         'transaction_id' => 'T-EXISTS',
     ]);
 

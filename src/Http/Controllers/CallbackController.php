@@ -7,6 +7,7 @@ namespace Akira\Sisp\Http\Controllers;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
@@ -92,7 +93,7 @@ final readonly class CallbackController
             ->first();
 
         if ($attempt instanceof TransactionAttempt) {
-            return $attempt->getAttribute('gateway_transaction_id') !== null;
+            return $attempt->status === TransactionStatus::completed;
         }
 
         $transaction = Transaction::query()
@@ -100,6 +101,6 @@ final readonly class CallbackController
             ->where('merchant_session', $payload->merchantSession)
             ->first();
 
-        return $transaction !== null && $transaction->getAttribute('transaction_id') !== null;
+        return $transaction instanceof Transaction && $transaction->status === TransactionStatus::completed;
     }
 }

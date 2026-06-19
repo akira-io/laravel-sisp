@@ -7,8 +7,6 @@ namespace Akira\Sisp\Actions;
 use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Models\PaymentIntent;
 use Akira\Sisp\Models\Transaction;
-use Akira\Sisp\Models\TransactionAttempt;
-use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\PreparedPaymentTransaction;
 use Illuminate\Http\Request;
@@ -128,27 +126,7 @@ final readonly class CreateIdempotentPaymentTransactionAction
             );
         }
 
-        return new PreparedPaymentTransaction(
-            paymentRequest: $this->paymentRequestFrom($transaction, $paymentIntentKey),
-            transaction: $transaction,
-        );
-    }
-
-    private function paymentRequestFrom(Transaction $transaction, string $paymentIntentKey): PaymentRequest
-    {
-        $attempt = $transaction->currentAttempt()->first()
-            ?? $transaction->attempts()->latest('attempt_number')->first();
-
-        $payload = $attempt instanceof TransactionAttempt ? $attempt->payload : null;
-
-        if ($payload === null || $payload === []) {
-            $transactionPayload = $transaction->getAttribute('payload');
-            $payload = is_array($transactionPayload) ? $transactionPayload : null;
-        }
-
-        throw_if($payload === null || $payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
-
-        return PaymentRequest::from($payload);
+        throw new PaymentIntentAlreadyProcessingException($paymentIntentKey);
     }
 
     private function submit(string $paymentIntentKey, Transaction $transaction): void

@@ -144,11 +144,12 @@ it('runs a failed payment flow and exposes signed retry without paying the invoi
         ->assertSee('/sisp/retry-payment', false);
 });
 
-it('runs retry through the signed public route and refreshes payment identifiers', function (): void {
+it('runs retry through the signed public route with the same SISP identifiers', function (): void {
     $transaction = Transaction::factory()->create([
         'amount' => 123.0,
         'currency' => '132',
         'status' => 'failed',
+        'merchant_ref' => 'retry-reference',
         'merchant_session' => 'old-session',
         'transaction_code' => '1',
         'locale' => 'pt',
@@ -165,8 +166,8 @@ it('runs retry through the signed public route and refreshes payment identifiers
 
     $transaction->refresh();
 
-    expect($transaction->merchant_session)->not->toBe('old-session')
-        ->and($transaction->merchant_session)->not->toBe('');
+    expect($transaction->merchant_ref)->toBe('retry-reference')
+        ->and($transaction->merchant_session)->toBe('old-session');
 });
 
 it('runs authorized full refund through the public route', function (): void {
@@ -175,6 +176,8 @@ it('runs authorized full refund through the public route', function (): void {
     $transaction = Transaction::factory()->create([
         'status' => 'completed',
         'amount' => 90.0,
+        'transaction_id' => 'PAID-TID',
+        'response_code' => '5',
         'customer_email' => 'buyer@example.test',
     ]);
 

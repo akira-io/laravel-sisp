@@ -37,9 +37,23 @@ it('includes all transaction details', function (): void {
     $paymentRequest = $this->action->handle($transaction);
 
     expect($paymentRequest->merchantRef)->toBe('CUSTOM-REF-123')
-        ->and($paymentRequest->merchantSession)->not->toBe('CUSTOM-SESS-456')
-        ->and($paymentRequest->merchantSession)->not->toBe('')
+        ->and($paymentRequest->merchantSession)->toBe('CUSTOM-SESS-456')
         ->and($paymentRequest->currency)->toBe('CVE');
+});
+
+it('keeps SISP identifiers when the legacy rotate flag is enabled', function (): void {
+    $transaction = Transaction::factory()->create([
+        'amount' => 25000.0,
+        'merchant_ref' => 'CUSTOM-REF-123',
+        'merchant_session' => 'CUSTOM-SESS-456',
+        'currency' => 'CVE',
+        'transaction_code' => '1',
+    ]);
+
+    $paymentRequest = $this->action->handle($transaction, rotateMerchantSession: true);
+
+    expect($paymentRequest->merchantRef)->toBe('CUSTOM-REF-123')
+        ->and($paymentRequest->merchantSession)->toBe('CUSTOM-SESS-456');
 });
 
 it('creates valid payment request with data from transaction', function (): void {

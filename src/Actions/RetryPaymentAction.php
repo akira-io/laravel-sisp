@@ -16,17 +16,18 @@ final readonly class RetryPaymentAction
 
     public function handle(Transaction $transaction, bool $rotateMerchantSession = true): PaymentRequest
     {
-        $paymentRequestData = $this->extractFromTransaction($transaction, $rotateMerchantSession);
+        $retryTransaction = $rotateMerchantSession ? $transaction->refresh() : $transaction;
+        $paymentRequestData = $this->extractFromTransaction($retryTransaction);
 
         return $this->buildRequestPayload->handle($paymentRequestData);
     }
 
-    private function extractFromTransaction(Transaction $transaction, bool $rotateMerchantSession): PaymentRequestData
+    private function extractFromTransaction(Transaction $transaction): PaymentRequestData
     {
         return new PaymentRequestData(
             amount: $transaction->amount,
             merchantRef: $transaction->merchant_ref,
-            merchantSession: $rotateMerchantSession ? null : $this->merchantSession($transaction),
+            merchantSession: $this->merchantSession($transaction),
             timeStamp: null,
             currency: $transaction->currency,
             transactionCode: $transaction->transaction_code,
