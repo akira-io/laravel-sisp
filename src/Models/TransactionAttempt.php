@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property-read int $attempt_number
  * @property-read string $merchant_ref
  * @property-read string $merchant_session
+ * @property-read string|null $attempt_session
  * @property-read TransactionStatus $status
  * @property-read string|null $gateway_transaction_id
  * @property-read array<string, mixed>|null $payload
@@ -35,6 +36,7 @@ final class TransactionAttempt extends Model
         'attempt_number',
         'merchant_ref',
         'merchant_session',
+        'attempt_session',
         'status',
         'gateway_transaction_id',
         'message_type',

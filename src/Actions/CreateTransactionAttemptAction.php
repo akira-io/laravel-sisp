@@ -10,8 +10,12 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 
 final readonly class CreateTransactionAttemptAction
 {
-    public function handle(Transaction $transaction, PaymentRequest $paymentRequest, bool $supersedeCurrent = false): TransactionAttempt
-    {
+    public function handle(
+        Transaction $transaction,
+        PaymentRequest $paymentRequest,
+        bool $supersedeCurrent = false,
+        ?string $attemptSession = null,
+    ): TransactionAttempt {
         if ($supersedeCurrent) {
             $this->ensureCurrentAttemptExists($transaction);
 
@@ -24,6 +28,7 @@ final readonly class CreateTransactionAttemptAction
             'attempt_number' => $this->nextAttemptNumber($transaction),
             'merchant_ref' => $paymentRequest->merchantRef,
             'merchant_session' => $paymentRequest->merchantSession,
+            'attempt_session' => $attemptSession ?? $paymentRequest->merchantSession,
             'status' => 'pending',
             'payload' => $paymentRequest->toArray(),
             'submitted_at' => now(),
@@ -36,6 +41,7 @@ final readonly class CreateTransactionAttemptAction
             'attempt_number' => $this->nextAttemptNumber($transaction),
             'merchant_ref' => $transaction->merchant_ref,
             'merchant_session' => $transaction->merchant_session,
+            'attempt_session' => $transaction->merchant_session,
             'status' => $transaction->status->value,
             'gateway_transaction_id' => $transaction->transaction_id,
             'message_type' => $transaction->message_type,

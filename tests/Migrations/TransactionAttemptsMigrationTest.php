@@ -50,8 +50,10 @@ it('backfills legacy duplicate identifiers without blocking the attempts migrati
         ->and($attempts)->toHaveCount(2)
         ->and($attempts[0]->merchant_ref)->toBe('MR-LEGACY-DUPLICATE')
         ->and($attempts[0]->merchant_session)->toBe('MS-LEGACY-DUPLICATE')
+        ->and($attempts[0]->attempt_session)->toBe('MS-LEGACY-DUPLICATE')
         ->and($attempts[0]->superseded_at)->toBeNull()
         ->and($attempts[1]->merchant_ref)->toBe('MR-LEGACY-DUPLICATE')
-        ->and($attempts[1]->merchant_session)->toContain('MS-LEGACY-DUPLICATE-legacy-')
+        ->and($attempts[1]->merchant_session)->toBe('MS-LEGACY-DUPLICATE')
+        ->and($attempts[1]->attempt_session)->toContain('MS-LEGACY-DUPLICATE-legacy-')
         ->and($attempts[1]->superseded_at)->not->toBeNull();
 });

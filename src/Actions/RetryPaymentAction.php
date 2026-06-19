@@ -28,7 +28,6 @@ final readonly class RetryPaymentAction
             amount: $transaction->amount,
             merchantRef: $transaction->merchant_ref,
             merchantSession: $this->merchantSession($transaction),
-            timeStamp: null,
             currency: $transaction->currency,
             transactionCode: $transaction->transaction_code,
             token: '',

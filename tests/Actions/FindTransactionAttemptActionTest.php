@@ -42,3 +42,54 @@ it('reuses a backfilled legacy callback attempt', function (): void {
         ->and($firstAttempt->merchant_ref)->toBe('MR-LEGACY-CALLBACK')
         ->and($firstAttempt->merchant_session)->toBe('MS-LEGACY-CALLBACK');
 });
+
+it('uses the latest pending local attempt for callbacks on the same SISP transaction', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-RETRIED-CALLBACK',
+        'merchant_session' => 'MS-SISP-CALLBACK',
+        'amount' => 30.0,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'failed',
+    ]);
+
+    TransactionAttempt::factory()->create([
+        'transaction_id' => $transaction->id,
+        'attempt_number' => 1,
+        'merchant_ref' => 'MR-RETRIED-CALLBACK',
+        'merchant_session' => 'MS-SISP-CALLBACK',
+        'attempt_session' => 'MS-LOCAL-1',
+        'status' => 'failed',
+        'callback_received_at' => now(),
+        'superseded_at' => now(),
+    ]);
+
+    $latestAttempt = TransactionAttempt::factory()->create([
+        'transaction_id' => $transaction->id,
+        'attempt_number' => 2,
+        'merchant_ref' => 'MR-RETRIED-CALLBACK',
+        'merchant_session' => 'MS-SISP-CALLBACK',
+        'attempt_session' => 'MS-LOCAL-2',
+        'status' => 'pending',
+        'callback_received_at' => null,
+    ]);
+
+    $payload = new CallbackPayload(
+        merchantRef: 'MR-RETRIED-CALLBACK',
+        merchantSession: 'MS-SISP-CALLBACK',
+        timeStamp: '20240101010101',
+        amount: '30.00',
+        currency: '132',
+        transactionCode: '1',
+        transactionID: 'TID-RETRIED-CALLBACK',
+        messageType: '8',
+        merchantResponse: 'OK',
+        responseCode: '00',
+        fingerprint: 'fingerprint',
+        posID: 'POS1',
+    );
+
+    $attempt = resolve(FindTransactionAttemptAction::class)->handle($payload);
+
+    expect($attempt->is($latestAttempt))->toBeTrue();
+});

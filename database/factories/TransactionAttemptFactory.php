@@ -22,6 +22,7 @@ final class TransactionAttemptFactory extends Factory
             'attempt_number' => 1,
             'merchant_ref' => $this->faker->uuid(),
             'merchant_session' => $this->faker->uuid(),
+            'attempt_session' => $this->faker->uuid(),
             'status' => 'pending',
             'payload' => [],
             'submitted_at' => now(),

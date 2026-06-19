@@ -37,6 +37,7 @@ final class SispServiceProvider extends PackageServiceProvider
                 'update_laravel_sisp_transactions_add_amount_cents',
                 'create_sisp_transaction_logs_table',
                 'create_sisp_transaction_attempts_table',
+                'update_sisp_transaction_attempts_for_local_sessions',
                 'create_sisp_payment_intents_table',
             ])
             ->hasTranslations()

@@ -90,6 +90,7 @@ final readonly class CallbackController
         $attempt = TransactionAttempt::query()
             ->where('merchant_ref', $payload->merchantRef)
             ->where('merchant_session', $payload->merchantSession)
+            ->where('status', TransactionStatus::completed)
             ->first();
 
         if ($attempt instanceof TransactionAttempt) {
