@@ -176,8 +176,6 @@ it('runs authorized full refund through the public route', function (): void {
     $transaction = Transaction::factory()->create([
         'status' => 'completed',
         'amount' => 90.0,
-        'transaction_id' => 'PAID-TID',
-        'response_code' => '5',
         'customer_email' => 'buyer@example.test',
         'transaction_id' => 'TX-REFUND-1',
         'response_code' => '001',

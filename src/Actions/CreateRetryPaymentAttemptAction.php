@@ -25,7 +25,6 @@ final readonly class CreateRetryPaymentAttemptAction
     public function handle(Transaction $transaction): PaymentRequest
     {
         $maxAttempts = $this->config->getIdentifierGenerationMaxAttempts();
-        $lastException = null;
 
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             try {
@@ -52,15 +51,13 @@ final readonly class CreateRetryPaymentAttemptAction
             } catch (QueryException $exception) {
                 throw_unless(UniqueConstraintViolation::causedBy($exception), $exception);
 
-                $lastException = $exception;
-
                 if ($attempt < $maxAttempts) {
                     $this->waitForNextCandidate();
                 }
             }
         }
 
-        throw new UnableToGenerateUniquePaymentIdentifiersException($maxAttempts, $lastException);
+        throw new UnableToGenerateUniquePaymentIdentifiersException($maxAttempts);
     }
 
     private function nextLocalAttemptSession(Transaction $transaction): string
