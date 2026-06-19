@@ -14,20 +14,19 @@ final readonly class RetryPaymentAction
 
     public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
 
-    public function handle(Transaction $transaction, bool $rotateMerchantSession = true): PaymentRequest
+    public function handle(Transaction $transaction): PaymentRequest
     {
-        $paymentRequestData = $this->extractFromTransaction($transaction, $rotateMerchantSession);
+        $paymentRequestData = $this->extractFromTransaction($transaction);
 
         return $this->buildRequestPayload->handle($paymentRequestData);
     }
 
-    private function extractFromTransaction(Transaction $transaction, bool $rotateMerchantSession): PaymentRequestData
+    private function extractFromTransaction(Transaction $transaction): PaymentRequestData
     {
         return new PaymentRequestData(
             amount: $transaction->amount,
             merchantRef: $transaction->merchant_ref,
-            merchantSession: $rotateMerchantSession ? null : $this->merchantSession($transaction),
-            timeStamp: null,
+            merchantSession: $this->merchantSession($transaction),
             currency: $transaction->currency,
             transactionCode: $transaction->transaction_code,
             token: '',

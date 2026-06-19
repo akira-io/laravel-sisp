@@ -10,6 +10,7 @@ it('retries payment for an existing transaction', function (): void {
         'amount' => 123.0,
         'currency' => '132',
         'status' => 'failed',
+        'merchant_ref' => 'retry-reference',
         'merchant_session' => 'old-session',
         'transaction_code' => '1',
     ]);
@@ -19,8 +20,8 @@ it('retries payment for an existing transaction', function (): void {
 
     $t->refresh();
 
-    expect($t->merchant_session)->not->toBe('old-session')
-        ->and($t->merchant_session)->not->toBe('')
+    expect($t->merchant_ref)->toBe('retry-reference')
+        ->and($t->merchant_session)->toBe('old-session')
         ->and($t->amount)->toBe(123.0)
         ->and($t->currency)->toBe('132')
         ->and($t->status->value)->toBe('failed');

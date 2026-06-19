@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Configuration\LoadConfig;
-use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Exceptions\UnableToGenerateUniquePaymentIdentifiersException;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\TransactionLogContext;
@@ -28,34 +27,28 @@ final readonly class CreateRetryPaymentAttemptAction
         $lastException = null;
 
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            $paymentRequest = $this->retryPayment->handle($transaction->refresh());
-
             try {
-                DB::transaction(function () use ($paymentRequest, $transaction): void {
+                return DB::transaction(function () use ($transaction): PaymentRequest {
                     /** @var Transaction $lockedTransaction */
                     $lockedTransaction = Transaction::query()
                         ->lockForUpdate()
                         ->findOrFail($transaction->id);
 
+                    $paymentRequest = $this->retryPayment->handle($lockedTransaction);
+                    $attemptSession = $this->nextLocalAttemptSession($lockedTransaction);
+
                     TransactionLogContext::run(
                         'retry',
-                        function () use ($lockedTransaction, $paymentRequest): void {
-                            $this->createAttempt->handle($lockedTransaction, $paymentRequest, supersedeCurrent: true);
-
-                            $lockedTransaction->update([
-                                'merchant_session' => $paymentRequest->merchantSession,
-                                'transaction_id' => null,
-                                'message_type' => null,
-                                'merchant_response' => null,
-                                'response_code' => null,
-                                'fingerprint' => null,
-                                'status' => TransactionStatus::pending,
-                            ]);
-                        }
+                        fn (): \Akira\Sisp\Models\TransactionAttempt => $this->createAttempt->handle(
+                            $lockedTransaction,
+                            $paymentRequest,
+                            supersedeCurrent: true,
+                            attemptSession: $attemptSession,
+                        )
                     );
-                }, attempts: 3);
 
-                return $paymentRequest;
+                    return $paymentRequest;
+                }, attempts: 3);
             } catch (QueryException $exception) {
                 throw_unless(UniqueConstraintViolation::causedBy($exception), $exception);
 
@@ -68,6 +61,27 @@ final readonly class CreateRetryPaymentAttemptAction
         }
 
         throw new UnableToGenerateUniquePaymentIdentifiersException($maxAttempts, $lastException);
+    }
+
+    private function nextLocalAttemptSession(Transaction $transaction): string
+    {
+        $base = $this->config->getMerchantSession();
+        $candidate = $base;
+        $counter = 1;
+
+        while ($transaction->attempts()->where('attempt_session', $candidate)->exists()) {
+            $candidate = $this->suffixedAttemptSession($base, $transaction, $counter);
+            $counter++;
+        }
+
+        return $candidate;
+    }
+
+    private function suffixedAttemptSession(string $base, Transaction $transaction, int $counter): string
+    {
+        $suffix = '-try-'.$transaction->id.'-'.$counter;
+
+        return mb_substr($base, 0, 255 - mb_strlen($suffix)).$suffix;
     }
 
     private function waitForNextCandidate(): void

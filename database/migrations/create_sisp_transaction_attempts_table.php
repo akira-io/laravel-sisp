@@ -30,6 +30,7 @@ return new class extends Migration
             $table->unsignedInteger('attempt_number');
             $table->string('merchant_ref');
             $table->string('merchant_session');
+            $table->string('attempt_session')->nullable();
             $table->string('status')->default('pending');
             $table->string('gateway_transaction_id')->nullable();
             $table->string('message_type')->nullable();
@@ -44,9 +45,9 @@ return new class extends Migration
             $table->timestamp('superseded_at')->nullable();
             $table->timestamps();
 
-            $table->unique('merchant_session');
-            $table->unique(['merchant_ref', 'merchant_session']);
             $table->unique(['transaction_id', 'attempt_number']);
+            $table->index(['merchant_ref', 'merchant_session']);
+            $table->index('attempt_session');
             $table->index(['transaction_id', 'status']);
             $table->index('gateway_transaction_id');
         });
@@ -103,7 +104,7 @@ return new class extends Migration
 
     private function backfillAttempts(string $transactionsTable, string $attemptsTable): void
     {
-        $usedMerchantSessions = [];
+        $usedAttemptSessions = [];
 
         DB::table($transactionsTable)
             ->orderBy('id')
@@ -121,20 +122,21 @@ return new class extends Migration
                 'created_at',
                 'updated_at',
             ])
-            ->chunkById(100, function ($transactions) use ($attemptsTable, &$usedMerchantSessions): void {
+            ->chunkById(100, function ($transactions) use ($attemptsTable, &$usedAttemptSessions): void {
                 foreach ($transactions as $transaction) {
-                    $merchantSession = $this->uniqueLegacyMerchantSession(
+                    $attemptSession = $this->uniqueLegacyMerchantSession(
                         (string) $transaction->merchant_session,
                         (int) $transaction->id,
-                        $usedMerchantSessions,
+                        $usedAttemptSessions,
                     );
-                    $hasDuplicateSession = $merchantSession !== (string) $transaction->merchant_session;
+                    $hasDuplicateAttemptSession = $attemptSession !== (string) $transaction->merchant_session;
 
                     DB::table($attemptsTable)->insert([
                         'transaction_id' => $transaction->id,
                         'attempt_number' => 1,
                         'merchant_ref' => $transaction->merchant_ref,
-                        'merchant_session' => $merchantSession,
+                        'merchant_session' => $transaction->merchant_session,
+                        'attempt_session' => $attemptSession,
                         'status' => $transaction->status,
                         'gateway_transaction_id' => $transaction->transaction_id,
                         'message_type' => $transaction->message_type,
@@ -143,10 +145,10 @@ return new class extends Migration
                         'fingerprint' => $transaction->fingerprint,
                         'payload' => $transaction->payload,
                         'callback_payload' => null,
-                        'failure_reason' => $hasDuplicateSession ? 'Legacy duplicate merchant_session; original value remains on the transaction.' : null,
+                        'failure_reason' => $hasDuplicateAttemptSession ? 'Legacy duplicate local attempt_session; original SISP merchant_session remains on the attempt.' : null,
                         'submitted_at' => $transaction->created_at,
                         'callback_received_at' => $transaction->transaction_id !== null ? $transaction->updated_at : null,
-                        'superseded_at' => $hasDuplicateSession ? ($transaction->updated_at ?? now()) : null,
+                        'superseded_at' => $hasDuplicateAttemptSession ? ($transaction->updated_at ?? now()) : null,
                         'created_at' => $transaction->created_at,
                         'updated_at' => $transaction->updated_at,
                     ]);
