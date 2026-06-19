@@ -14,10 +14,9 @@ final readonly class RetryPaymentAction
 
     public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
 
-    public function handle(Transaction $transaction, bool $rotateMerchantSession = true): PaymentRequest
+    public function handle(Transaction $transaction): PaymentRequest
     {
-        $retryTransaction = $rotateMerchantSession ? $transaction->refresh() : $transaction;
-        $paymentRequestData = $this->extractFromTransaction($retryTransaction);
+        $paymentRequestData = $this->extractFromTransaction($transaction);
 
         return $this->buildRequestPayload->handle($paymentRequestData);
     }

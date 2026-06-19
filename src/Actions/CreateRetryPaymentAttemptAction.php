@@ -34,7 +34,7 @@ final readonly class CreateRetryPaymentAttemptAction
                         ->lockForUpdate()
                         ->findOrFail($transaction->id);
 
-                    $paymentRequest = $this->retryPayment->handle($lockedTransaction, rotateMerchantSession: false);
+                    $paymentRequest = $this->retryPayment->handle($lockedTransaction);
                     $attemptSession = $this->nextLocalAttemptSession($lockedTransaction);
 
                     TransactionLogContext::run(
