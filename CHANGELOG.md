@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2](https://github.com/akira-io/laravel-sisp/compare/v1.0.1...v1.0.2) (2026-06-19)
+
+### Bug Fixes
+
+- **payments:** Prevent duplicate SISP submissions ([f0a8cf8](https://github.com/akira-io/laravel-sisp/commit/f0a8cf89d25aa9f2ad9c6fcad6aca4b1603ed8f9))
+- **payments:** Track local retry attempts ([48a19e4](https://github.com/akira-io/laravel-sisp/commit/48a19e45c48ec4d1bfcddf9b0bc98bcc62f3f267))
+- **payments:** Remove retry session rotation flag ([b8b8c00](https://github.com/akira-io/laravel-sisp/commit/b8b8c0012f9ffa93101e23c7836586c67a97c3bb))
+
 ## [1.0.1](https://github.com/akira-io/laravel-sisp/compare/v1.0.0...v1.0.1) (2026-06-17)
 
 ### Bug Fixes
