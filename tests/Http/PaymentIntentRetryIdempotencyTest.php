@@ -11,7 +11,7 @@ beforeEach(function (): void {
     config()->set('sisp.identifier_generation.collision_retry_sleep_microseconds', 0);
 });
 
-it('returns the existing pending retry attempt for duplicate failed checkout intents', function (): void {
+it('does not create retry attempts for duplicate failed checkout intents', function (): void {
     $payload = payment_intent_retry_payload([
         'idempotency_key' => 'checkout-intent-repeat-retry',
     ]);
@@ -40,13 +40,11 @@ it('returns the existing pending retry attempt for duplicate failed checkout int
     $this->post(route('sisp.payment'), $payload)
         ->assertOk();
 
-    $retryAttempt = $transaction->refresh()->currentAttempt;
-
     $this->post(route('sisp.payment'), $payload)
         ->assertOk();
 
-    expect($transaction->attempts()->count())->toBe(2)
-        ->and($transaction->refresh()->currentAttempt->is($retryAttempt))->toBeTrue();
+    expect($transaction->attempts()->count())->toBe(1)
+        ->and($transaction->refresh()->currentAttempt->status)->toBe(TransactionStatus::failed);
 });
 
 function payment_intent_retry_payload(array $overrides = []): array

@@ -129,7 +129,7 @@ it('rejects an existing pending transaction when the checkout intent is posted t
         ->and(PaymentIntent::query()->sole()->transaction_id)->toBe($transaction->id);
 });
 
-it('creates a local retry attempt for the same SISP transaction when a failed checkout intent is posted again', function (): void {
+it('returns the stored payment request when a failed checkout intent is posted again', function (): void {
     $payload = transaction_attempts_payment_payload(overrides: [
         'idempotency_key' => 'checkout-intent-retry',
     ]);
@@ -167,16 +167,11 @@ it('creates a local retry attempt for the same SISP transaction when a failed ch
 
     expect(Transaction::query()->count())->toBe(1)
         ->and(PaymentIntent::query()->sole()->transaction_id)->toBe($transaction->id)
-        ->and($attempts)->toHaveCount(2)
+        ->and($attempts)->toHaveCount(1)
         ->and($attempts[0]->merchant_ref)->toBe($oldRef)
         ->and($attempts[0]->merchant_session)->toBe($oldSession)
         ->and($attempts[0]->attempt_session)->toBe($oldSession)
-        ->and($attempts[0]->superseded_at)->not->toBeNull()
-        ->and($attempts[1]->merchant_ref)->toBe($oldRef)
-        ->and($attempts[1]->merchant_session)->toBe($oldSession)
-        ->and($attempts[1]->attempt_session)->not->toBe($oldSession)
-        ->and($attempts[1]->payload['merchantSession'])->toBe($oldSession)
-        ->and($attempts[1]->superseded_at)->toBeNull()
+        ->and($attempts[0]->superseded_at)->toBeNull()
         ->and($transaction->merchant_ref)->toBe($oldRef)
         ->and($transaction->merchant_session)->toBe($oldSession)
         ->and($transaction->status)->toBe(TransactionStatus::failed)
