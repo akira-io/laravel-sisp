@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Models\PaymentIntent;
+use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 
 it('creates transaction and renders payment form', function (): void {
     config()->set('sisp.rate_limiting.enabled', false);
@@ -60,6 +63,30 @@ it('stores decimal payment amounts with canonical cents', function (): void {
 
     expect($transaction->amount)->toBe(8.03)
         ->and($transaction->amount_cents)->toBe(803);
+});
+
+it('respects disabled idempotency and metadata collection flags', function (): void {
+    config()->set('sisp.rate_limiting.enabled', false);
+    config()->set('sisp.idempotency.enabled', false);
+    config()->set('sisp.security.collect_metadata', false);
+
+    $this->post(route('sisp.payment'), [
+        'amount' => 100.0,
+        'checkout_intent_id' => 'checkout-disabled-flags',
+        'items' => [[
+            'product_name' => 'Test',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+            'total_price' => 100.0,
+        ]],
+        'customer_name' => 'John',
+        'customer_email' => 'john@example.test',
+    ])->assertOk();
+
+    expect(Transaction::query()->count())->toBe(1)
+        ->and(PaymentIntent::query()->count())->toBe(0)
+        ->and(TransactionAttempt::query()->count())->toBe(0)
+        ->and(RequestMetadata::query()->count())->toBe(0);
 });
 
 it('blocks duplicate transactions via middleware', function (): void {

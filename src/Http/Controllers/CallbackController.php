@@ -7,6 +7,7 @@ namespace Akira\Sisp\Http\Controllers;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
@@ -22,6 +23,7 @@ final readonly class CallbackController
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
+        private LoadConfig $config,
     ) {}
 
     public function __invoke(Request $request): mixed
@@ -78,7 +80,9 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
-        $this->storeMetadata->handle($request, $transaction);
+        if ($this->config->isMetadataCollectionEnabled()) {
+            $this->storeMetadata->handle($request, $transaction);
+        }
 
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
