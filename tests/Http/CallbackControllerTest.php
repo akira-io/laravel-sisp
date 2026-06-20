@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
@@ -73,6 +74,25 @@ it('handles POST callback and redirects to GET with ref', function (): void {
         ->and($t->merchant_response)->toBe($payload->merchantResponse)
         ->and($t->response_code)->toBe($payload->merchantRespCp)
         ->and($t->fingerprint)->toBe($payload->fingerprint);
+});
+
+it('does not store callback metadata when metadata collection is disabled', function (): void {
+    config()->set('sisp.security.collect_metadata', false);
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-NO-METADATA',
+        'merchant_session' => 'MS-NO-METADATA',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-NO-METADATA']));
+
+    expect(RequestMetadata::query()->count())->toBe(0);
 });
 
 it('accepts successful callbacks when the signed response omits transaction code', function (): void {

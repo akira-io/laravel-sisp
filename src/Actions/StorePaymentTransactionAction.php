@@ -14,7 +14,7 @@ final readonly class StorePaymentTransactionAction
         private CreateTransactionAction $createTransaction,
     ) {}
 
-    public function handle(PaymentRequest $paymentRequest): Transaction
+    public function handle(PaymentRequest $paymentRequest, bool $recordAttempt = true): Transaction
     {
         $transactionData = TransactionData::from([
             'merchantRef' => $paymentRequest->merchantRef,
@@ -26,6 +26,6 @@ final readonly class StorePaymentTransactionAction
             'locale' => $paymentRequest->locale,
         ]);
 
-        return $this->createTransaction->handle($transactionData);
+        return $this->createTransaction->handle($transactionData, $recordAttempt);
     }
 }

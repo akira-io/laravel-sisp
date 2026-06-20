@@ -58,6 +58,7 @@ it('reads boolean flags for features and security', function (): void {
     config()->set('sisp.use_blade.enabled', false);
     config()->set('sisp.sandbox', true);
     config()->set('sisp.rate_limiting.enabled', false);
+    config()->set('sisp.idempotency.enabled', false);
     config()->set('sisp.security.collect_metadata', false);
     config()->set('sisp.security.block_vpn_proxy', false);
     config()->set('sisp.security.block_new_country_payments', true);
@@ -71,6 +72,7 @@ it('reads boolean flags for features and security', function (): void {
     expect($this->cfg->shouldUseBlade())->toBeFalse()
         ->and($this->cfg->isSandboxEnabled())->toBeTrue()
         ->and($this->cfg->isRateLimitingEnabled())->toBeFalse()
+        ->and($this->cfg->isIdempotencyEnabled())->toBeFalse()
         ->and($this->cfg->isMetadataCollectionEnabled())->toBeFalse()
         ->and($this->cfg->shouldBlockVpnProxy())->toBeFalse()
         ->and($this->cfg->shouldBlockNewCountryPayments())->toBeTrue()
@@ -83,7 +85,9 @@ it('reads boolean flags for features and security', function (): void {
 });
 
 it('defaults unsupported advanced security controls to disabled', function (): void {
-    expect($this->cfg->isMetadataCollectionEnabled())->toBeTrue()
+    expect($this->cfg->isIdempotencyEnabled())->toBeTrue()
+        ->and($this->cfg->isMetadataCollectionEnabled())->toBeTrue()
+        ->and($this->cfg->getIdempotencyRequestKeys())->toBe(['idempotency_key', 'checkout_intent_id'])
         ->and($this->cfg->isVpnDetectionEnabled())->toBeFalse()
         ->and($this->cfg->isProxyDetectionEnabled())->toBeFalse()
         ->and($this->cfg->isRiskScoringEnabled())->toBeFalse()

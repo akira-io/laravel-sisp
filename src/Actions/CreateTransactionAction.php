@@ -15,10 +15,10 @@ final readonly class CreateTransactionAction
 {
     public function __construct(private CreateTransactionAttemptAction $createAttempt) {}
 
-    public function handle(TransactionData $data): Transaction
+    public function handle(TransactionData $data, bool $recordAttempt = true): Transaction
     {
         try {
-            return DB::transaction(function () use ($data): Transaction {
+            return DB::transaction(function () use ($data, $recordAttempt): Transaction {
                 $transaction = Transaction::query()->create([
                     'merchant_ref' => $data->merchantRef,
                     'merchant_session' => $data->merchantSession,
@@ -30,7 +30,9 @@ final readonly class CreateTransactionAction
                     'locale' => $data->locale,
                 ]);
 
-                $this->createAttempt->createFromTransaction($transaction);
+                if ($recordAttempt) {
+                    $this->createAttempt->createFromTransaction($transaction);
+                }
 
                 return $transaction;
             }, attempts: 3);

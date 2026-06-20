@@ -31,12 +31,12 @@ final readonly class CreateAndStorePaymentTransactionAction
     /**
      * @throws Throwable
      */
-    public function handle(PaymentRequest $paymentRequest, Request $request): Transaction
+    public function handle(PaymentRequest $paymentRequest, Request $request, bool $recordAttempt = true): Transaction
     {
         try {
-            return DB::transaction(function () use ($paymentRequest, $request): Transaction {
+            return DB::transaction(function () use ($paymentRequest, $recordAttempt, $request): Transaction {
 
-                $transaction = $this->storeTransaction->handle($paymentRequest);
+                $transaction = $this->storeTransaction->handle($paymentRequest, $recordAttempt);
 
                 $customerData = CustomerData::from($request->all());
 
