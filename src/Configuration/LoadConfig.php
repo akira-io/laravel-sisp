@@ -192,6 +192,11 @@ final readonly class LoadConfig
         return $this->config->get('sisp.rate_limiting.enabled', true);
     }
 
+    public function isIdempotencyEnabled(): bool
+    {
+        return $this->config->get('sisp.idempotency.enabled', true);
+    }
+
     public function isMetadataCollectionEnabled(): bool
     {
         return $this->config->get('sisp.security.collect_metadata', true);
