@@ -6,6 +6,7 @@ namespace Akira\Sisp\Pipelines\Payment\Pipes;
 
 use Akira\Sisp\Actions\CanRetryPaymentAction;
 use Akira\Sisp\Actions\CreateRetryPaymentAttemptAction;
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\PaymentPipe;
 use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Models\PaymentIntent;
@@ -20,6 +21,7 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
     public function __construct(
         private CreateRetryPaymentAttemptAction $createRetryAttempt,
         private CanRetryPaymentAction $canRetryPayment,
+        private LoadConfig $config,
     ) {}
 
     public function handle(PaymentContext $context, Closure $next): PaymentContext
@@ -49,21 +51,11 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
     private function paymentIntentKey(PaymentContext $context): ?string
     {
-        if (! config()->boolean('sisp.idempotency.enabled', true)) {
+        if (! $this->config->isIdempotencyEnabled()) {
             return null;
         }
 
-        $keys = config()->array('sisp.idempotency.request_keys', ['idempotency_key', 'checkout_intent_id']);
-
-        foreach ($keys as $key) {
-            if (! is_string($key)) {
-                continue;
-            }
-
-            if ($key === '') {
-                continue;
-            }
-
+        foreach ($this->config->getIdempotencyRequestKeys() as $key) {
             $value = $context->request->input($key);
 
             if (is_string($value) && mb_trim($value) !== '') {

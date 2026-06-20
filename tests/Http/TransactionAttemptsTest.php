@@ -46,6 +46,18 @@ it('creates the initial attempt when a payment transaction is stored', function 
         ->and($transaction->currentAttempt->attempt_number)->toBe(1);
 });
 
+it('does not reserve payment intents when idempotency is disabled', function (): void {
+    config()->set('sisp.idempotency.enabled', false);
+
+    $this->post(route('sisp.payment'), transaction_attempts_payment_payload(overrides: [
+        'checkout_intent_id' => 'checkout-intent-disabled',
+    ]))->assertOk();
+
+    expect(Transaction::query()->count())->toBe(1)
+        ->and(TransactionAttempt::query()->count())->toBe(1)
+        ->and(PaymentIntent::query()->count())->toBe(0);
+});
+
 it('rejects an existing pending transaction when the checkout intent is posted twice', function (): void {
     $payload = transaction_attempts_payment_payload(overrides: [
         'checkout_intent_id' => 'checkout-intent-duplicate',
