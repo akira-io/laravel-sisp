@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Configuration;
 
+use Akira\Sisp\Configuration\Concerns\LoadsDocumentConfig;
 use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
 use Akira\Sisp\Pipelines\Payment\ProcessPaymentPipeline;
 use Illuminate\Container\Attributes\Singleton;
@@ -12,18 +13,20 @@ use Illuminate\Contracts\Config\Repository;
 #[Singleton]
 final readonly class LoadConfig
 {
+    use LoadsDocumentConfig;
+
     public function __construct(
         private Repository $config,
     ) {}
 
     public function shouldUseInertia(): bool
     {
-        return $this->config->get('sisp.use_inertia.enabled', false) && class_exists(\Inertia\Inertia::class);
+        return $this->boolean('sisp.use_inertia.enabled', false) && class_exists(\Inertia\Inertia::class);
     }
 
     public function shouldUseBlade(): bool
     {
-        return $this->config->get('sisp.use_blade.enabled', true);
+        return $this->boolean('sisp.use_blade.enabled', true);
     }
 
     public function getPaymentFormComponent(): string
@@ -48,7 +51,7 @@ final readonly class LoadConfig
 
     public function isSandboxEnabled(): bool
     {
-        return $this->config->get('sisp.sandbox', false);
+        return $this->boolean('sisp.sandbox', false);
     }
 
     /**
@@ -132,89 +135,14 @@ final readonly class LoadConfig
         return $this->config->get('sisp.url', '');
     }
 
-    public function getTransactionStatusUrl(): string
-    {
-        return $this->config->get('sisp.transaction_status.url', 'https://comerciante.vinti4.cv/pos/transaction-status');
-    }
-
-    public function getTransactionStatusPortalId(): string
-    {
-        return $this->config->get('sisp.transaction_status.portal_id', '');
-    }
-
-    public function getTransactionStatusPortalPassword(): string
-    {
-        return $this->config->get('sisp.transaction_status.portal_password', '');
-    }
-
-    public function getTransactionStatusTimeoutSeconds(): int
-    {
-        return (int) $this->config->get('sisp.transaction_status.timeout_seconds', 10);
-    }
-
-    public function getInvoiceNumberFormat(): string
-    {
-        return $this->config->get('sisp.invoice.number_format', 'date-based');
-    }
-
-    public function getInvoiceNumberPrefix(): string
-    {
-        return $this->config->get('sisp.invoice.prefix', 'INV');
-    }
-
-    public function getInvoiceStorageDisk(): string
-    {
-        return $this->config->get('sisp.invoice.disk', 'public');
-    }
-
-    public function getInvoiceTemplate(): string
-    {
-        return $this->config->get('sisp.invoice.template', 'branded');
-    }
-
-    public function getInvoiceCompanyName(): string
-    {
-        return $this->config->get('sisp.invoice.company_name', '');
-    }
-
-    public function getInvoiceCompanyAddress(): string
-    {
-        return $this->config->get('sisp.invoice.company_address', '');
-    }
-
-    public function getInvoiceCompanyCode(): string
-    {
-        return $this->config->get('sisp.invoice.company_code', '');
-    }
-
-    public function getInvoiceCompanyCountry(): string
-    {
-        return $this->config->get('sisp.invoice.company_country', '');
-    }
-
-    public function getInvoiceCompanyPhone(): string
-    {
-        return $this->config->get('sisp.invoice.company_phone', '');
-    }
-
-    public function getInvoiceCompanyEmail(): string
-    {
-        return $this->config->get('sisp.invoice.company_email', '');
-    }
-
-    public function getInvoiceCompanyWebsite(): string
-    {
-        return $this->config->get('sisp.invoice.company_website', '');
-    }
-
     public function isRateLimitingEnabled(): bool
     {
-        return $this->config->get('sisp.rate_limiting.enabled', true);
+        return $this->boolean('sisp.rate_limiting.enabled', true);
     }
 
     public function isIdempotencyEnabled(): bool
     {
-        return $this->config->get('sisp.idempotency.enabled', true);
+        return $this->boolean('sisp.idempotency.enabled', true);
     }
 
     /** @return list<string> */
@@ -234,32 +162,32 @@ final readonly class LoadConfig
 
     public function isMetadataCollectionEnabled(): bool
     {
-        return $this->config->get('sisp.security.collect_metadata', true);
+        return $this->boolean('sisp.security.collect_metadata', true);
     }
 
     public function shouldBlockVpnProxy(): bool
     {
-        return $this->config->get('sisp.security.block_vpn_proxy', false);
+        return $this->boolean('sisp.security.block_vpn_proxy', false);
     }
 
     public function shouldBlockNewCountryPayments(): bool
     {
-        return $this->config->get('sisp.security.block_new_country_payments', false);
+        return $this->boolean('sisp.security.block_new_country_payments', false);
     }
 
     public function isVpnDetectionEnabled(): bool
     {
-        return $this->config->get('sisp.security.detect_vpn', false);
+        return $this->boolean('sisp.security.detect_vpn', false);
     }
 
     public function isProxyDetectionEnabled(): bool
     {
-        return $this->config->get('sisp.security.detect_proxy', false);
+        return $this->boolean('sisp.security.detect_proxy', false);
     }
 
     public function isRiskScoringEnabled(): bool
     {
-        return $this->config->get('sisp.security.calculate_risk_score', false);
+        return $this->boolean('sisp.security.calculate_risk_score', false);
     }
 
     public function getRateLimitPerIp(): int
@@ -279,7 +207,7 @@ final readonly class LoadConfig
 
     public function isRetryAllowed(): bool
     {
-        return $this->config->get('sisp.allow_retry', true);
+        return $this->boolean('sisp.allow_retry', true);
     }
 
     public function getIdentifierGenerationMaxAttempts(): int
@@ -295,5 +223,10 @@ final readonly class LoadConfig
     public function getInvoiceTemporaryUrlExpirationHours(): int
     {
         return (int) $this->config->get('sisp.invoice.temporary_url_expiration_hours', 24);
+    }
+
+    private function boolean(string $key, bool $default): bool
+    {
+        return filter_var($this->config->get($key, $default), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
     }
 }

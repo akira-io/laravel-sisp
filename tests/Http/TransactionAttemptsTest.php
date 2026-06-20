@@ -58,6 +58,55 @@ it('does not reserve payment intents when idempotency is disabled', function ():
         ->and(PaymentIntent::query()->count())->toBe(0);
 });
 
+it('retries identifier collisions when idempotency is disabled', function (): void {
+    config()->set('sisp.idempotency.enabled', false);
+
+    Transaction::factory()->create([
+        'merchant_ref' => 'MR-DISABLED-COLLISION',
+        'merchant_session' => 'MS-DISABLED-COLLISION',
+    ]);
+
+    app()->singleton('sisp.test.disabledCollisionReference', fn (): object => new class
+    {
+        private int $next = 0;
+
+        public function __invoke(): string
+        {
+            $this->next++;
+
+            return $this->next === 1 ? 'MR-DISABLED-COLLISION' : 'MR-DISABLED-UNIQUE';
+        }
+    });
+
+    app()->singleton('sisp.test.disabledCollisionSession', fn (): object => new class
+    {
+        private int $next = 0;
+
+        public function __invoke(): string
+        {
+            $this->next++;
+
+            return $this->next === 1 ? 'MS-DISABLED-COLLISION' : 'MS-DISABLED-UNIQUE';
+        }
+    });
+
+    config()->set('sisp.generators.merchantReference', 'sisp.test.disabledCollisionReference');
+    config()->set('sisp.generators.merchantSession', 'sisp.test.disabledCollisionSession');
+
+    $this->post(route('sisp.payment'), transaction_attempts_payment_payload(overrides: [
+        'checkout_intent_id' => 'checkout-disabled-collision',
+    ]))->assertOk();
+
+    $transaction = Transaction::query()
+        ->where('merchant_ref', 'MR-DISABLED-UNIQUE')
+        ->sole();
+
+    expect($transaction->merchant_session)->toBe('MS-DISABLED-UNIQUE')
+        ->and(Transaction::query()->count())->toBe(2)
+        ->and(TransactionAttempt::query()->count())->toBe(1)
+        ->and(PaymentIntent::query()->count())->toBe(0);
+});
+
 it('rejects an existing pending transaction when the checkout intent is posted twice', function (): void {
     $payload = transaction_attempts_payment_payload(overrides: [
         'checkout_intent_id' => 'checkout-intent-duplicate',
