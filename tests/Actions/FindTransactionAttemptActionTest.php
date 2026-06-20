@@ -95,3 +95,56 @@ it('uses the latest pending local attempt for callbacks on the same SISP transac
 
     expect($attempt->is($latestAttempt))->toBeTrue();
 });
+
+it('reuses a processed superseded attempt when a duplicate callback arrives without gateway id', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'R-STALE-CALLBACK',
+        'merchant_session' => 'S-SHARED-CALLBACK',
+        'amount' => 30.0,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'failed',
+    ]);
+
+    $processedAttempt = TransactionAttempt::factory()
+        ->forTransaction($transaction)
+        ->create([
+            'attempt_number' => 1,
+            'merchant_session' => 'S-SHARED-CALLBACK',
+            'attempt_session' => 'S-LOCAL-OLD',
+            'status' => 'failed',
+            'fingerprint' => 'stale-fingerprint',
+            'gateway_transaction_id' => null,
+            'callback_received_at' => now(),
+            'superseded_at' => now(),
+        ]);
+
+    TransactionAttempt::factory()
+        ->forTransaction($transaction)
+        ->create([
+            'attempt_number' => 2,
+            'merchant_session' => 'S-SHARED-CALLBACK',
+            'attempt_session' => 'S-LOCAL-NEW',
+            'status' => 'pending',
+            'callback_received_at' => null,
+        ]);
+
+    $payload = new CallbackPayload(
+        merchantRef: 'R-STALE-CALLBACK',
+        merchantSession: 'S-SHARED-CALLBACK',
+        timeStamp: '20260101010101',
+        amount: '30.00',
+        currency: '132',
+        transactionCode: '1',
+        transactionID: '',
+        messageType: '8',
+        merchantResponse: 'OK',
+        responseCode: '00',
+        fingerprint: 'stale-fingerprint',
+        posID: 'POS1',
+    );
+
+    $attempt = resolve(FindTransactionAttemptAction::class)->handle($payload);
+
+    expect($attempt->is($processedAttempt))->toBeTrue();
+});

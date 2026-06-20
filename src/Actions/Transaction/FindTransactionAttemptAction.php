@@ -65,11 +65,38 @@ final readonly class FindTransactionAttemptAction
             }
         }
 
+        $attempt = $this->findProcessedAttempt($payload, $lockForUpdate);
+
+        if ($attempt instanceof TransactionAttempt) {
+            return $attempt;
+        }
+
         $query = TransactionAttempt::query()
             ->with('transaction')
             ->where('merchant_ref', $payload->merchantRef)
             ->where('merchant_session', $payload->merchantSession)
             ->orderByRaw('callback_received_at is not null')
+            ->orderByDesc('attempt_number');
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function findProcessedAttempt(CallbackPayload $payload, bool $lockForUpdate): ?TransactionAttempt
+    {
+        if ($payload->fingerprint === '') {
+            return null;
+        }
+
+        $query = TransactionAttempt::query()
+            ->with('transaction')
+            ->where('merchant_ref', $payload->merchantRef)
+            ->where('merchant_session', $payload->merchantSession)
+            ->where('fingerprint', $payload->fingerprint)
+            ->whereNotNull('callback_received_at')
             ->orderByDesc('attempt_number');
 
         if ($lockForUpdate) {
