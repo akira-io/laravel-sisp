@@ -87,6 +87,7 @@ it('reads boolean flags for features and security', function (): void {
 it('defaults unsupported advanced security controls to disabled', function (): void {
     expect($this->cfg->isIdempotencyEnabled())->toBeTrue()
         ->and($this->cfg->isMetadataCollectionEnabled())->toBeTrue()
+        ->and($this->cfg->getIdempotencyRequestKeys())->toBe(['idempotency_key', 'checkout_intent_id'])
         ->and($this->cfg->isVpnDetectionEnabled())->toBeFalse()
         ->and($this->cfg->isProxyDetectionEnabled())->toBeFalse()
         ->and($this->cfg->isRiskScoringEnabled())->toBeFalse()

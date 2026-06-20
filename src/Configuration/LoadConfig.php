@@ -197,6 +197,21 @@ final readonly class LoadConfig
         return $this->config->get('sisp.idempotency.enabled', true);
     }
 
+    /** @return list<string> */
+    public function getIdempotencyRequestKeys(): array
+    {
+        $keys = $this->config->get('sisp.idempotency.request_keys', ['idempotency_key', 'checkout_intent_id']);
+
+        if (! is_array($keys)) {
+            return ['idempotency_key', 'checkout_intent_id'];
+        }
+
+        return array_values(array_filter(
+            $keys,
+            fn (mixed $key): bool => is_string($key) && $key !== '',
+        ));
+    }
+
     public function isMetadataCollectionEnabled(): bool
     {
         return $this->config->get('sisp.security.collect_metadata', true);

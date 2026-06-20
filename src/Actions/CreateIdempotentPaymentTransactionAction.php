@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Models\PaymentIntent;
 use Akira\Sisp\Models\Transaction;
@@ -19,6 +20,7 @@ final readonly class CreateIdempotentPaymentTransactionAction
         private CreateUniquePaymentTransactionAction $createPayment,
         private CreateRetryPaymentAttemptAction $createRetryAttempt,
         private CanRetryPaymentAction $canRetryPayment,
+        private LoadConfig $config,
     ) {}
 
     /**
@@ -51,25 +53,11 @@ final readonly class CreateIdempotentPaymentTransactionAction
 
     private function paymentIntentKey(Request $request): ?string
     {
-        if (! (bool) config('sisp.idempotency.enabled', true)) {
+        if (! $this->config->isIdempotencyEnabled()) {
             return null;
         }
 
-        $keys = config('sisp.idempotency.request_keys', ['idempotency_key', 'checkout_intent_id']);
-
-        if (! is_array($keys)) {
-            return null;
-        }
-
-        foreach ($keys as $key) {
-            if (! is_string($key)) {
-                continue;
-            }
-
-            if ($key === '') {
-                continue;
-            }
-
+        foreach ($this->config->getIdempotencyRequestKeys() as $key) {
             $value = $request->input($key);
 
             if (is_string($value) && mb_trim($value) !== '') {
