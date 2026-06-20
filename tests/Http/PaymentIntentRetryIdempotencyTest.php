@@ -47,6 +47,32 @@ it('does not create retry attempts for duplicate failed checkout intents', funct
         ->and($transaction->refresh()->currentAttempt->status)->toBe(TransactionStatus::failed);
 });
 
+it('returns a conflict when a retryable checkout intent has no stored payment payload', function (): void {
+    $payload = payment_intent_retry_payload([
+        'idempotency_key' => 'checkout-intent-empty-payload',
+    ]);
+
+    $this->post(route('sisp.payment'), $payload)
+        ->assertOk();
+
+    $transaction = Transaction::query()->sole();
+
+    $transaction->currentAttempt()->update([
+        'payload' => [],
+        'status' => TransactionStatus::failed,
+        'callback_received_at' => now(),
+    ]);
+    $transaction->update([
+        'status' => TransactionStatus::failed,
+    ]);
+
+    $this->postJson(route('sisp.payment'), $payload)
+        ->assertConflict()
+        ->assertJson([
+            'message' => __('sisp::messages.validation.payment_in_progress'),
+        ]);
+});
+
 function payment_intent_retry_payload(array $overrides = []): array
 {
     return array_replace_recursive([

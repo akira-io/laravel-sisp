@@ -109,7 +109,7 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
         $context->transaction = $transaction;
 
         if ($this->canRetryPayment->handle($transaction)) {
-            $context->paymentRequest = $this->paymentRequestFrom($transaction);
+            $context->paymentRequest = $this->paymentRequestFrom($transaction, $paymentIntentKey);
             $context->transaction = $transaction->refresh()->load('currentAttempt');
 
             return $context;
@@ -118,13 +118,13 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
         throw new PaymentIntentAlreadyProcessingException($paymentIntentKey);
     }
 
-    private function paymentRequestFrom(Transaction $transaction): PaymentRequest
+    private function paymentRequestFrom(Transaction $transaction, string $paymentIntentKey): PaymentRequest
     {
         $payload = $transaction->currentAttempt instanceof TransactionAttempt
             ? $transaction->currentAttempt->payload
             : $transaction->payload;
 
-        throw_if(! is_array($payload) || $payload === [], PaymentIntentAlreadyProcessingException::class);
+        throw_if(! is_array($payload) || $payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
 
         return PaymentRequest::from($payload);
     }
