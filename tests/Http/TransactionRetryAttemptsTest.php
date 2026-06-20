@@ -115,10 +115,13 @@ it('suffixes duplicate legacy attempt sessions during backfill', function (): vo
 
     $firstAttemptSession = $method->invokeArgs($migration, ['S-LEGACY-DUPLICATE', 1, &$usedAttemptSessions]);
     $secondAttemptSession = $method->invokeArgs($migration, ['S-LEGACY-DUPLICATE', 2, &$usedAttemptSessions]);
+    $activeAttemptSession = $method->invokeArgs($migration, ['S-LEGACY-DUPLICATE', '2-active', &$usedAttemptSessions]);
 
     expect($firstAttemptSession)->toBe('S-LEGACY-DUPLICATE')
         ->and($secondAttemptSession)->toContain('S-LEGACY-DUPLICATE-legacy-')
-        ->and($secondAttemptSession)->not->toBe($firstAttemptSession);
+        ->and($secondAttemptSession)->not->toBe($firstAttemptSession)
+        ->and($activeAttemptSession)->toContain('S-LEGACY-DUPLICATE-legacy-')
+        ->and($activeAttemptSession)->not->toBe($secondAttemptSession);
 });
 
 it('allows a later successful callback for the same SISP transaction after a failed callback', function (): void {

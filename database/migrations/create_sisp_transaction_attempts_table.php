@@ -127,6 +127,25 @@ return new class extends Migration
                         'created_at' => $transaction->created_at ?? $now,
                         'updated_at' => $transaction->updated_at ?? $now,
                     ];
+
+                    if ($hasDuplicateAttemptSession) {
+                        $records[] = [
+                            'transaction_id' => $transaction->id,
+                            'attempt_number' => 2,
+                            'merchant_ref' => $transaction->merchant_ref,
+                            'merchant_session' => $transaction->merchant_session,
+                            'attempt_session' => $this->uniqueLegacyAttemptSession(
+                                (string) $transaction->merchant_session,
+                                $transaction->id.'-active',
+                                $usedAttemptSessions,
+                            ),
+                            'status' => 'pending',
+                            'payload' => $transaction->payload,
+                            'submitted_at' => null,
+                            'created_at' => $transaction->updated_at ?? $now,
+                            'updated_at' => $transaction->updated_at ?? $now,
+                        ];
+                    }
                 }
 
                 if ($records !== []) {
@@ -138,7 +157,7 @@ return new class extends Migration
     /**
      * @param  array<string, true>  $usedAttemptSessions
      */
-    private function uniqueLegacyAttemptSession(string $merchantSession, int $transactionId, array &$usedAttemptSessions): string
+    private function uniqueLegacyAttemptSession(string $merchantSession, int|string $transactionId, array &$usedAttemptSessions): string
     {
         if ($merchantSession !== '' && ! isset($usedAttemptSessions[$merchantSession])) {
             $usedAttemptSessions[$merchantSession] = true;

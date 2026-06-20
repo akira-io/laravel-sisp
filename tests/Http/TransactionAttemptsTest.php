@@ -141,6 +141,14 @@ it('creates a local retry attempt for the same SISP transaction when a failed ch
     $oldRef = $transaction->merchant_ref;
     $oldSession = $transaction->merchant_session;
 
+    $transaction->currentAttempt()->update([
+        'status' => TransactionStatus::failed,
+        'gateway_transaction_id' => 'FAILED-GATEWAY-ID',
+        'message_type' => '13',
+        'merchant_response' => 'declined',
+        'response_code' => '13',
+        'callback_received_at' => now(),
+    ]);
     $transaction->update([
         'status' => TransactionStatus::failed,
         'transaction_id' => 'FAILED-GATEWAY-ID',

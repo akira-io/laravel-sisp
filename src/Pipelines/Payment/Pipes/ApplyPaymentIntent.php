@@ -8,10 +8,13 @@ use Akira\Sisp\Actions\CanRetryPaymentAction;
 use Akira\Sisp\Actions\CreateRetryPaymentAttemptAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\PaymentPipe;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Models\PaymentIntent;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Pipelines\Payment\PaymentContext;
+use Akira\Sisp\ValueObjects\PaymentRequest;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -105,16 +108,32 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
         throw_unless($transaction instanceof Transaction, PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
 
+        $transaction->load('currentAttempt');
         $context->transaction = $transaction;
 
         if ($this->canRetryPayment->handle($transaction)) {
-            $context->paymentRequest = $this->createRetryAttempt->handle($transaction);
-            $context->transaction = $transaction->refresh();
+            $context->paymentRequest = $this->retryPaymentRequest($transaction);
+            $context->transaction = $transaction->refresh()->load('currentAttempt');
 
             return $context;
         }
 
         throw new PaymentIntentAlreadyProcessingException($paymentIntentKey);
+    }
+
+    private function retryPaymentRequest(Transaction $transaction): PaymentRequest
+    {
+        $currentAttempt = $transaction->currentAttempt;
+
+        if ($currentAttempt instanceof TransactionAttempt && $currentAttempt->status === TransactionStatus::pending) {
+            $payload = $currentAttempt->payload;
+
+            throw_if(! is_array($payload) || $payload === [], PaymentIntentAlreadyProcessingException::class);
+
+            return PaymentRequest::from($payload);
+        }
+
+        return $this->createRetryAttempt->handle($transaction);
     }
 
     private function submit(string $paymentIntentKey, Transaction $transaction): void
