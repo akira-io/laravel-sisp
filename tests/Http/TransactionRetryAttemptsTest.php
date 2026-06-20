@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\CreateTransactionAttemptAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
@@ -106,6 +107,21 @@ it('enforces unique local attempt sessions in the database', function (): void {
             'merchant_session' => 'S-UNIQUE-SISP',
             'attempt_session' => 'S-DUPLICATE-LOCAL',
         ]))->toThrow(QueryException::class);
+});
+
+it('stores a unique sentinel attempt session for legacy transactions without a SISP session', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::failed,
+        'merchant_ref' => 'R-LEGACY-EMPTY-SESSION',
+        'merchant_session' => '',
+    ]);
+
+    $attempt = resolve(CreateTransactionAttemptAction::class)->createFromTransaction($transaction);
+
+    expect($attempt->attempt_session)->toBe('legacy-empty-session-legacy-'.$transaction->id);
+
+    expect(fn (): TransactionAttempt => resolve(CreateTransactionAttemptAction::class)->createFromTransaction($transaction))
+        ->toThrow(QueryException::class);
 });
 
 it('suffixes duplicate legacy attempt sessions during backfill', function (): void {

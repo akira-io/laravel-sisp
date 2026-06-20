@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('attempt_number');
             $table->string('merchant_ref');
             $table->string('merchant_session');
-            $table->string('attempt_session')->nullable();
+            $table->string('attempt_session');
             $table->string('status')->default('pending');
             $table->string('gateway_transaction_id')->nullable();
             $table->string('message_type')->nullable();
