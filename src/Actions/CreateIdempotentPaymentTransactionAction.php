@@ -53,10 +53,6 @@ final readonly class CreateIdempotentPaymentTransactionAction
 
     private function paymentIntentKey(Request $request): ?string
     {
-        if (! $this->config->isIdempotencyEnabled()) {
-            return null;
-        }
-
         foreach ($this->config->getIdempotencyRequestKeys() as $key) {
             $value = $request->input($key);
 

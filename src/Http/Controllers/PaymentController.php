@@ -6,9 +6,8 @@ namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\CheckBlacklistAction;
 use Akira\Sisp\Actions\CheckRateLimitAction;
-use Akira\Sisp\Actions\CreateAndStorePaymentTransactionAction;
 use Akira\Sisp\Actions\CreateIdempotentPaymentTransactionAction;
-use Akira\Sisp\Actions\PreparePaymentAction;
+use Akira\Sisp\Actions\CreateUniquePaymentTransactionAction;
 use Akira\Sisp\Actions\RenderPaymentFormBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Configuration\LoadConfig;
@@ -22,8 +21,7 @@ final readonly class PaymentController
 {
     public function __construct(
         private CreateIdempotentPaymentTransactionAction $createPayment,
-        private PreparePaymentAction $preparePayment,
-        private CreateAndStorePaymentTransactionAction $createTransaction,
+        private CreateUniquePaymentTransactionAction $createUniquePayment,
         private RenderPaymentFormBasedOnConfigAction $renderForm,
         private CheckRateLimitAction $checkRateLimit,
         private CheckBlacklistAction $checkBlacklist,
@@ -56,8 +54,10 @@ final readonly class PaymentController
             $paymentRequest = $preparedPayment->paymentRequest;
             $transaction = $preparedPayment->transaction;
         } else {
-            $paymentRequest = $this->preparePayment->handle($requestData);
-            $transaction = $this->createTransaction->handle($paymentRequest, $request, recordAttempt: false);
+            $preparedPayment = $this->createUniquePayment->handle($requestData, $request, recordAttempt: false);
+
+            $paymentRequest = $preparedPayment->paymentRequest;
+            $transaction = $preparedPayment->transaction;
         }
 
         if ($this->config->isMetadataCollectionEnabled()) {

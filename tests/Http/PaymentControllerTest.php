@@ -89,6 +89,67 @@ it('respects disabled idempotency and metadata collection flags', function (): v
         ->and(RequestMetadata::query()->count())->toBe(0);
 });
 
+it('retries identifier collisions when idempotency is disabled', function (): void {
+    config()->set('sisp.rate_limiting.enabled', false);
+    config()->set('sisp.idempotency.enabled', false);
+    config()->set('sisp.identifier_generation.max_attempts', 2);
+    config()->set('sisp.identifier_generation.collision_retry_sleep_microseconds', 0);
+
+    Transaction::factory()->create([
+        'merchant_ref' => 'MR-DISABLED-COLLISION',
+        'merchant_session' => 'MS-DISABLED-COLLISION',
+    ]);
+
+    app()->singleton('sisp.test.disabledCollisionReference', fn (): object => new class
+    {
+        private int $next = 0;
+
+        public function __invoke(): string
+        {
+            $this->next++;
+
+            return $this->next === 1 ? 'MR-DISABLED-COLLISION' : 'MR-DISABLED-UNIQUE';
+        }
+    });
+
+    app()->singleton('sisp.test.disabledCollisionSession', fn (): object => new class
+    {
+        private int $next = 0;
+
+        public function __invoke(): string
+        {
+            $this->next++;
+
+            return $this->next === 1 ? 'MS-DISABLED-COLLISION' : 'MS-DISABLED-UNIQUE';
+        }
+    });
+
+    config()->set('sisp.generators.merchantReference', 'sisp.test.disabledCollisionReference');
+    config()->set('sisp.generators.merchantSession', 'sisp.test.disabledCollisionSession');
+
+    $this->post(route('sisp.payment'), [
+        'amount' => 100.0,
+        'checkout_intent_id' => 'checkout-disabled-collision',
+        'items' => [[
+            'product_name' => 'Test',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+            'total_price' => 100.0,
+        ]],
+        'customer_name' => 'John',
+        'customer_email' => 'john@example.test',
+    ])->assertOk();
+
+    $transaction = Transaction::query()
+        ->where('merchant_ref', 'MR-DISABLED-UNIQUE')
+        ->sole();
+
+    expect($transaction->merchant_session)->toBe('MS-DISABLED-UNIQUE')
+        ->and(Transaction::query()->count())->toBe(2)
+        ->and(PaymentIntent::query()->count())->toBe(0)
+        ->and(TransactionAttempt::query()->count())->toBe(0);
+});
+
 it('blocks duplicate transactions via middleware', function (): void {
     Transaction::factory()->create([
         'merchant_ref' => 'MR-DUP',

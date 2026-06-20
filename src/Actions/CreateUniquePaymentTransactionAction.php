@@ -19,7 +19,7 @@ final readonly class CreateUniquePaymentTransactionAction
         private LoadConfig $config,
     ) {}
 
-    public function handle(PaymentRequestData $data, Request $request): PreparedPaymentTransaction
+    public function handle(PaymentRequestData $data, Request $request, bool $recordAttempt = true): PreparedPaymentTransaction
     {
         $maxAttempts = $this->maxAttempts();
         $lastException = null;
@@ -30,7 +30,7 @@ final readonly class CreateUniquePaymentTransactionAction
             try {
                 return new PreparedPaymentTransaction(
                     paymentRequest: $paymentRequest,
-                    transaction: $this->createTransaction->handle($paymentRequest, $request),
+                    transaction: $this->createTransaction->handle($paymentRequest, $request, $recordAttempt),
                 );
             } catch (DuplicatePaymentIdentifierException $exception) {
                 $lastException = $exception;
