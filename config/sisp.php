@@ -499,4 +499,28 @@ return [
         'refund' => ['web', 'auth'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MCP Server
+    |--------------------------------------------------------------------------
+    |
+    | Exposes the package to AI agents through the Model Context Protocol.
+    | Disabled by default so host applications opt in explicitly. The local
+    | transport serves coding agents on the developer machine; the web
+    | transport serves remote clients behind authentication. Destructive
+    | payment tools stay off the web transport unless expose_destructive is on.
+    |
+    */
+    'mcp' => [
+        'enabled' => env('SISP_MCP_ENABLED', false),
+        'local' => env('SISP_MCP_LOCAL', true),
+        'web' => [
+            'enabled' => env('SISP_MCP_WEB_ENABLED', false),
+            'path' => env('SISP_MCP_WEB_PATH', '/sisp/mcp'),
+            'middleware' => ['auth:sanctum'],
+            'ability' => null,
+            'expose_destructive' => env('SISP_MCP_WEB_DESTRUCTIVE', false),
+        ],
+    ],
+
 ];

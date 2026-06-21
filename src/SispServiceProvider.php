@@ -9,7 +9,6 @@ use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Commands\ReconcilePendingTransactionsCommand;
 use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
 use Akira\Sisp\Commands\TransactionStatusCommand;
-use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Drivers\SispManager;
 use Illuminate\Contracts\Foundation\Application;
@@ -43,20 +42,10 @@ final class SispServiceProvider extends PackageServiceProvider
             ]);
     }
 
-    /**
-     * Container bindings are declared with native container
-     * attributes: #[Bind] on the contracts and #[Singleton] on
-     * LoadConfig, SispManager, and Sisp. Only the driver contract needs
-     * an explicit closure since it is resolved through the manager.
-     */
     public function register(): void
     {
         parent::register();
 
-        // #[Bind] container attributes are only consulted when an environment
-        // resolver is present. Full applications register one during bootstrap,
-        // but lighter harnesses such as Testbench do not, so mirror the
-        // framework's default resolver here.
         $this->app->resolveEnvironmentUsing(fn (array $environments): bool => (bool) $this->app->environment($environments));
 
         $this->app->bind(SispDriver::class, fn (Application $app): SispDriver => $app->make(SispManager::class)->driver());
@@ -66,8 +55,22 @@ final class SispServiceProvider extends PackageServiceProvider
     {
         $this->registerComponents();
         $this->registerFactories();
+        $this->registerMcp();
 
         return parent::boot();
+    }
+
+    private function registerMcp(): void
+    {
+        if (! class_exists(\Laravel\Mcp\Server::class)) {
+            return;
+        }
+
+        if (! config('sisp.mcp.enabled', false)) {
+            return;
+        }
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
     }
 
     private function registerFactories(): void
