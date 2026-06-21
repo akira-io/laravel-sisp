@@ -19,6 +19,7 @@
     "php": "^8.5",
     "akira/laravel-pdf-invoices": "^1.8",
     "illuminate/contracts": "^13.0",
+    "laravel/mcp": "^0.8",
     "pinkary-project/type-guard": "^0.1.0",
     "spatie/laravel-package-tools": "^1.16",
     "stevebauman/location": "^7.6"
