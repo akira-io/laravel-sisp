@@ -13,7 +13,8 @@ final readonly class CreateTransactionAttemptAction
 {
     public function handle(Transaction $transaction, PaymentRequest $paymentRequest, bool $supersedeCurrent = false): TransactionAttempt
     {
-        $attemptNumber = ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
+        $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
+        $attemptNumber = ((int) $transaction->attempts()->max('attempt_number')) + 1;
 
         if ($supersedeCurrent) {
             $transaction->attempts()
@@ -34,7 +35,8 @@ final readonly class CreateTransactionAttemptAction
 
     public function createFromTransaction(Transaction $transaction): TransactionAttempt
     {
-        $attemptNumber = ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
+        $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
+        $attemptNumber = ((int) $transaction->attempts()->max('attempt_number')) + 1;
 
         return TransactionAttempt::query()->create([
             'transaction_id' => $transaction->id,
