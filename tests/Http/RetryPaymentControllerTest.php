@@ -24,5 +24,5 @@ it('retries payment for an existing transaction', function (): void {
         ->and($t->merchant_session)->toBe('old-session')
         ->and($t->amount)->toBe(123.0)
         ->and($t->currency)->toBe('132')
-        ->and($t->status->value)->toBe('failed');
+        ->and($t->status->value)->toBe('pending');
 });

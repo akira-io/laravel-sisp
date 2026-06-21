@@ -167,14 +167,18 @@ it('returns the stored payment request when a failed checkout intent is posted a
 
     expect(Transaction::query()->count())->toBe(1)
         ->and(PaymentIntent::query()->sole()->transaction_id)->toBe($transaction->id)
-        ->and($attempts)->toHaveCount(1)
+        ->and($attempts)->toHaveCount(2)
         ->and($attempts[0]->merchant_ref)->toBe($oldRef)
         ->and($attempts[0]->merchant_session)->toBe($oldSession)
         ->and($attempts[0]->attempt_session)->toBe($oldSession)
-        ->and($attempts[0]->superseded_at)->toBeNull()
+        ->and($attempts[0]->superseded_at)->not->toBeNull()
+        ->and($attempts[1]->merchant_ref)->toBe($oldRef)
+        ->and($attempts[1]->merchant_session)->toBe($oldSession)
+        ->and($attempts[1]->status)->toBe(TransactionStatus::pending)
+        ->and($attempts[1]->superseded_at)->toBeNull()
         ->and($transaction->merchant_ref)->toBe($oldRef)
         ->and($transaction->merchant_session)->toBe($oldSession)
-        ->and($transaction->status)->toBe(TransactionStatus::failed)
+        ->and($transaction->status)->toBe(TransactionStatus::pending)
         ->and($transaction->transaction_id)->toBe('FAILED-GATEWAY-ID');
 });
 

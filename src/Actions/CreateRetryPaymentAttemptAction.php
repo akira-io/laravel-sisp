@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Exceptions\UnableToGenerateUniquePaymentIdentifiersException;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
@@ -38,12 +39,18 @@ final readonly class CreateRetryPaymentAttemptAction
 
                     TransactionLogContext::run(
                         'retry',
-                        fn (): TransactionAttempt => $this->createAttempt->handle(
-                            $lockedTransaction,
-                            $paymentRequest,
-                            supersedeCurrent: true,
-                            attemptSession: $attemptSession,
-                        )
+                        function () use ($lockedTransaction, $paymentRequest, $attemptSession): TransactionAttempt {
+                            $attempt = $this->createAttempt->handle(
+                                $lockedTransaction,
+                                $paymentRequest,
+                                supersedeCurrent: true,
+                                attemptSession: $attemptSession,
+                            );
+
+                            $lockedTransaction->update(['status' => TransactionStatus::pending]);
+
+                            return $attempt;
+                        }
                     );
 
                     return $paymentRequest;

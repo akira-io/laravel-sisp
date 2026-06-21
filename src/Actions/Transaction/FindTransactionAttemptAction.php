@@ -75,6 +75,7 @@ final readonly class FindTransactionAttemptAction
             ->with('transaction')
             ->where('merchant_ref', $payload->merchantRef)
             ->where('merchant_session', $payload->merchantSession)
+            ->whereNull('superseded_at')
             ->orderByRaw('callback_received_at is not null')
             ->orderByDesc('attempt_number');
 

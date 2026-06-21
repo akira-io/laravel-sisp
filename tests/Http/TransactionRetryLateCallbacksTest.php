@@ -58,7 +58,7 @@ it('does not let a late failed callback from a superseded attempt overwrite the 
         ->and($attempts[1]->status)->toBe(TransactionStatus::pending)
         ->and($attempts[1]->callback_received_at)->toBeNull()
         ->and($attempts[1]->superseded_at)->toBeNull()
-        ->and($transaction->status)->toBe(TransactionStatus::failed)
+        ->and($transaction->status)->toBe(TransactionStatus::pending)
         ->and($transaction->transaction_id)->toBe('FAILED-GATEWAY-ID');
 });
 

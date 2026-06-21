@@ -11,7 +11,7 @@ beforeEach(function (): void {
     config()->set('sisp.identifier_generation.collision_retry_sleep_microseconds', 0);
 });
 
-it('does not create retry attempts for duplicate failed checkout intents', function (): void {
+it('starts a single retry attempt for a duplicate failed checkout intent then blocks further submissions', function (): void {
     $payload = payment_intent_retry_payload([
         'idempotency_key' => 'checkout-intent-repeat-retry',
     ]);
@@ -40,14 +40,21 @@ it('does not create retry attempts for duplicate failed checkout intents', funct
     $this->post(route('sisp.payment'), $payload)
         ->assertOk();
 
-    $this->post(route('sisp.payment'), $payload)
-        ->assertOk();
+    $this->postJson(route('sisp.payment'), $payload)
+        ->assertConflict();
 
-    expect($transaction->attempts()->count())->toBe(1)
-        ->and($transaction->refresh()->currentAttempt->status)->toBe(TransactionStatus::failed);
+    $transaction->refresh();
+    $attempts = $transaction->attempts()->orderBy('attempt_number')->get();
+
+    expect($attempts)->toHaveCount(2)
+        ->and($attempts[0]->superseded_at)->not->toBeNull()
+        ->and($attempts[1]->status)->toBe(TransactionStatus::pending)
+        ->and($attempts[1]->callback_received_at)->toBeNull()
+        ->and($attempts[1]->superseded_at)->toBeNull()
+        ->and($transaction->status)->toBe(TransactionStatus::pending);
 });
 
-it('returns a conflict when a retryable checkout intent has no stored payment payload', function (): void {
+it('starts a retry for a retryable checkout intent even when the stored attempt payload is empty', function (): void {
     $payload = payment_intent_retry_payload([
         'idempotency_key' => 'checkout-intent-empty-payload',
     ]);
@@ -66,11 +73,14 @@ it('returns a conflict when a retryable checkout intent has no stored payment pa
         'status' => TransactionStatus::failed,
     ]);
 
-    $this->postJson(route('sisp.payment'), $payload)
-        ->assertConflict()
-        ->assertJson([
-            'message' => __('sisp::messages.validation.payment_in_progress'),
-        ]);
+    $this->post(route('sisp.payment'), $payload)
+        ->assertOk();
+
+    $transaction->refresh();
+
+    expect($transaction->attempts()->count())->toBe(2)
+        ->and($transaction->currentAttempt->status)->toBe(TransactionStatus::pending)
+        ->and($transaction->status)->toBe(TransactionStatus::pending);
 });
 
 function payment_intent_retry_payload(array $overrides = []): array

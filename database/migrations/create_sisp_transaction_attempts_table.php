@@ -107,10 +107,11 @@ return new class extends Migration
                         $usedAttemptSessions,
                     );
                     $hasDuplicateAttemptSession = $attemptSession !== (string) $transaction->merchant_session;
+                    $attemptNumber = 1;
 
                     $records[] = [
                         'transaction_id' => $transaction->id,
-                        'attempt_number' => 1,
+                        'attempt_number' => $attemptNumber,
                         'merchant_ref' => $transaction->merchant_ref,
                         'merchant_session' => $transaction->merchant_session,
                         'attempt_session' => $attemptSession,
@@ -131,7 +132,7 @@ return new class extends Migration
                     if ($hasDuplicateAttemptSession) {
                         $records[] = [
                             'transaction_id' => $transaction->id,
-                            'attempt_number' => 2,
+                            'attempt_number' => $attemptNumber + 1,
                             'merchant_ref' => $transaction->merchant_ref,
                             'merchant_session' => $transaction->merchant_session,
                             'attempt_session' => $this->uniqueLegacyAttemptSession(

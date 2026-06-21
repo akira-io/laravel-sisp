@@ -67,7 +67,7 @@ it('keeps the same SISP identifiers on retry so the gateway sees the same transa
 
     expect($t->merchant_ref)->toBe('MR-R2')
         ->and($t->merchant_session)->toBe('MS-OLD')
-        ->and($t->status->value)->toBe('failed')
+        ->and($t->status->value)->toBe('pending')
         ->and($t->transaction_id)->toBe('OLD-TID')
         ->and($t->message_type)->toBe('13')
         ->and($t->merchant_response)->toBe('old failure')

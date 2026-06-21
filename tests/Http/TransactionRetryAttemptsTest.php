@@ -64,6 +64,15 @@ it('persists every local retry while sending the original SISP transaction ident
         ]);
 
     for ($retry = 0; $retry < 5; $retry++) {
+        if ($retry > 0) {
+            $transaction->refresh();
+            $transaction->currentAttempt()->update([
+                'status' => TransactionStatus::failed,
+                'callback_received_at' => now(),
+            ]);
+            $transaction->update(['status' => TransactionStatus::failed]);
+        }
+
         $this->post(signed_transaction_retry_url($transaction))->assertOk();
     }
 
@@ -79,7 +88,7 @@ it('persists every local retry while sending the original SISP transaction ident
         ->and($attempts->last()->superseded_at)->toBeNull()
         ->and($transaction->merchant_ref)->toBe('R-FIVE-RETRIES')
         ->and($transaction->merchant_session)->toBe('S-SISP-ORIGINAL')
-        ->and($transaction->status)->toBe(TransactionStatus::failed)
+        ->and($transaction->status)->toBe(TransactionStatus::pending)
         ->and($transaction->transaction_id)->toBe('FAILED-GATEWAY-ID');
 });
 
