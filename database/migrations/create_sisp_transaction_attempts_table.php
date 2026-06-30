@@ -25,6 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('attempt_number');
             $table->string('merchant_ref');
             $table->string('merchant_session');
+            $table->string('attempt_session');
             $table->string('status')->default('pending');
             $table->string('gateway_transaction_id')->nullable();
             $table->string('message_type')->nullable();
@@ -39,9 +40,9 @@ return new class extends Migration
             $table->timestamp('superseded_at')->nullable();
             $table->timestamps();
 
-            $table->unique('merchant_session');
-            $table->unique(['merchant_ref', 'merchant_session']);
             $table->unique(['transaction_id', 'attempt_number']);
+            $table->unique('attempt_session');
+            $table->index(['merchant_ref', 'merchant_session']);
             $table->index(['transaction_id', 'status']);
             $table->index('gateway_transaction_id');
         });
@@ -73,18 +74,12 @@ return new class extends Migration
 
         throw_if($duplicateMerchantRef !== null, RuntimeException::class, "Cannot add SISP merchant_ref uniqueness; duplicate merchant_ref [{$duplicateMerchantRef}] already exists.");
 
-        $duplicateMerchantSession = DB::table($transactionsTable)
-            ->select('merchant_session')
-            ->whereNotNull('merchant_session')
-            ->groupBy('merchant_session')
-            ->havingRaw('COUNT(*) > 1')
-            ->value('merchant_session');
-
-        throw_if($duplicateMerchantSession !== null, RuntimeException::class, "Cannot backfill SISP attempts; duplicate merchant_session [{$duplicateMerchantSession}] already exists.");
     }
 
     private function backfillCurrentAttempts(string $transactionsTable, string $attemptsTable): void
     {
+        $usedAttemptSessions = [];
+
         DB::table($transactionsTable)
             ->select([
                 'id',
@@ -101,16 +96,25 @@ return new class extends Migration
                 'updated_at',
             ])
             ->orderBy('id')
-            ->chunkById(500, function ($transactions) use ($attemptsTable): void {
+            ->chunkById(500, function ($transactions) use ($attemptsTable, &$usedAttemptSessions): void {
                 $now = now();
                 $records = [];
 
                 foreach ($transactions as $transaction) {
+                    $attemptSession = $this->uniqueLegacyAttemptSession(
+                        (string) $transaction->merchant_session,
+                        (int) $transaction->id,
+                        $usedAttemptSessions,
+                    );
+                    $hasDuplicateAttemptSession = $attemptSession !== (string) $transaction->merchant_session;
+                    $attemptNumber = 1;
+
                     $records[] = [
                         'transaction_id' => $transaction->id,
-                        'attempt_number' => 1,
+                        'attempt_number' => $attemptNumber,
                         'merchant_ref' => $transaction->merchant_ref,
                         'merchant_session' => $transaction->merchant_session,
+                        'attempt_session' => $attemptSession,
                         'status' => $transaction->status,
                         'gateway_transaction_id' => $transaction->transaction_id,
                         'message_type' => $transaction->message_type,
@@ -118,16 +122,69 @@ return new class extends Migration
                         'merchant_response' => $transaction->merchant_response,
                         'fingerprint' => $transaction->fingerprint,
                         'payload' => $transaction->payload,
+                        'failure_reason' => $hasDuplicateAttemptSession ? 'Legacy duplicate local attempt_session; original SISP merchant_session remains on the attempt.' : null,
                         'submitted_at' => $transaction->created_at,
+                        'superseded_at' => $hasDuplicateAttemptSession ? ($transaction->updated_at ?? $now) : null,
                         'created_at' => $transaction->created_at ?? $now,
                         'updated_at' => $transaction->updated_at ?? $now,
                     ];
+
+                    if ($hasDuplicateAttemptSession) {
+                        $records[] = [
+                            'transaction_id' => $transaction->id,
+                            'attempt_number' => $attemptNumber + 1,
+                            'merchant_ref' => $transaction->merchant_ref,
+                            'merchant_session' => $transaction->merchant_session,
+                            'attempt_session' => $this->uniqueLegacyAttemptSession(
+                                (string) $transaction->merchant_session,
+                                $transaction->id.'-active',
+                                $usedAttemptSessions,
+                            ),
+                            'status' => 'pending',
+                            'payload' => $transaction->payload,
+                            'submitted_at' => null,
+                            'created_at' => $transaction->updated_at ?? $now,
+                            'updated_at' => $transaction->updated_at ?? $now,
+                        ];
+                    }
                 }
 
                 if ($records !== []) {
                     DB::table($attemptsTable)->insert($records);
                 }
             });
+    }
+
+    /**
+     * @param  array<string, true>  $usedAttemptSessions
+     */
+    private function uniqueLegacyAttemptSession(string $merchantSession, int|string $transactionId, array &$usedAttemptSessions): string
+    {
+        if ($merchantSession !== '' && ! isset($usedAttemptSessions[$merchantSession])) {
+            $usedAttemptSessions[$merchantSession] = true;
+
+            return $merchantSession;
+        }
+
+        $base = $merchantSession !== '' ? $merchantSession : 'legacy-empty-session';
+        $candidate = $this->legacyIdentifier($base, $transactionId);
+        $counter = 1;
+
+        while (isset($usedAttemptSessions[$candidate])) {
+            $candidate = $this->legacyIdentifier($base, $transactionId.'-'.$counter);
+            $counter++;
+        }
+
+        $usedAttemptSessions[$candidate] = true;
+
+        return $candidate;
+    }
+
+    private function legacyIdentifier(string $value, int|string $suffix): string
+    {
+        $suffix = '-legacy-'.$suffix;
+
+        return mb_substr($value, 0, 255 - mb_strlen($suffix)).$suffix;
     }
 
     private function addMerchantReferenceUniqueIndex(string $transactionsTable): void

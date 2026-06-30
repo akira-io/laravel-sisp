@@ -7,6 +7,8 @@ namespace Akira\Sisp\Http\Controllers;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
+use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
@@ -21,11 +23,11 @@ final readonly class CallbackController
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
+        private LoadConfig $config,
     ) {}
 
     public function __invoke(Request $request): mixed
     {
-
         if ($request->boolean('UserCancelled')) {
             return redirect(config('sisp.redirect_url', '/'));
         }
@@ -77,7 +79,9 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
-        $this->storeMetadata->handle($request, $transaction);
+        if ($this->config->isMetadataCollectionEnabled()) {
+            $this->storeMetadata->handle($request, $transaction);
+        }
 
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
@@ -89,10 +93,11 @@ final readonly class CallbackController
         $attempt = TransactionAttempt::query()
             ->where('merchant_ref', $payload->merchantRef)
             ->where('merchant_session', $payload->merchantSession)
+            ->where('status', TransactionStatus::completed)
             ->first();
 
         if ($attempt instanceof TransactionAttempt) {
-            return $attempt->gateway_transaction_id !== null;
+            return true;
         }
 
         $transaction = Transaction::query()
@@ -100,6 +105,6 @@ final readonly class CallbackController
             ->where('merchant_session', $payload->merchantSession)
             ->first();
 
-        return $transaction !== null && $transaction->getAttribute('transaction_id') !== null;
+        return $transaction instanceof Transaction && $transaction->status === TransactionStatus::completed;
     }
 }

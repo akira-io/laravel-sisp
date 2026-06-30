@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Models\Transaction;
 
 it('creates transaction and renders payment form', function (): void {
@@ -60,6 +61,26 @@ it('stores decimal payment amounts with canonical cents', function (): void {
 
     expect($transaction->amount)->toBe(8.03)
         ->and($transaction->amount_cents)->toBe(803);
+});
+
+it('does not capture request metadata when metadata collection is disabled', function (): void {
+    config()->set('sisp.rate_limiting.enabled', false);
+    config()->set('sisp.security.collect_metadata', false);
+
+    $this->post(route('sisp.payment'), [
+        'amount' => 100.0,
+        'items' => [[
+            'product_name' => 'Metadata Disabled',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+            'total_price' => 100.0,
+        ]],
+        'customer_name' => 'Metadata Customer',
+        'customer_email' => 'metadata@example.test',
+    ])->assertOk();
+
+    expect(Transaction::query()->count())->toBe(1)
+        ->and(RequestMetadata::query()->count())->toBe(0);
 });
 
 it('blocks duplicate transactions via middleware', function (): void {

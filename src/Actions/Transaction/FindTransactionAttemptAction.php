@@ -44,10 +44,61 @@ final readonly class FindTransactionAttemptAction
 
     private function findAttempt(CallbackPayload $payload, bool $lockForUpdate = false): ?TransactionAttempt
     {
+        $gatewayTransactionId = (string) $payload->transactionID;
+
+        if ($gatewayTransactionId !== '') {
+            $query = TransactionAttempt::query()
+                ->with('transaction')
+                ->where('merchant_ref', $payload->merchantRef)
+                ->where('merchant_session', $payload->merchantSession)
+                ->where('gateway_transaction_id', $gatewayTransactionId)
+                ->orderByDesc('attempt_number');
+
+            if ($lockForUpdate) {
+                $query->lockForUpdate();
+            }
+
+            $attempt = $query->first();
+
+            if ($attempt instanceof TransactionAttempt) {
+                return $attempt;
+            }
+        }
+
+        $attempt = $this->findProcessedAttempt($payload, $lockForUpdate);
+
+        if ($attempt instanceof TransactionAttempt) {
+            return $attempt;
+        }
+
         $query = TransactionAttempt::query()
             ->with('transaction')
             ->where('merchant_ref', $payload->merchantRef)
-            ->where('merchant_session', $payload->merchantSession);
+            ->where('merchant_session', $payload->merchantSession)
+            ->whereNull('superseded_at')
+            ->orderByRaw('callback_received_at is not null')
+            ->orderByDesc('attempt_number');
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function findProcessedAttempt(CallbackPayload $payload, bool $lockForUpdate): ?TransactionAttempt
+    {
+        if ($payload->fingerprint === '') {
+            return null;
+        }
+
+        $query = TransactionAttempt::query()
+            ->with('transaction')
+            ->where('merchant_ref', $payload->merchantRef)
+            ->where('merchant_session', $payload->merchantSession)
+            ->where('fingerprint', $payload->fingerprint)
+            ->whereNotNull('callback_received_at')
+            ->orderByDesc('attempt_number');
 
         if ($lockForUpdate) {
             $query->lockForUpdate();

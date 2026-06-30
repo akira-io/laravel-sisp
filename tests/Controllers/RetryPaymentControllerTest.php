@@ -46,7 +46,7 @@ it('opens signed retry links with get requests without mutating transactions', f
         ->and($t->fingerprint)->toBe('old-fingerprint');
 });
 
-it('updates merchant_session on transaction so callback can find it', function (): void {
+it('keeps the same SISP identifiers on retry so the gateway sees the same transaction', function (): void {
     $t = Transaction::factory()->create([
         'status' => 'failed',
         'merchant_ref' => 'MR-R2',
@@ -65,15 +65,14 @@ it('updates merchant_session on transaction so callback can find it', function (
 
     $t->refresh();
 
-    expect($t->merchant_session)
-        ->not->toBe('MS-OLD')
-        ->not->toBeEmpty()
+    expect($t->merchant_ref)->toBe('MR-R2')
+        ->and($t->merchant_session)->toBe('MS-OLD')
         ->and($t->status->value)->toBe('pending')
-        ->and($t->transaction_id)->toBeNull()
-        ->and($t->message_type)->toBeNull()
-        ->and($t->merchant_response)->toBeNull()
-        ->and($t->response_code)->toBeNull()
-        ->and($t->fingerprint)->toBeNull();
+        ->and($t->transaction_id)->toBe('OLD-TID')
+        ->and($t->message_type)->toBe('13')
+        ->and($t->merchant_response)->toBe('old failure')
+        ->and($t->response_code)->toBe('13')
+        ->and($t->fingerprint)->toBe('old-fingerprint');
 });
 
 it('does not reset completed transactions through signed retry links', function (): void {
