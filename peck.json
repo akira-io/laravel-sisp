@@ -22,7 +22,8 @@
             "addr",
             "pdfs",
             "decrypted",
-            "testbench"
+            "testbench",
+            "mcp"
         ],
         "paths": []
     }

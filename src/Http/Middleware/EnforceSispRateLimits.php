@@ -30,7 +30,6 @@ final readonly class EnforceSispRateLimits
                 $this->checkRateLimit->handle(
                     $ip,
                     'ip',
-                    context: null,
                     limit: (int) config('sisp.rate_limiting.per_ip.limit'),
                     windowSeconds: (int) config('sisp.rate_limiting.per_ip.window_seconds')
                 );

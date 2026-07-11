@@ -42,10 +42,8 @@ abstract class TestCase extends Orchestra
         config()->set('sisp.transaction_code', '1');
         config()->set('sisp.url_merchant_response', 'https://localhost/sisp/callback');
 
-        // App key for encryption
         $app->make(Repository::class)->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
 
-        // Set application namespace for Blade component compilation
         $app->singleton('namespace', fn (): string => 'App\\');
     }
 
@@ -57,6 +55,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            \Laravel\Mcp\Server\McpServiceProvider::class,
             SispServiceProvider::class,
         ];
     }

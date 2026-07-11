@@ -82,6 +82,7 @@ The existing security metadata collection and risk scoring can be extended with:
 - React and Vue component libraries
 - Webhook signature verification middleware
 - Payment status polling utilities
+- [MCP server](15-mcp.md) for AI-assisted integration and operation
 
 **Events and Webhooks**
 
