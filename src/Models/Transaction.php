@@ -42,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionAttempt> $attempts
  * @property-read  TransactionAttempt|null $currentAttempt
  * @property-read  Invoice|null $invoice
+ * @property-read  \Illuminate\Support\Carbon|null $created_at
+ * @property-read  \Illuminate\Support\Carbon|null $updated_at
  */
 #[UseFactory(TransactionFactory::class)]
 #[Fillable([
@@ -79,11 +81,13 @@ final class Transaction extends Model
         return config('sisp.tables.transactions', 'sisp_transactions');
     }
 
+    /** @return HasMany<TransactionItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class, 'transaction_id');
     }
 
+    /** @return HasMany<TransactionAttempt, $this> */
     public function attempts(): HasMany
     {
         return $this->hasMany(TransactionAttempt::class, 'transaction_id');
