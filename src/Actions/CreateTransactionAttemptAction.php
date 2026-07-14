@@ -74,7 +74,9 @@ final readonly class CreateTransactionAttemptAction
 
     private function nextAttemptNumber(Transaction $transaction): int
     {
-        return ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
+        $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
+
+        return ((int) $transaction->attempts()->max('attempt_number')) + 1;
     }
 
     private function attemptSession(?string $attemptSession, Transaction $transaction): string
