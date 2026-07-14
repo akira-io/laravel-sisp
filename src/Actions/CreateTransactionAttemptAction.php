@@ -11,9 +11,9 @@ use Akira\Sisp\ValueObjects\PaymentRequest;
 
 final readonly class CreateTransactionAttemptAction
 {
-    public function handle(Transaction $transaction, PaymentRequest $paymentRequest, bool $supersedeCurrent = false): TransactionAttempt
+    public function handle(Transaction $transaction, PaymentRequest $paymentRequest, bool $supersedeCurrent = false, ?string $attemptSession = null): TransactionAttempt
     {
-        $attemptNumber = ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
+        $attemptNumber = ((int) $transaction->attempts()->max('attempt_number')) + 1;
 
         if ($supersedeCurrent) {
             $transaction->attempts()
@@ -26,6 +26,7 @@ final readonly class CreateTransactionAttemptAction
             'attempt_number' => $attemptNumber,
             'merchant_ref' => $paymentRequest->merchantRef,
             'merchant_session' => $paymentRequest->merchantSession,
+            'attempt_session' => $attemptSession ?? $paymentRequest->merchantSession,
             'status' => TransactionStatus::pending,
             'payload' => $paymentRequest->toArray(),
             'submitted_at' => now(),
@@ -34,13 +35,14 @@ final readonly class CreateTransactionAttemptAction
 
     public function createFromTransaction(Transaction $transaction): TransactionAttempt
     {
-        $attemptNumber = ((int) $transaction->attempts()->lockForUpdate()->max('attempt_number')) + 1;
+        $attemptNumber = ((int) $transaction->attempts()->max('attempt_number')) + 1;
 
         return TransactionAttempt::query()->create([
             'transaction_id' => $transaction->id,
             'attempt_number' => $attemptNumber,
             'merchant_ref' => $transaction->merchant_ref,
             'merchant_session' => $transaction->merchant_session,
+            'attempt_session' => $transaction->merchant_session,
             'status' => $transaction->status,
             'gateway_transaction_id' => $transaction->transaction_id,
             'message_type' => $transaction->message_type,

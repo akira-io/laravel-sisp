@@ -60,7 +60,9 @@ it('creates the initial attempt when a payment transaction is stored', function 
         ->and($transaction->currentAttempt->attempt_number)->toBe(1);
 });
 
-it('reuses an existing pending transaction when the checkout intent is posted twice', function (): void {
+it('rejects a duplicate submission while the pending checkout intent is processing', function (): void {
+    config()->set('session.driver', 'array');
+
     $payload = transaction_attempts_payment_payload(overrides: [
         'checkout_intent_id' => 'checkout-intent-duplicate',
     ]);
@@ -71,8 +73,10 @@ it('reuses an existing pending transaction when the checkout intent is posted tw
     $transaction = Transaction::query()->sole();
 
     $this->post(route('sisp.payment'), $payload)
-        ->assertOk()
-        ->assertSee($transaction->merchant_ref);
+        ->assertStatus(303)
+        ->assertSessionHasErrors([
+            'payment' => __('sisp::messages.validation.payment_in_progress'),
+        ]);
 
     expect(Transaction::query()->count())->toBe(1)
         ->and(TransactionAttempt::query()->count())->toBe(1)

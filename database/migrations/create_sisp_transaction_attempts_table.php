@@ -25,6 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('attempt_number');
             $table->string('merchant_ref');
             $table->string('merchant_session');
+            $table->string('attempt_session')->nullable();
             $table->string('status')->default('pending');
             $table->string('gateway_transaction_id')->nullable();
             $table->string('message_type')->nullable();
@@ -44,6 +45,7 @@ return new class extends Migration
             $table->unique(['transaction_id', 'attempt_number']);
             $table->index(['transaction_id', 'status']);
             $table->index('gateway_transaction_id');
+            $table->index('attempt_session');
         });
 
         $this->backfillCurrentAttempts($transactionsTable, $attemptsTable);
