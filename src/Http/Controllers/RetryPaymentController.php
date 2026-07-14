@@ -24,7 +24,7 @@ final readonly class RetryPaymentController
 
         if ($request->isMethod('get')) {
             return $this->renderForm->handle(
-                $this->retryPayment->handle($transaction, rotateMerchantSession: false),
+                $this->retryPayment->handle($transaction),
                 $transaction->locale,
             );
         }

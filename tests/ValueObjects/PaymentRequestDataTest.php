@@ -169,10 +169,7 @@ it('reports missing three d secure fields', function (): void {
     $data = new PaymentRequestData(
         amount: 120.00,
         customerEmail: 'customer@example.com',
-        customerCountry: null,
         customerCity: 'Lisbon',
-        customerAddress: null,
-        customerPostalCode: null,
     );
 
     expect($data->hasThreeDSecureData())->toBeFalse()
@@ -186,9 +183,7 @@ it('reports missing three d secure fields', function (): void {
 it('reports missing email and city for three d secure data', function (): void {
     $data = new PaymentRequestData(
         amount: 120.00,
-        customerEmail: null,
         customerCountry: 'PT',
-        customerCity: null,
         customerAddress: 'Rua Augusta',
         customerPostalCode: '1100-048',
     );

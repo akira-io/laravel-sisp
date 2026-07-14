@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+use function Illuminate\Support\defer;
+
 final readonly class CreateAndStorePaymentTransactionAction
 {
     public function __construct(
