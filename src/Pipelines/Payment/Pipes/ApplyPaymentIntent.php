@@ -6,13 +6,12 @@ namespace Akira\Sisp\Pipelines\Payment\Pipes;
 
 use Akira\Sisp\Actions\CanRetryPaymentAction;
 use Akira\Sisp\Actions\CreateRetryPaymentAttemptAction;
+use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\PaymentPipe;
 use Akira\Sisp\Exceptions\PaymentIntentAlreadyProcessingException;
 use Akira\Sisp\Models\PaymentIntent;
 use Akira\Sisp\Models\Transaction;
-use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Pipelines\Payment\PaymentContext;
-use Akira\Sisp\ValueObjects\PaymentRequest;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -20,8 +19,9 @@ use Throwable;
 final readonly class ApplyPaymentIntent implements PaymentPipe
 {
     public function __construct(
-        private CreateRetryPaymentAttemptAction $createRetryAttempt,
         private CanRetryPaymentAction $canRetryPayment,
+        private CreateRetryPaymentAttemptAction $createRetryAttempt,
+        private LoadConfig $config,
     ) {}
 
     public function handle(PaymentContext $context, Closure $next): PaymentContext
@@ -51,21 +51,11 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
     private function paymentIntentKey(PaymentContext $context): ?string
     {
-        if (! config()->boolean('sisp.idempotency.enabled', true)) {
+        if (! $this->config->isIdempotencyEnabled()) {
             return null;
         }
 
-        $keys = config()->array('sisp.idempotency.request_keys', ['idempotency_key', 'checkout_intent_id']);
-
-        foreach ($keys as $key) {
-            if (! is_string($key)) {
-                continue;
-            }
-
-            if ($key === '') {
-                continue;
-            }
-
+        foreach ($this->config->getIdempotencyRequestKeys() as $key) {
             $value = $context->request->input($key);
 
             if (is_string($value) && mb_trim($value) !== '') {
@@ -115,35 +105,12 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
         throw_unless($transaction instanceof Transaction, PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
 
-        $context->transaction = $transaction;
+        throw_unless($this->canRetryPayment->handle($transaction), PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
 
-        if ($this->canRetryPayment->handle($transaction)) {
-            $context->paymentRequest = $this->createRetryAttempt->handle($transaction);
-            $context->transaction = $transaction->refresh();
-
-            return $context;
-        }
-
-        $context->paymentRequest = $this->paymentRequestFrom($transaction, $paymentIntentKey);
+        $context->paymentRequest = $this->createRetryAttempt->handle($transaction);
+        $context->transaction = $transaction->refresh()->load('currentAttempt');
 
         return $context;
-    }
-
-    private function paymentRequestFrom(Transaction $transaction, string $paymentIntentKey): PaymentRequest
-    {
-        $attempt = $transaction->currentAttempt()->first()
-            ?? $transaction->attempts()->latest('attempt_number')->first();
-
-        $payload = $attempt instanceof TransactionAttempt ? $attempt->payload : null;
-
-        if ($payload === null || $payload === []) {
-            $transactionPayload = $transaction->getAttribute('payload');
-            $payload = is_array($transactionPayload) ? $transactionPayload : null;
-        }
-
-        throw_if($payload === null || $payload === [], PaymentIntentAlreadyProcessingException::class, $paymentIntentKey);
-
-        return PaymentRequest::from($payload);
     }
 
     private function submit(string $paymentIntentKey, Transaction $transaction): void
