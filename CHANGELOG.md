@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/akira-io/laravel-sisp/compare/v0.7.2...v2.0.0) (2026-07-14)
+
+### Bug Fixes
+
+- **invoice:** Never fail the payment callback on PDF generation ([e8699aa](https://github.com/akira-io/laravel-sisp/commit/e8699aa579431a2a453149a16a84f6eddedb0192))
+- **static-analysis:** Render the payment form via the view factory ([f1312c7](https://github.com/akira-io/laravel-sisp/commit/f1312c7ad47e872a61975d0db4b696add0f6cc96))
+- **payments:** Add SISP payment intents ([0e22d88](https://github.com/akira-io/laravel-sisp/commit/0e22d88e602de365110f827f7c57ff26b0f32412))
+- **payments:** Harden v2 payment intents ([aa5c05b](https://github.com/akira-io/laravel-sisp/commit/aa5c05bc4ca72049355120352c45de129e8fd268))
+- **callback:** Lock legacy attempt lookup ([f8430f4](https://github.com/akira-io/laravel-sisp/commit/f8430f439d94c897b6ef510be8c98961a3b3d59c))
+- **callback:** Make attempt writes atomic ([85985ff](https://github.com/akira-io/laravel-sisp/commit/85985ff1c37532cb0d5fbcccde25d3ef4a834313))
+- **config:** Centralize identifier generation settings ([54e6e21](https://github.com/akira-io/laravel-sisp/commit/54e6e212f6088c0004a202ec29d773e657dbe4b8))
+- **payments:** Address v2 review edge cases ([c25e0f0](https://github.com/akira-io/laravel-sisp/commit/c25e0f021c9c78ca0ca6abfafe729e745e0b7539))
+- **payments:** Keep downstream exceptions out of retry loop ([468c8c3](https://github.com/akira-io/laravel-sisp/commit/468c8c35289413c1ad16fc3600e1ed46cdb794fd))
+- **transaction:** Lock parent row instead of aggregate for attempt number ([d135928](https://github.com/akira-io/laravel-sisp/commit/d13592859649f8168836a750e8e3b2e3ea7b0cda))
+- **ci:** Remove redundant null named args for PHP 8.5 rector ([7ad4771](https://github.com/akira-io/laravel-sisp/commit/7ad47716179168e4042ee630384c6310a9faf37b))
+- **payments:** Prevent duplicate SISP submissions ([8ec2604](https://github.com/akira-io/laravel-sisp/commit/8ec2604c27f51ae296d59b8008b375b86db4cfcf))
+- **payments:** Align retry attempt patch with v2 ([41e5fe1](https://github.com/akira-io/laravel-sisp/commit/41e5fe199bf5340efff253cdeb3a6fc061cd5e68))
+- **payments:** Protect shared-session retries ([ac3a21e](https://github.com/akira-io/laravel-sisp/commit/ac3a21e2ea66140b18335f5350085991b58469e5))
+- **payments:** Honor disabled tracking flags ([eb1d521](https://github.com/akira-io/laravel-sisp/commit/eb1d52104dc3ce57cc6fd60d89d5e18b08e7e76a))
+- **payments:** Honor disabled tracking flags ([603af8a](https://github.com/akira-io/laravel-sisp/commit/603af8a9a4cc15d7c683f0ebdf3068e24755f39c))
+- **callback:** Reuse processed retry attempts ([39d5d13](https://github.com/akira-io/laravel-sisp/commit/39d5d1352abc2324fbcdd6ee3e0e512425c2df06))
+- **payments:** Keep retry idempotency stable ([45a65b5](https://github.com/akira-io/laravel-sisp/commit/45a65b5c08732fd1d995a6b6668b28081fb65c19))
+- **payments:** Make existing intents read-only ([cb303ab](https://github.com/akira-io/laravel-sisp/commit/cb303ab718a77dd7325bc416f86f317426dc97b7))
+- **payments:** Prevent nullable attempt sessions ([42e7669](https://github.com/akira-io/laravel-sisp/commit/42e7669938b5b99a522011220d17c438f3ec90f5))
+- **payments:** Handle empty retry intent payloads ([3e811e9](https://github.com/akira-io/laravel-sisp/commit/3e811e9f3f84084894ad374adf137bb89a5319c1))
+- **payments:** Close duplicate SISP submission gaps on retry ([e19f8a1](https://github.com/akira-io/laravel-sisp/commit/e19f8a1cbe7ff68774cc43e9faf0b5f9357ccf8a))
+
+
+### Code Refactoring
+
+- **payments:** Consolidate v2 attempt migration ([2d0d8dc](https://github.com/akira-io/laravel-sisp/commit/2d0d8dca63406a65ee42c93da59a9626b7c15f1f))
+
+
+### Features
+
+- **drivers:** Introduce gateway driver pattern with SispManager ([e1c4575](https://github.com/akira-io/laravel-sisp/commit/e1c45758eb93373925453d581415d3fa212a4fef))
+- **pipelines:** Run payment and callback flows through Laravel pipelines ([95d8c78](https://github.com/akira-io/laravel-sisp/commit/95d8c7873ce324cfcb19323c1ca54c1bcdbb4428))
+- **builders:** Fluent payment and refund builders ([a48b358](https://github.com/akira-io/laravel-sisp/commit/a48b35844d61243951a570f2fd978b89194d1619))
+- **laravel-13:** Adopt native framework attributes throughout ([f4e5686](https://github.com/akira-io/laravel-sisp/commit/f4e5686cdc00d3de9e17ce4190561312a27141f1))
+- **php-8.5:** Adopt #[\Override] on overridden properties ([8fb5a9f](https://github.com/akira-io/laravel-sisp/commit/8fb5a9fc15a8b8715cf4a3fd8cf587a779dc85b7))
+
 ## [0.7.2](https://github.com/akira-io/laravel-sisp/compare/v0.7.1...v0.7.2) (2026-06-04)
 
 ### Bug Fixes
