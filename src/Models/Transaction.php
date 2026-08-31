@@ -35,6 +35,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string|null $customer_country
  * @property-read  string|null $customer_city
  * @property-read  string|null $customer_address
+ * @property-read  string|null $customer_vat
+ * @property-read  string|null $customer_tax_name
+ * @property-read  string|null $customer_tax_entity_type
+ * @property-read  string|null $customer_tax_address
  * @property-read  int|float $amount
  * @property-read  int $amount_cents
  * @property-read  string $formatted_amount
@@ -70,6 +74,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'cancelled_at',
     'refunded_at',
     'customer_postal_code',
+    'customer_vat',
+    'customer_tax_name',
+    'customer_tax_entity_type',
+    'customer_tax_address',
 ])]
 final class Transaction extends Model
 {
