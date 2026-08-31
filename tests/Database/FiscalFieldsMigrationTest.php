@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\SispServiceProvider;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Spatie\LaravelPackageTools\Package;
 
@@ -57,4 +58,25 @@ it('skips tables that do not exist yet', function (): void {
     $migration->down();
 
     expect(Schema::hasTable('sisp_transactions_absent'))->toBeFalse();
+});
+
+it('completes a partially upgraded table', function (): void {
+    $migration = fiscalFieldsMigration();
+    $transactions = config('sisp.tables.transactions', 'sisp_transactions');
+
+    Schema::table($transactions, function (Blueprint $blueprint): void {
+        $blueprint->dropColumn(['customer_tax_name', 'customer_tax_entity_type', 'customer_tax_address']);
+    });
+
+    expect(Schema::hasColumn($transactions, 'customer_vat'))->toBeTrue()
+        ->and(Schema::hasColumn($transactions, 'customer_tax_name'))->toBeFalse();
+
+    $migration->up();
+
+    expect(Schema::hasColumns($transactions, [
+        'customer_vat',
+        'customer_tax_name',
+        'customer_tax_entity_type',
+        'customer_tax_address',
+    ]))->toBeTrue();
 });

@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private const array COLUMN_LENGTHS = [
+        'customer_vat' => 20,
+        'customer_tax_name' => 255,
+        'customer_tax_entity_type' => 20,
+        'customer_tax_address' => 255,
+    ];
+
     public function up(): void
     {
         foreach ($this->tables() as $table) {
@@ -15,15 +22,20 @@ return new class extends Migration
                 continue;
             }
 
-            if (Schema::hasColumn($table, 'customer_vat')) {
+            $missing = array_filter(
+                self::COLUMN_LENGTHS,
+                fn (int $length, string $column): bool => ! Schema::hasColumn($table, $column),
+                ARRAY_FILTER_USE_BOTH
+            );
+
+            if ($missing === []) {
                 continue;
             }
 
-            Schema::table($table, function (Blueprint $blueprint): void {
-                $blueprint->string('customer_vat', 20)->nullable();
-                $blueprint->string('customer_tax_name')->nullable();
-                $blueprint->string('customer_tax_entity_type', 20)->nullable();
-                $blueprint->string('customer_tax_address')->nullable();
+            Schema::table($table, function (Blueprint $blueprint) use ($missing): void {
+                foreach ($missing as $column => $length) {
+                    $blueprint->string($column, $length)->nullable();
+                }
             });
         }
     }
@@ -36,7 +48,7 @@ return new class extends Migration
             }
 
             $columns = array_values(array_filter(
-                $this->columns(),
+                array_keys(self::COLUMN_LENGTHS),
                 fn (string $column): bool => Schema::hasColumn($table, $column)
             ));
 
@@ -58,19 +70,6 @@ return new class extends Migration
         return [
             config('sisp.tables.transactions', 'sisp_transactions'),
             config('sisp.tables.invoices', 'sisp_invoices'),
-        ];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function columns(): array
-    {
-        return [
-            'customer_vat',
-            'customer_tax_name',
-            'customer_tax_entity_type',
-            'customer_tax_address',
         ];
     }
 };
