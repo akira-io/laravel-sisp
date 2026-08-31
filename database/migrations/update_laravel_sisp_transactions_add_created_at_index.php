@@ -29,19 +29,34 @@ return new class extends Migration
     {
         $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
 
-        if (! Schema::hasTable($transactionsTable) || ! $this->hasIndex($transactionsTable)) {
+        if (! Schema::hasTable($transactionsTable)) {
             return;
         }
 
-        Schema::table($transactionsTable, function (Blueprint $table): void {
-            $table->dropIndex(['created_at']);
+        $indexName = $this->indexName($transactionsTable);
+
+        if (! $this->hasIndex($transactionsTable, $indexName)) {
+            return;
+        }
+
+        Schema::table($transactionsTable, function (Blueprint $table) use ($indexName): void {
+            $table->dropIndex($indexName);
         });
     }
 
-    private function hasIndex(string $table): bool
+    private function indexName(string $table): string
+    {
+        return mb_strtolower($table.'_created_at_index');
+    }
+
+    private function hasIndex(string $table, ?string $name = null): bool
     {
         foreach (Schema::getIndexes($table) as $index) {
-            if ($index['columns'] === ['created_at']) {
+            if ($index['columns'] !== ['created_at']) {
+                continue;
+            }
+
+            if ($name === null || mb_strtolower((string) $index['name']) === $name) {
                 return true;
             }
         }
