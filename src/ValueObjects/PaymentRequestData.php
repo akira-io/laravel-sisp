@@ -23,6 +23,10 @@ final readonly class PaymentRequestData
         public ?string $customerAddress = null,
         public ?string $customerPostalCode = null,
         public ?string $customerPhone = null,
+        public ?string $customerVat = null,
+        public ?string $customerTaxName = null,
+        public ?string $customerTaxEntityType = null,
+        public ?string $customerTaxAddress = null,
     ) {}
 
     public static function from(array $data): self
@@ -44,6 +48,10 @@ final readonly class PaymentRequestData
             customerAddress: $data['customer_address'] ?? null,
             customerPostalCode: $data['customer_postal_code'] ?? null,
             customerPhone: $data['customer_phone'] ?? null,
+            customerVat: $data['customer_vat'] ?? null,
+            customerTaxName: $data['customer_tax_name'] ?? null,
+            customerTaxEntityType: $data['customer_tax_entity_type'] ?? null,
+            customerTaxAddress: $data['customer_tax_address'] ?? null,
         );
     }
 

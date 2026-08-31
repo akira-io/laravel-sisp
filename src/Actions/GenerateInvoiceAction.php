@@ -38,6 +38,10 @@ final readonly class GenerateInvoiceAction
                 'customer_city' => $transaction->customer_city,
                 'customer_address' => $transaction->customer_address,
                 'customer_country' => $transaction->customer_country,
+                'customer_vat' => $transaction->customer_vat,
+                'customer_tax_name' => $transaction->customer_tax_name,
+                'customer_tax_entity_type' => $transaction->customer_tax_entity_type,
+                'customer_tax_address' => $transaction->customer_tax_address,
                 'notes' => $invoiceData->notes,
                 'metadata' => $invoiceData->metadata,
             ]);

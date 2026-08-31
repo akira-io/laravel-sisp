@@ -30,6 +30,10 @@ use Override;
  * @property-read  string|null $pdf_url
  * @property-read  array $metadata
  * @property-read  string $customer_name
+ * @property-read  string|null $customer_vat
+ * @property-read  string|null $customer_tax_name
+ * @property-read  string|null $customer_tax_entity_type
+ * @property-read  string|null $customer_tax_address
  * @property-read  CarbonInterface $updated_at
  */
 #[Fillable([
@@ -43,6 +47,10 @@ use Override;
     'customer_city',
     'customer_address',
     'customer_country',
+    'customer_vat',
+    'customer_tax_name',
+    'customer_tax_entity_type',
+    'customer_tax_address',
     'notes',
     'pdf_path',
     'metadata',

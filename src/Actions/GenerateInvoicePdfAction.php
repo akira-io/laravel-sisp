@@ -34,10 +34,14 @@ final readonly class GenerateInvoicePdfAction
             ->set('website', $this->config->getInvoiceCompanyWebsite())
             ->build();
 
+        $taxName = $invoice->customer_tax_name ?? $transaction->customer_tax_name;
+        $taxAddress = $invoice->customer_tax_address ?? $transaction->customer_tax_address;
+
         $buyer = EntityBuilder::make()
-            ->name($invoice->customer_name ?? $transaction->customer_name ?? '')
+            ->name($taxName ?? $invoice->customer_name ?? $transaction->customer_name ?? '')
             ->email($invoice->customer_email ?? $transaction->customer_email ?? '')
-            ->address($invoice->customer_address ?? $transaction->customer_address ?? '')
+            ->address($taxAddress ?? $invoice->customer_address ?? $transaction->customer_address ?? '')
+            ->vat($invoice->customer_vat ?? $transaction->customer_vat ?? '')
             ->set('country', $invoice->customer_country ?? $transaction->customer_country)
             ->set('phone', $transaction->customer_phone)
             ->set('city', $invoice->customer_city ?? $transaction->customer_city)
