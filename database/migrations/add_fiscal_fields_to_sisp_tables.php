@@ -11,7 +11,11 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->tables() as $table) {
-            if (! Schema::hasTable($table) || Schema::hasColumn($table, 'customer_vat')) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
+            if (Schema::hasColumn($table, 'customer_vat')) {
                 continue;
             }
 
@@ -27,13 +31,21 @@ return new class extends Migration
     public function down(): void
     {
         foreach ($this->tables() as $table) {
-            Schema::table($table, function (Blueprint $blueprint): void {
-                $blueprint->dropColumn([
-                    'customer_vat',
-                    'customer_tax_name',
-                    'customer_tax_entity_type',
-                    'customer_tax_address',
-                ]);
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
+            $columns = array_values(array_filter(
+                $this->columns(),
+                fn (string $column): bool => Schema::hasColumn($table, $column)
+            ));
+
+            if ($columns === []) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint) use ($columns): void {
+                $blueprint->dropColumn($columns);
             });
         }
     }
@@ -46,6 +58,19 @@ return new class extends Migration
         return [
             config('sisp.tables.transactions', 'sisp_transactions'),
             config('sisp.tables.invoices', 'sisp_invoices'),
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function columns(): array
+    {
+        return [
+            'customer_vat',
+            'customer_tax_name',
+            'customer_tax_entity_type',
+            'customer_tax_address',
         ];
     }
 };

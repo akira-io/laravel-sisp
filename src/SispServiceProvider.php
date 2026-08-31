@@ -30,6 +30,7 @@ final class SispServiceProvider extends PackageServiceProvider
                 'create_sisp_transaction_logs_table',
                 'create_sisp_transaction_attempts_table',
                 'create_sisp_payment_intents_table',
+                'add_fiscal_fields_to_sisp_tables',
             ])
             ->hasTranslations()
             ->hasRoutes('web')
