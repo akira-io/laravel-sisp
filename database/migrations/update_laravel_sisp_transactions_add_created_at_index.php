@@ -20,8 +20,10 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($transactionsTable, function (Blueprint $table): void {
-            $table->index(['created_at']);
+        $indexName = $this->indexName($transactionsTable);
+
+        Schema::table($transactionsTable, function (Blueprint $table) use ($indexName): void {
+            $table->index(['created_at'], $indexName);
         });
     }
 
@@ -46,7 +48,7 @@ return new class extends Migration
 
     private function indexName(string $table): string
     {
-        return mb_strtolower($table.'_created_at_index');
+        return str_replace(['-', '.'], '_', mb_strtolower($table.'_created_at_index'));
     }
 
     private function hasIndex(string $table, ?string $name = null): bool

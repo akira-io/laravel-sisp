@@ -60,3 +60,23 @@ it('drops the index it created on rollback', function (): void {
 
     expect(array_column(Schema::getIndexes($table), 'columns'))->toContain(['created_at']);
 });
+
+it('rolls back the index on a table name laravel normalizes', function (): void {
+    $table = 'sisp-legacy-transactions';
+    config()->set('sisp.tables.transactions', $table);
+
+    Schema::create($table, function (Blueprint $blueprint): void {
+        $blueprint->id();
+        $blueprint->timestamps();
+    });
+
+    $migration = require __DIR__.'/../../database/migrations/update_laravel_sisp_transactions_add_created_at_index.php';
+
+    $migration->up();
+
+    expect(array_column(Schema::getIndexes($table), 'columns'))->toContain(['created_at']);
+
+    $migration->down();
+
+    expect(array_column(Schema::getIndexes($table), 'columns'))->not->toContain(['created_at']);
+});
