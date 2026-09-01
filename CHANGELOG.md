@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/akira-io/laravel-sisp/compare/v2.0.0...v2.1.0) (2026-08-31)
+
+### Bug Fixes
+
+- **payments:** Register the fiscal fields migration and guard its rollback ([1895200](https://github.com/akira-io/laravel-sisp/commit/18952001b797b99848ce85c076da9efa151ba61d))
+- **payments:** Add only the fiscal columns a table is missing ([a79c44d](https://github.com/akira-io/laravel-sisp/commit/a79c44d965648ab521ffea1b26dfc98689d0bb4a))
+- **migrations:** Index created_at on the transactions table ([e716b10](https://github.com/akira-io/laravel-sisp/commit/e716b10e0bcfe2bce5a2804721f376740d533515))
+- **migrations:** Drop the created_at index by the name it created ([4b25628](https://github.com/akira-io/laravel-sisp/commit/4b25628fd3806e3cfcd9925f4a1dcc25a681e20c))
+- **migrations:** Name the created_at index instead of deriving it ([ea61468](https://github.com/akira-io/laravel-sisp/commit/ea61468b1056d747db8a9ece4e217b1d27575416))
+
+
+### Features
+
+- **payments:** Store buyer tax details on transactions and invoices ([295ae45](https://github.com/akira-io/laravel-sisp/commit/295ae4556d3c5036b32e9613ace91edbdb2fead5))
+- **payments:** Accept buyer tax details on the payment request ([03f1864](https://github.com/akira-io/laravel-sisp/commit/03f1864abf9c53b47a7685b9bc3c3b1d1a54f9cb))
+- **invoice:** Carry the buyer tax id onto the invoice pdf ([a5802e1](https://github.com/akira-io/laravel-sisp/commit/a5802e17efdbc47973b4c23dd5e0870b7b922520))
+
 ## [2.0.0](https://github.com/akira-io/laravel-sisp/compare/v0.7.2...v2.0.0) (2026-07-14)
 
 ### Bug Fixes
