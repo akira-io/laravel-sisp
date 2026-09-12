@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Events\PaymentCompleted;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Pipelines\Callback\CallbackContext;
 use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Support\Facades\Event;
 
@@ -67,7 +69,7 @@ it('short-circuits and fails the transaction when the fingerprint is invalid', f
         'transactionCode' => '1',
     ]));
 
-    $tampered = Akira\Sisp\ValueObjects\CallbackPayload::from([
+    $tampered = CallbackPayload::from([
         ...$payload->toArray(),
         'resultFingerPrint' => 'tampered-fingerprint',
     ]);
@@ -98,6 +100,75 @@ it('fails the transaction when callback details do not match', function (): void
         'amount' => 42.0,
         'merchantRef' => 'MR-PIPE-MISMATCH',
         'merchantSession' => 'MS-PIPE-MISMATCH',
+        'timeStamp' => '2026-01-01 00:00:00',
+        'currency' => '132',
+        'transactionCode' => '1',
+    ]));
+
+    $context = resolve(HandleCallbackPipeline::class)->run(new CallbackContext($payload));
+
+    expect($context->failed())->toBeTrue()
+        ->and($context->failureReason)->toBe('callback_details_mismatch')
+        ->and($context->transaction()->status->value)->toBe('failed');
+
+    Event::assertDispatched(PaymentFailed::class);
+});
+
+it('completes a refused transaction through the callback pipeline even though the error response omits the amount', function (): void {
+    Event::fake();
+
+    Transaction::factory()->create([
+        'merchant_ref' => 'MR-PIPE-REFUSED',
+        'merchant_session' => 'MS-PIPE-REFUSED',
+        'amount' => 1500.0,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $unsigned = CallbackPayload::from([
+        'messageType' => CallbackPayload::ERROR_MESSAGE_TYPE,
+        'merchantRespMerchantRef' => 'MR-PIPE-REFUSED',
+        'merchantRespMerchantSession' => 'MS-PIPE-REFUSED',
+        'merchantRespTimeStamp' => '2026-01-01 00:00:00',
+        'merchantRespErrorCode' => '3',
+        'merchantRespErrorDescription' => 'Saldo insuficiente',
+        'merchantRespAdditionalErrorMessage' => 'Saldo do cartao insuficiente',
+    ]);
+
+    $fingerprint = resolve(PaymentErrorResponseFingerPrintAction::class)->handle($unsigned);
+
+    $payload = CallbackPayload::from([
+        ...$unsigned->raw,
+        'resultFingerPrint' => $fingerprint,
+    ]);
+
+    $context = resolve(HandleCallbackPipeline::class)->run(new CallbackContext($payload));
+
+    expect($context->failed())->toBeFalse()
+        ->and($context->transaction()->status->value)->toBe('failed')
+        ->and($context->transaction()->merchant_response)->not->toBe('callback_details_mismatch')
+        ->and($context->transaction()->error_message)->toBe('Saldo do cartao insuficiente');
+
+    Event::assertDispatched(PaymentFailed::class);
+});
+
+it('still rejects a success callback whose amount does not match the stored transaction', function (): void {
+    Event::fake();
+
+    Transaction::factory()->create([
+        'merchant_ref' => 'MR-PIPE-AMOUNT-MISMATCH',
+        'merchant_session' => 'MS-PIPE-AMOUNT-MISMATCH',
+        'amount' => 42.0,
+        'currency' => '132',
+        'transaction_code' => '1',
+        'status' => 'pending',
+    ]);
+
+    $payload = Sisp::generateSandboxPayload(PaymentRequestData::from([
+        'amount' => 99.0,
+        'merchantRef' => 'MR-PIPE-AMOUNT-MISMATCH',
+        'merchantSession' => 'MS-PIPE-AMOUNT-MISMATCH',
         'timeStamp' => '2026-01-01 00:00:00',
         'currency' => '132',
         'transactionCode' => '1',

@@ -73,14 +73,17 @@ it('tracks whether optional unsigned fields were provided', function (): void {
         'currency' => '',
         'transactionCode' => '',
         'posID' => '',
+        'merchantRespPurchaseAmount' => 0,
     ]);
 
     expect($missing->currencyProvided)->toBeFalse()
         ->and($missing->transactionCodeProvided)->toBeFalse()
         ->and($missing->posIDProvided)->toBeFalse()
+        ->and($missing->amountProvided)->toBeFalse()
         ->and($empty->currencyProvided)->toBeTrue()
         ->and($empty->transactionCodeProvided)->toBeTrue()
-        ->and($empty->posIDProvided)->toBeTrue();
+        ->and($empty->posIDProvided)->toBeTrue()
+        ->and($empty->amountProvided)->toBeTrue();
 });
 
 it('captures the error fields of a refused callback', function (): void {
