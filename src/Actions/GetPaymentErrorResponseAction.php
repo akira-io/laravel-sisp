@@ -7,6 +7,11 @@ namespace Akira\Sisp\Actions;
 use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\ValueObjects\PaymentErrorResponse;
 
+/**
+ * @deprecated Built on Akira\Sisp\Enums\ErrorMessageType, which no longer
+ *             matches what SISP actually sends. Kept only for consumers of
+ *             published views that still read its output shape.
+ */
 final readonly class GetPaymentErrorResponseAction
 {
     public function handle(ErrorMessageType $errorType): PaymentErrorResponse

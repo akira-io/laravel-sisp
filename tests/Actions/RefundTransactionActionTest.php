@@ -67,7 +67,7 @@ it('records refund updates with the refund log source', function (): void {
 
     expect($log->source)->toBe('refund')
         ->and($log->changed_attributes)->toContain('payload')
-        ->and($log->new_values['payload']['refunds'][0]['reason'])->toBe('partial_request');
+        ->and($log->new_values['payload'])->toBe('[redacted]');
 });
 
 it('does not allow refund amounts above the transaction amount', function (): void {

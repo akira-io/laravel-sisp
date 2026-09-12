@@ -24,6 +24,8 @@
             "decrypted",
             "testbench"
         ],
-        "paths": []
+        "paths": [
+            "docs/superpowers"
+        ]
     }
 }

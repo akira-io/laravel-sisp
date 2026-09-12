@@ -3,8 +3,27 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Tests\TestCase;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 
 uses(TestCase::class)->in(__DIR__);
+
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function sispErrorPayload(array $overrides = []): CallbackPayload
+{
+    return CallbackPayload::from(array_merge([
+        'messageType' => '6',
+        'merchantRespMessageID' => 'MSG-1',
+        'merchantRespErrorCode' => '3',
+        'merchantRespErrorDetail' => 'Transaction Refusal Balance',
+        'merchantRespErrorDescription' => 'Saldo insuficiente',
+        'merchantRespMerchantRef' => 'R1',
+        'merchantRespMerchantSession' => 'S1',
+        'merchantRespAdditionalErrorMessage' => 'Saldo do cartao insuficiente',
+        'merchantRespTimeStamp' => '2026-09-12 10:00:00',
+    ], $overrides));
+}
 
 function withInstallCommandFsLock(callable $callback): void
 {

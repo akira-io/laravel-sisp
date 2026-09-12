@@ -41,6 +41,7 @@ return [
             'communicationTimeout' => 'Délai de communication dépassé',
             'invalidFingerprint' => 'Empreinte digitale invalide',
             'genericError' => 'Erreur générique',
+            'unknown' => 'Le paiement n\'a pas abouti',
         ],
         'categories' => [
             'card' => 'Problème de Carte',
@@ -70,6 +71,8 @@ return [
             'enrollmentRequest' => 'Demande d\'Inscription',
             'tokenPayment' => 'Paiement par Jeton',
             'tokenCancel' => 'Annulation de Jeton',
+            'refund' => 'Remboursement traité',
+            'partialRefund' => 'Remboursement partiel traité',
         ],
     ],
     'payment' => [

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Events\PaymentPending;
 use Akira\Sisp\Facades\Sisp;
@@ -37,6 +38,10 @@ it('dispatches PaymentFailed for invalid or failed callbacks', function (): void
     Sisp::handlePaymentCallback($payload);
 
     Event::assertDispatched(PaymentFailed::class);
+
+    expect($t->refresh())
+        ->status->toBe(TransactionStatus::failed)
+        ->merchant_response->not->toBe('invalid_callback_fingerprint');
 });
 
 it('dispatches PaymentPending for pending status', function (): void {

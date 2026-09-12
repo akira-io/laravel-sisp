@@ -12,6 +12,8 @@ enum SuccessMessageType: string
     case enrollmentRequest = 'A';
     case tokenPayment = 'B';
     case tokenCancel = 'C';
+    case refund = '10';
+    case partialRefund = '?';
 
     public function label(): string
     {
@@ -22,6 +24,18 @@ enum SuccessMessageType: string
             self::enrollmentRequest => __('sisp::messages.success.labels.enrollmentRequest'),
             self::tokenPayment => __('sisp::messages.success.labels.tokenPayment'),
             self::tokenCancel => __('sisp::messages.success.labels.tokenCancel'),
+            self::refund => __('sisp::messages.success.labels.refund'),
+            self::partialRefund => __('sisp::messages.success.labels.partialRefund'),
+        };
+    }
+
+    /** @return array<int, string> */
+    public function expectedMerchantResponses(): array
+    {
+        return match ($this) {
+            self::purchase, self::servicePayment, self::phoneRecharge => ['C'],
+            self::enrollmentRequest, self::tokenPayment, self::tokenCancel => ['0'],
+            self::refund, self::partialRefund => [''],
         };
     }
 }

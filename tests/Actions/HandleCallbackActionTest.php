@@ -14,7 +14,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Facade;
 
-function cb_payload(string $msgType): CallbackPayload
+function cb_payload(string $msgType, string $merchantResponse = 'C'): CallbackPayload
 {
     return new CallbackPayload(
         merchantRef: 'mref',
@@ -25,7 +25,7 @@ function cb_payload(string $msgType): CallbackPayload
         transactionCode: '8',
         transactionID: 'TID123',
         messageType: $msgType,
-        merchantResponse: 'ok',
+        merchantResponse: $merchantResponse,
         responseCode: '00',
         fingerprint: 'fp',
         posID: 'POS1',
@@ -88,7 +88,7 @@ it('dispatches events for completed, failed, and pending statuses', function ():
     Event::assertDispatched(PaymentCompleted::class);
 
     Event::fake();
-    resolve(HandleCallbackAction::class)->handle(cb_payload('13')); // invalidAmount -> failed
+    resolve(HandleCallbackAction::class)->handle(cb_payload('6')); // issuer/system error -> failed
     Event::assertDispatched(PaymentFailed::class);
 
     Event::fake();

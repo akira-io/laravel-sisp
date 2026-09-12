@@ -75,6 +75,11 @@ final readonly class RefundTransactionAction
         return $refunded;
     }
 
+    public function refundableAmount(Transaction $transaction): float
+    {
+        return SispAmount::fromThousandths($this->refundableThousandths($transaction));
+    }
+
     private function canBeRefunded(Transaction $transaction): bool
     {
         return $transaction->status->value === 'completed';
@@ -90,7 +95,7 @@ final readonly class RefundTransactionAction
             return $this->buildRefundRequest->total($transaction);
         }
 
-        return $this->buildRefundRequest->partial($transaction, $refundAmount / 1000);
+        return $this->buildRefundRequest->partial($transaction, SispAmount::fromThousandths($refundAmount));
     }
 
     private function refundableThousandths(Transaction $transaction): int
@@ -100,15 +105,63 @@ final readonly class RefundTransactionAction
 
     private function refundedThousandths(Transaction $transaction): int
     {
+        if ($transaction->refunds()->exists()) {
+            return (int) $transaction->refunds()->sum('amount_thousandths');
+        }
+
+        return $this->legacyRefundedThousandths($transaction);
+    }
+
+    private function legacyRefundedThousandths(Transaction $transaction): int
+    {
+        return array_sum(array_map(
+            fn (array $refund): int => SispAmount::toThousandths($this->entryAmount($refund)),
+            $this->legacyRefunds($transaction),
+        ));
+    }
+
+    /**
+     * @return array<int, array<array-key, mixed>>
+     */
+    private function legacyRefunds(Transaction $transaction): array
+    {
         $payload = $transaction->getAttribute('payload');
         $payload = is_array($payload) ? $payload : [];
         $refunds = $payload['refunds'] ?? [];
-        $refunds = is_array($refunds) ? $refunds : [];
 
-        return array_sum(array_map(
-            fn (mixed $refund): int => is_array($refund) ? SispAmount::toThousandths($refund['amount'] ?? 0) : 0,
-            $refunds,
-        ));
+        if (! is_array($refunds)) {
+            return [];
+        }
+
+        return array_values(array_filter($refunds, is_array(...)));
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $refund
+     */
+    private function entryAmount(array $refund): float
+    {
+        $amount = $refund['amount'] ?? 0;
+
+        return is_numeric($amount) ? (float) $amount : 0.0;
+    }
+
+    private function backfillLegacyRefunds(Transaction $transaction): void
+    {
+        if ($transaction->refunds()->exists()) {
+            return;
+        }
+
+        foreach ($this->legacyRefunds($transaction) as $refund) {
+            $reason = $refund['reason'] ?? null;
+            $request = $refund['request'] ?? [];
+
+            $transaction->refunds()->create([
+                'amount' => $this->entryAmount($refund),
+                'reason' => is_string($reason) ? $reason : null,
+                'request' => is_array($request) ? $request : [],
+            ]);
+        }
     }
 
     /**
@@ -117,6 +170,8 @@ final readonly class RefundTransactionAction
      */
     private function appendRefundPayload(Transaction $transaction, array $request, string $reason): array
     {
+        $this->backfillLegacyRefunds($transaction);
+
         $payload = $transaction->getAttribute('payload');
         $payload = is_array($payload) ? $payload : [];
         $refunds = $payload['refunds'] ?? [];
@@ -127,6 +182,12 @@ final readonly class RefundTransactionAction
             'request' => $request,
         ];
         $payload['refunds'] = $refunds;
+
+        $transaction->refunds()->create([
+            'amount' => (float) $request['amount'],
+            'reason' => $reason,
+            'request' => $request,
+        ]);
 
         return $payload;
     }

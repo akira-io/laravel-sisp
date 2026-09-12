@@ -22,7 +22,14 @@ trait EncryptsAttributes
         return in_array($key, $encryptable);
     }
 
-    public function getAttribute($key): mixed
+    public function isExplicitlyEncryptable(string $key): bool
+    {
+        $encryptable = $this->encryptable();
+
+        return $encryptable !== [] && in_array($key, $encryptable, true);
+    }
+
+    public function getAttribute(mixed $key): mixed
     {
         if (array_key_exists((string) $key, $this->decryptedAttributesCache)) {
             return $this->decryptedAttributesCache[$key];
@@ -31,7 +38,6 @@ trait EncryptsAttributes
         $value = parent::getAttribute($key);
 
         if ($this->shouldEncrypt($key)) {
-            // Prefer decrypting from raw attribute to bypass casts when necessary
             $raw = $this->attributes[$key] ?? null;
 
             if (is_string($raw)) {
@@ -44,7 +50,6 @@ trait EncryptsAttributes
 
                     return $this->decryptedAttributesCache[$key] = $decrypted;
                 } catch (Throwable) {
-                    // Fall through and return the original casted value
                 }
             }
 
@@ -60,7 +65,7 @@ trait EncryptsAttributes
         return $value;
     }
 
-    public function setAttribute($key, $value): static
+    public function setAttribute(mixed $key, mixed $value): static
     {
         unset($this->decryptedAttributesCache[$key]);
 
@@ -99,8 +104,6 @@ trait EncryptsAttributes
             return false;
         }
 
-        // Fast check for potentially encrypted values
-        // Laravel encrypted values are base64 encoded JSON objects containing 'iv', 'value', 'mac'
         if (mb_strlen($value) < 100) {
             return false;
         }

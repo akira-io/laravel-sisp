@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  int $id
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
+ * @property-read  \Illuminate\Support\Carbon|null $request_payload_pruned_at
  * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
  * @property-read  string $merchant_session
@@ -44,10 +45,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string $formatted_amount
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionItem> $items
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionAttempt> $attempts
+ * @property-read  \Illuminate\Database\Eloquent\Collection<int, Refund> $refunds
  * @property-read  TransactionAttempt|null $currentAttempt
  * @property-read  Invoice|null $invoice
  * @property-read  \Illuminate\Support\Carbon|null $created_at
  * @property-read  \Illuminate\Support\Carbon|null $updated_at
+ * @property-read  array<string, mixed>|null $callback_raw_payload
+ * @property-read  string|null $error_code
+ * @property-read  string|null $error_message
  */
 #[UseFactory(TransactionFactory::class)]
 #[Fillable([
@@ -64,6 +69,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'merchant_response',
     'fingerprint',
     'payload',
+    'request_payload_pruned_at',
     'customer_name',
     'customer_email',
     'customer_phone',
@@ -78,6 +84,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'customer_tax_name',
     'customer_tax_entity_type',
     'customer_tax_address',
+    'callback_raw_payload',
+    'error_code',
+    'error_message',
 ])]
 final class Transaction extends Model
 {
@@ -123,6 +132,12 @@ final class Transaction extends Model
         return $this->hasMany(TransactionLog::class, 'transaction_id');
     }
 
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'transaction_id');
+    }
+
     protected static function booted(): void
     {
         self::updated(static function (Transaction $transaction): void {
@@ -140,6 +155,7 @@ final class Transaction extends Model
             'updated_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'request_payload_pruned_at' => 'datetime',
         ];
     }
 
@@ -154,6 +170,7 @@ final class Transaction extends Model
     {
         return [
             'payload',
+            'callback_raw_payload',
         ];
     }
 

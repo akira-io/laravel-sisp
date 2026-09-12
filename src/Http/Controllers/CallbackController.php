@@ -17,6 +17,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use LogicException;
 
 final readonly class CallbackController
@@ -25,13 +26,13 @@ final readonly class CallbackController
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
-        private LoadConfig $config,
         private CancelTransactionAction $cancelTransaction,
+        private LoadConfig $config,
     ) {}
 
     public function __invoke(Request $request): mixed
     {
-        if ($request->boolean('UserCancelled')) {
+        if ($this->isCancellation($request)) {
             return $this->handleUserCancellation($request);
         }
 
@@ -42,6 +43,15 @@ final readonly class CallbackController
         return $this->handlePostRequest($request);
     }
 
+    private function isCancellation(Request $request): bool
+    {
+        if ($request->boolean('UserCancelled')) {
+            return true;
+        }
+
+        return $request->boolean('userCancelled');
+    }
+
     private function handleUserCancellation(Request $request): RedirectResponse
     {
         $transaction = $this->resolveCancelledTransaction($request);
@@ -49,7 +59,11 @@ final readonly class CallbackController
         if ($transaction instanceof Transaction) {
             try {
                 $this->cancelTransaction->handle($transaction);
-            } catch (LogicException) {
+            } catch (LogicException $exception) {
+                Log::warning('SISP cancellation callback could not cancel the transaction.', [
+                    'transaction_id' => $transaction->getKey(),
+                    'error' => $exception->getMessage(),
+                ]);
             }
         }
 
@@ -65,9 +79,11 @@ final readonly class CallbackController
             return null;
         }
 
-        $query = Transaction::query()->where('merchant_ref', $merchantRef);
-
-        return $query->where('merchant_session', $merchantSession)->first();
+        return Transaction::query()
+            ->where('merchant_ref', $merchantRef)
+            ->where('merchant_session', $merchantSession)
+            ->where('status', TransactionStatus::pending->value)
+            ->first();
     }
 
     private function handleGetRequest(): mixed

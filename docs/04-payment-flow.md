@@ -185,7 +185,24 @@ After payment, SISP POSTs to `/sisp/callback` with:
 - SHA512 hash of callback fields with pos auth code
 - Verifies data integrity from SISP
 - Prevents callback tampering or spoofing
-- Fields included: messageType, amount, reference, timestamp, and 13+ others
+- Picks the formula by `messageType`: exactly `6` uses the error formula, anything else uses the success formula. See [Security](./07-security.md#callback-fingerprint-formulas) for both field orders.
+
+#### messageType Table
+
+`messageType` is a closed set. Anything outside it is treated as an error response.
+
+| `messageType` | Meaning | Expected `merchantResp` |
+| --- | --- | --- |
+| `8` | Purchase | `C` |
+| `P` | Service payment | `C` |
+| `M` | Phone recharge | `C` |
+| `A` | Token enrollment | `0` |
+| `B` | Token payment | `0` |
+| `C` | Token cancel | `0` |
+| `10` | Full refund | (empty) |
+| `?` | Partial refund | (empty) |
+| `6` | Error | n/a (`Transaction::$error_message` carries the refusal reason) |
+| null | Error (no callback received, or the callback carried an empty `messageType`) | n/a |
 
 Invalid POST callbacks are redirected to `config('sisp.redirect_url', '/')` before any transaction lookup.
 
@@ -222,11 +239,14 @@ The callback must match:
 If any value does not match, the transaction is marked `failed` with `merchant_response` set to `callback_details_mismatch`.
 
 ### 9.5 Error Response Parsing
-`GetPaymentErrorResponseAction` transforms error codes into structured responses:
-- Maps error code (e.g., "6") to human-readable label
+`GetPaymentErrorResponseAction` (deprecated) and `ErrorMessageType` (deprecated) were built on the assumption that `6` is an error code. However, `6` is the callback's `messageType`, meaning "transaction processed with error" - it carries no reason itself. The reason arrives separately. SISP designates `merchantRespAdditionalErrorMessage` as the text to show the customer, falling back to `merchantRespScreenError` and then `merchantRespErrorDescription`; whichever is present lands in `Transaction::$error_message`. The short code from `merchantRespErrorCode` is stored alongside it in `Transaction::$error_code`, and real traffic shows it can be a letter rather than one of the digits the specification lists.
+
+The deprecated action transforms ISO-8583 error codes into structured responses for backwards compatibility with views that still read its shape:
 - Categorizes error: card, funds, security, validation, system, issuer
 - Suggests action: contact-issuer, use-different-card, retry, etc.
-- Provides translated messages for EN and PT
+- Provides translated messages for EN, PT and FR
+
+For new implementations, read the refusal reason directly from `Transaction::$error_message` instead.
 
 ### 9.6 Status Update
 - Sets status: `completed`, `failed`, or `pending`
@@ -367,14 +387,16 @@ Payment failures return structured error information:
 
 ```php
 [
-    'code' => 'card_declined',           // Error code from SISP (e.g., "6")
-    'label' => 'Card Declined',          // Human-readable label (translated)
-    'category' => 'card',                 // Category: card|funds|security|validation|system|issuer
-    'categoryLabel' => 'Card Issue',      // Category label (translated)
-    'action' => 'use-different-card',    // Suggested action for user
-    'actionLabel' => 'Try Another Card', // Action label (translated)
+    'code' => '3',                                // merchantRespErrorCode, as sent by SISP
+    'label' => 'Invalid merchant',                // Human-readable label (translated)
+    'category' => 'validation',                   // Category: card|funds|security|validation|system|issuer
+    'categoryLabel' => 'Invalid Details',          // Category label (translated)
+    'action' => 'contact-support',                // Suggested action for user
+    'actionLabel' => 'Contact customer support',   // Action label (translated)
 ]
 ```
+
+`6` is the callback's `messageType`, not the error code; the error code lives in `merchantRespErrorCode`. Real refused callbacks confirm this field is not always numeric, for example `F`, so nothing in the package assumes it is a digit. `card_declined` is not a value SISP ever sends; the response above uses `GetPaymentErrorResponseAction`, which is deprecated (see [API Reference](./11-api-reference.md#errormessagetype)). The raw refusal reason for a real callback is `Transaction::$error_message`.
 
 These error responses are shown to user with retry option if configured.
 

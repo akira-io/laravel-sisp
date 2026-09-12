@@ -43,7 +43,7 @@ it('does not record timestamp-only transaction updates', function (): void {
     expect($transaction->logs()->count())->toBe(0);
 });
 
-it('records payload changes as decrypted arrays', function (): void {
+it('redacts payload changes instead of storing decrypted arrays', function (): void {
     $transaction = Transaction::factory()->create([
         'payload' => ['attempt' => 1],
     ]);
@@ -55,10 +55,49 @@ it('records payload changes as decrypted arrays', function (): void {
     $log = $transaction->logs()->sole();
 
     expect($log->changed_attributes)->toBe(['payload'])
-        ->and($log->old_values['payload'])->toBe(['attempt' => 1])
-        ->and($log->new_values['payload'])->toBe([
-            'attempt' => 2,
-            'status' => ['approved' => true],
+        ->and($log->old_values['payload'])->toBe('[redacted]')
+        ->and($log->new_values['payload'])->toBe('[redacted]');
+});
+
+it('redacts callback_raw_payload changes while still recording that it changed', function (): void {
+    $transaction = Transaction::factory()->create([
+        'callback_raw_payload' => ['merchantRespMerchantSession' => 'session-old'],
+    ]);
+
+    $transaction->update([
+        'callback_raw_payload' => ['merchantRespMerchantSession' => 'session-new'],
+    ]);
+
+    $log = $transaction->logs()->sole();
+
+    expect($log->changed_attributes)->toBe(['callback_raw_payload'])
+        ->and($log->old_values['callback_raw_payload'])->toBe('[redacted]')
+        ->and($log->new_values['callback_raw_payload'])->toBe('[redacted]')
+        ->and(json_encode($log->old_values))->not->toContain('session-old')
+        ->and(json_encode($log->new_values))->not->toContain('session-new');
+});
+
+it('still logs real before-and-after values for unencrypted attributes', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::pending->value,
+        'message_type' => '8',
+    ]);
+
+    $transaction->update([
+        'status' => TransactionStatus::completed->value,
+        'message_type' => '9',
+    ]);
+
+    $log = $transaction->logs()->sole();
+
+    expect($log->changed_attributes)->toBe(['status', 'message_type'])
+        ->and($log->old_values)->toMatchArray([
+            'status' => 'pending',
+            'message_type' => '8',
+        ])
+        ->and($log->new_values)->toMatchArray([
+            'status' => 'completed',
+            'message_type' => '9',
         ]);
 });
 
@@ -100,5 +139,5 @@ it('uses package flow source for reconciliation updates', function (): void {
 
     expect($log->source)->toBe('reconciliation')
         ->and($log->new_values['status'])->toBe('completed')
-        ->and($log->new_values['payload']['transaction_status_response']['transactionSuccess'])->toBeTrue();
+        ->and($log->new_values['payload'])->toBe('[redacted]');
 });

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
-use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -18,6 +18,7 @@ final readonly class BuildSandboxPayloadAction
 {
     public function __construct(
         private PaymentResponseFingerPrintAction $generateFingerprint,
+        private PaymentErrorResponseFingerPrintAction $generateErrorFingerprint,
         private SispCredentialsResolver $resolver,
     ) {}
 
@@ -36,9 +37,14 @@ final readonly class BuildSandboxPayloadAction
 
         $messageType = match ($status) {
             'success' => SuccessMessageType::purchase->value,
-            'failed' => ErrorMessageType::issuerError->value,
+            'failed' => CallbackPayload::ERROR_MESSAGE_TYPE,
             default => 'P',
         };
+
+        $successType = SuccessMessageType::tryFrom($messageType);
+        $merchantResp = $successType instanceof SuccessMessageType
+            ? $successType->expectedMerchantResponses()[0]
+            : '00';
 
         $payload = [
             'messageType' => $messageType,
@@ -49,7 +55,7 @@ final readonly class BuildSandboxPayloadAction
             'merchantRespPurchaseAmount' => $amount,
             'merchantRespMessageID' => 'MSG-'.Str::random(8),
             'merchantRespPan' => '****-****-****-1234',
-            'merchantResp' => '00',
+            'merchantResp' => $merchantResp,
             'merchantRespTimeStamp' => $timestamp,
             'merchantRespReferenceNumber' => Str::random(12),
             'merchantRespEntityCode' => '10010',
@@ -64,7 +70,9 @@ final readonly class BuildSandboxPayloadAction
 
         $callbackPayload = CallbackPayload::from($payload);
 
-        $fingerprint = $this->generateFingerprint->handle($callbackPayload);
+        $fingerprint = $callbackPayload->isError()
+            ? $this->generateErrorFingerprint->handle($callbackPayload)
+            : $this->generateFingerprint->handle($callbackPayload);
 
         $payload['resultFingerPrint'] = $fingerprint;
 

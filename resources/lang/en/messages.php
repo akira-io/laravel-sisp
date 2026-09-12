@@ -41,6 +41,7 @@ return [
             'communicationTimeout' => 'Communication timeout',
             'invalidFingerprint' => 'Invalid fingerprint',
             'genericError' => 'Generic error',
+            'unknown' => 'The payment was not completed',
         ],
         'categories' => [
             'card' => 'Card Issue',
@@ -70,6 +71,8 @@ return [
             'enrollmentRequest' => 'Enrollment Request',
             'tokenPayment' => 'Token Payment',
             'tokenCancel' => 'Token Cancel',
+            'refund' => 'Refund processed',
+            'partialRefund' => 'Partial refund processed',
         ],
     ],
     'payment' => [

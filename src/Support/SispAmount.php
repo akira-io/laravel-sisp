@@ -11,6 +11,11 @@ final readonly class SispAmount
         return (int) round(self::toThousandths($amount) / 10);
     }
 
+    public static function fromThousandths(int $thousandths): float
+    {
+        return $thousandths / 1000;
+    }
+
     public static function toThousandths(float|int|string $amount): int
     {
         $decimal = self::decimalString($amount);

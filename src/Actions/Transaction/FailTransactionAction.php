@@ -16,6 +16,8 @@ final readonly class FailTransactionAction
     public function __construct(
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
+        private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage,
+        private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
     ) {}
 
     public function handle(
@@ -23,10 +25,11 @@ final readonly class FailTransactionAction
         CallbackPayload $payload,
         string $merchantResponse,
         ?TransactionAttempt $attempt = null,
+        bool $trustPayload = true,
     ): bool {
-        return DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction): bool {
+        return DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction, $trustPayload): bool {
             if ($attempt instanceof TransactionAttempt) {
-                $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
+                $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse, $trustPayload);
 
                 if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
                     return false;
@@ -47,6 +50,9 @@ final readonly class FailTransactionAction
                     'response_code' => $payload->merchantRespCp,
                     'fingerprint' => $payload->fingerprint,
                     'status' => TransactionStatus::failed,
+                    'error_code' => $trustPayload && $payload->errorCode !== '' ? $payload->errorCode : null,
+                    'error_message' => $trustPayload ? $this->resolveCustomerErrorMessage->handle($payload) : null,
+                    'callback_raw_payload' => $trustPayload ? $this->maskCallbackRawPayload->handle($payload->raw) : null,
                 ])
             );
 

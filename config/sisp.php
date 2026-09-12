@@ -214,6 +214,7 @@ return [
         'blacklist' => env('SISP_TABLE_BLACKLIST', 'sisp_blacklist'),
         'transaction_logs' => env('SISP_TABLE_TRANSACTION_LOGS', 'sisp_transaction_logs'),
         'payment_intents' => env('SISP_TABLE_PAYMENT_INTENTS', 'sisp_payment_intents'),
+        'refunds' => env('SISP_TABLE_REFUNDS', 'sisp_refunds'),
     ],
 
     /*
@@ -299,6 +300,29 @@ return [
         'reconcile_after_minutes' => env('SISP_TRANSACTION_RECONCILE_AFTER_MINUTES', 5),
         'reconcile_limit' => env('SISP_TRANSACTION_RECONCILE_LIMIT', 50),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pending Transaction Expiry
+    |--------------------------------------------------------------------------
+    |
+    | Pending transactions that never received a callback are cancelled once
+    | they are older than this window. See sisp:expire-pending.
+    |
+    */
+    'expire_pending_after_days' => env('SISP_EXPIRE_PENDING_AFTER_DAYS', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Request Payload Pruning
+    |--------------------------------------------------------------------------
+    |
+    | The 3-D Secure purchaseRequest blob is removed from terminal
+    | transactions once they are older than this window. See
+    | sisp:prune-request-payloads.
+    |
+    */
+    'prune_request_payloads_after_days' => env('SISP_PRUNE_REQUEST_PAYLOADS_AFTER_DAYS', 90),
 
     /*
     |--------------------------------------------------------------------------
