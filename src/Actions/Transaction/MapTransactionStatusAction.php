@@ -7,6 +7,7 @@ namespace Akira\Sisp\Actions\Transaction;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Support\Facades\Log;
 
 final readonly class MapTransactionStatusAction
 {
@@ -24,8 +25,20 @@ final readonly class MapTransactionStatusAction
             return TransactionStatus::pending;
         }
 
-        return in_array((string) $merchantResponse, $successType->expectedMerchantResponses(), true)
-            ? TransactionStatus::completed
-            : TransactionStatus::pending;
+        if (! in_array((string) $merchantResponse, $successType->expectedMerchantResponses(), true)) {
+            $expected = implode(', ', $successType->expectedMerchantResponses());
+            Log::warning(
+                'SISP callback received known success message type with unexpected merchant response.',
+                [
+                    'messageType' => $messageType,
+                    'merchantResponse' => $merchantResponse,
+                    'expectedResponses' => $expected,
+                ]
+            );
+
+            return TransactionStatus::pending;
+        }
+
+        return TransactionStatus::completed;
     }
 }

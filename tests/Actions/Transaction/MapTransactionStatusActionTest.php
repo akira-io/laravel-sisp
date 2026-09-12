@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\Transaction\MapTransactionStatusAction;
 use Akira\Sisp\Enums\TransactionStatus;
+use Illuminate\Support\Facades\Log;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 
 it('completes the documented success pairs', function (string $messageType, string $merchantResponse): void {
     expect(resolve(MapTransactionStatusAction::class)->handle($messageType, $merchantResponse))
@@ -40,3 +43,45 @@ it('no longer treats ISO-8583 codes as message types', function (string $message
     expect(resolve(MapTransactionStatusAction::class)->handle($messageType, ''))
         ->toBe(TransactionStatus::pending);
 })->with(['51', '33', '91', '99']);
+
+it('logs warning when known success message type arrives with unexpected merchant response', function (): void {
+    $handler = new TestHandler();
+    $logger = new Logger('test', [$handler]);
+    Log::swap($logger);
+
+    $status = resolve(MapTransactionStatusAction::class)->handle('8', '0');
+
+    expect($status)->toBe(TransactionStatus::pending)
+        ->and($handler->getRecords())->toHaveLength(1)
+        ->and($handler->getRecords()[0]['level_name'])->toBe('WARNING')
+        ->and($handler->getRecords()[0]['message'])->toBe('SISP callback received known success message type with unexpected merchant response.')
+        ->and($handler->getRecords()[0]['context'])->toMatchArray([
+            'messageType' => '8',
+            'merchantResponse' => '0',
+            'expectedResponses' => 'C',
+        ]);
+});
+
+it('does not log when expected merchant response arrives', function (): void {
+    $handler = new TestHandler();
+    $logger = new Logger('test', [$handler]);
+    Log::swap($logger);
+
+    $status = resolve(MapTransactionStatusAction::class)->handle('8', 'C');
+
+    expect($status)->toBe(TransactionStatus::completed)
+        ->and($handler->getRecords())->toHaveLength(0);
+});
+
+it('does not log when message type is empty', function (): void {
+    $handler = new TestHandler();
+    $logger = new Logger('test', [$handler]);
+    Log::swap($logger);
+
+    $status1 = resolve(MapTransactionStatusAction::class)->handle('', '');
+    $status2 = resolve(MapTransactionStatusAction::class)->handle(null);
+
+    expect($status1)->toBe(TransactionStatus::pending)
+        ->and($status2)->toBe(TransactionStatus::pending)
+        ->and($handler->getRecords())->toHaveLength(0);
+});
