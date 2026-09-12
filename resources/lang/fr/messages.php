@@ -41,6 +41,7 @@ return [
             'communicationTimeout' => 'Délai de communication dépassé',
             'invalidFingerprint' => 'Empreinte digitale invalide',
             'genericError' => 'Erreur générique',
+            'unknown' => 'Le paiement n\'a pas abouti',
         ],
         'categories' => [
             'card' => 'Problème de Carte',

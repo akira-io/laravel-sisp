@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Enums;
 
+/**
+ * @deprecated The SISP messageType is not an ISO-8583 code. Only '6' exists and
+ *             it means "transaction processed with error". Read the refusal
+ *             reason from Transaction::$error_message instead.
+ */
 enum ErrorMessageType: string
 {
     case referToCardIssuer = '1';

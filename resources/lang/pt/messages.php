@@ -41,6 +41,7 @@ return [
             'communicationTimeout' => 'Tempo limite de comunicação excedido',
             'invalidFingerprint' => 'Impressão digital inválida',
             'genericError' => 'Erro genérico',
+            'unknown' => 'O pagamento não foi concluído',
         ],
         'categories' => [
             'card' => 'Problema no Cartão',

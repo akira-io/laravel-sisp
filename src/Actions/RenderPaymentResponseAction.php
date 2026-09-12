@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
-use Akira\Sisp\Enums\ErrorMessageType;
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\InertiaAvailability;
@@ -15,7 +15,6 @@ use Inertia\Inertia;
 final readonly class RenderPaymentResponseAction
 {
     public function __construct(
-        private GetPaymentErrorResponseAction $getErrorResponse,
         private GetPaymentResponseTranslationsAction $getTranslations,
         private CanRetryPaymentAction $canRetryPayment,
         private InertiaAvailability $inertiaAvailability,
@@ -72,19 +71,21 @@ final readonly class RenderPaymentResponseAction
         ]);
     }
 
+    /** @return array<string, string>|null */
     private function getStructuredError(Transaction $transaction): ?array
     {
-        if (! $transaction->message_type) {
+        if ($transaction->status !== TransactionStatus::failed) {
             return null;
         }
 
-        $errorType = ErrorMessageType::tryFrom($transaction->message_type);
-
-        if (! $errorType) {
-            return null;
-        }
-
-        return $this->getErrorResponse->handle($errorType)->toArray();
+        return [
+            'code' => (string) ($transaction->error_code ?? ''),
+            'label' => $transaction->error_message ?? __('sisp::messages.errors.labels.unknown'),
+            'category' => 'unknown',
+            'categoryLabel' => __('sisp::messages.errors.categories.unknown'),
+            'action' => 'contact-support',
+            'actionLabel' => __('sisp::messages.errors.actions.contact-support'),
+        ];
     }
 
     private function retryUrl(Transaction $transaction): string

@@ -41,6 +41,7 @@ return [
             'communicationTimeout' => 'Communication timeout',
             'invalidFingerprint' => 'Invalid fingerprint',
             'genericError' => 'Generic error',
+            'unknown' => 'The payment was not completed',
         ],
         'categories' => [
             'card' => 'Card Issue',

@@ -7,7 +7,6 @@ namespace Akira\Sisp\Actions;
 use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
-use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -38,7 +37,7 @@ final readonly class BuildSandboxPayloadAction
 
         $messageType = match ($status) {
             'success' => SuccessMessageType::purchase->value,
-            'failed' => ErrorMessageType::issuerError->value,
+            'failed' => '6',
             default => 'P',
         };
 
