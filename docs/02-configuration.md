@@ -207,7 +207,7 @@ The API sends HTTP Basic authentication using `SISP_PORTAL_ID:SISP_PORTAL_PASSWO
 Query a transaction without changing local data:
 
 ```bash
-php artisan sisp:transaction-status R20260523235959
+php artisan sisp:transaction-status R20260523235959K7M2QX9TBV
 ```
 
 Query by local transaction ID and update it only when SISP returns a successful status API result:
@@ -227,7 +227,7 @@ use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 
 $response = Sisp::queryTransactionStatus($transaction);
-$response = Sisp::queryTransactionStatus('R20260523235959');
+$response = Sisp::queryTransactionStatus('R20260523235959K7M2QX9TBV');
 
 $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 ```
@@ -313,10 +313,13 @@ Customize middleware assigned to package routes in `config/sisp.php`:
     'payment' => [Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class],
     'retry' => [],
     'refund' => ['web', 'auth'],
+    'callback' => ['throttle:60,1'],
 ],
 ```
 
-Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default. The callback route is intentionally not part of this configuration because SISP must be able to post callbacks without browser CSRF middleware.
+Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default.
+
+The callback route never receives the browser `web` group, because SISP must be able to post callbacks without CSRF middleware. It does carry a rate limit: SISP sends no fingerprint on the user-cancellation callback, so that branch is authenticated by nothing but the merchant reference, and the throttle bounds how fast references can be tried. Raise the limit if a busy gateway needs more, but leave one in place.
 
 ## Security Configuration
 
