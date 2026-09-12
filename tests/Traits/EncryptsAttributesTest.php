@@ -209,6 +209,20 @@ it('does not encrypt attributes not in encryptable list', function (): void {
         ->and($found->note)->toBe('plain-note');
 });
 
+it('reports a key as explicitly encryptable only when listed', function (): void {
+    $model = new TmpEncryptedSelective();
+
+    expect($model->isExplicitlyEncryptable('secret'))->toBeTrue()
+        ->and($model->isExplicitlyEncryptable('note'))->toBeFalse();
+});
+
+it('does not treat every attribute as explicitly encryptable when the list is empty', function (): void {
+    $model = new TmpEncryptAll();
+
+    expect($model->shouldEncrypt('notes'))->toBeTrue()
+        ->and($model->isExplicitlyEncryptable('notes'))->toBeFalse();
+});
+
 it('falls back when raw attribute decryption fails and returns original', function (): void {
     Schema::create('tmp_encrypts_fail', function (Blueprint $table): void {
         $table->id();

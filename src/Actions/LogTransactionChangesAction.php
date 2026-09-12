@@ -13,6 +13,8 @@ use Throwable;
 
 final readonly class LogTransactionChangesAction
 {
+    private const string REDACTED = '[redacted]';
+
     public function handle(Transaction $transaction): void
     {
         $changes = $this->changes($transaction);
@@ -48,6 +50,14 @@ final readonly class LogTransactionChangesAction
             }
 
             $changedAttributes[] = $attribute;
+
+            if ($transaction->isExplicitlyEncryptable($attribute)) {
+                $oldValues[$attribute] = self::REDACTED;
+                $newValues[$attribute] = self::REDACTED;
+
+                continue;
+            }
+
             $oldValues[$attribute] = $oldValue;
             $newValues[$attribute] = $newValue;
         }

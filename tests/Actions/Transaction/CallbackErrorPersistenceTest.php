@@ -58,6 +58,21 @@ it('falls back to the error description as a last resort', function (): void {
     expect($transaction->refresh()->error_message)->toBe('Saldo insuficiente');
 });
 
+it('skips a whitespace-only customer message and falls through to the screen error', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    resolve(FailTransactionAction::class)->handle($transaction, CallbackPayload::from([
+        'messageType' => '6',
+        'merchantRespMerchantRef' => $transaction->merchant_ref,
+        'merchantRespMerchantSession' => $transaction->merchant_session,
+        'merchantRespAdditionalErrorMessage' => '   ',
+        'merchantRespScreenError' => 'Pagamento recusado',
+        'merchantRespErrorDescription' => 'Saldo insuficiente',
+    ]), 'refused');
+
+    expect($transaction->refresh()->error_message)->toBe('Pagamento recusado');
+});
+
 it('stores no error message when none is present', function (): void {
     $transaction = Transaction::factory()->create(['status' => 'pending']);
 

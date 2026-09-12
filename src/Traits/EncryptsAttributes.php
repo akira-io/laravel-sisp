@@ -22,6 +22,13 @@ trait EncryptsAttributes
         return in_array($key, $encryptable);
     }
 
+    public function isExplicitlyEncryptable(string $key): bool
+    {
+        $encryptable = $this->encryptable();
+
+        return $encryptable !== [] && in_array($key, $encryptable, true);
+    }
+
     public function getAttribute($key): mixed
     {
         if (array_key_exists((string) $key, $this->decryptedAttributesCache)) {
