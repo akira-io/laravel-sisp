@@ -14,9 +14,15 @@ final readonly class MaskCallbackRawPayloadAction
      */
     public function handle(array $raw): array
     {
-        $pan = $raw[self::PAN_KEY] ?? null;
+        if (! array_key_exists(self::PAN_KEY, $raw)) {
+            return $raw;
+        }
+
+        $pan = $raw[self::PAN_KEY];
 
         if (! is_string($pan) || $pan === '') {
+            unset($raw[self::PAN_KEY]);
+
             return $raw;
         }
 
