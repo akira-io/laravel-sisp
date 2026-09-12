@@ -303,6 +303,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pending Transaction Expiry
+    |--------------------------------------------------------------------------
+    |
+    | Pending transactions that never received a callback are cancelled once
+    | they are older than this window. See sisp:expire-pending.
+    |
+    */
+    'expire_pending_after_days' => env('SISP_EXPIRE_PENDING_AFTER_DAYS', 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | Blade Template Rendering
     |--------------------------------------------------------------------------
     |
