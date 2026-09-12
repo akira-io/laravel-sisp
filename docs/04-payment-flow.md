@@ -239,11 +239,14 @@ The callback must match:
 If any value does not match, the transaction is marked `failed` with `merchant_response` set to `callback_details_mismatch`.
 
 ### 9.5 Error Response Parsing
-`GetPaymentErrorResponseAction` transforms error codes into structured responses:
-- Maps error code (e.g., "6") to human-readable label
+`GetPaymentErrorResponseAction` (deprecated) and `ErrorMessageType` (deprecated) were built on the assumption that `6` is an error code. However, `6` is the callback's `messageType`, meaning "transaction processed with error" - it carries no reason itself. The real refusal reason arrives in `merchantRespErrorCode` and is now stored in `Transaction::$error_message`, which is the authoritative source for the customer-facing refusal message.
+
+The deprecated action transforms ISO-8583 error codes into structured responses for backwards compatibility with views that still read its shape:
 - Categorizes error: card, funds, security, validation, system, issuer
 - Suggests action: contact-issuer, use-different-card, retry, etc.
-- Provides translated messages for EN and PT
+- Provides translated messages for EN, PT and FR
+
+For new implementations, read the refusal reason directly from `Transaction::$error_message` instead.
 
 ### 9.6 Status Update
 - Sets status: `completed`, `failed`, or `pending`
