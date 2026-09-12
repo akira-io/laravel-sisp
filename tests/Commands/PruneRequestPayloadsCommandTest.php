@@ -179,6 +179,37 @@ it('makes progress across successive runs instead of re-selecting the same rows'
     expect($third->refresh()->payload)->not->toHaveKey('purchaseRequest');
 });
 
+it('prunes a transaction that becomes terminal after a higher-id transaction was already pruned', function (): void {
+    $pending = Transaction::factory()->create([
+        'status' => 'pending',
+        'created_at' => now()->subDays(95),
+        'payload' => ['purchaseRequest' => 'blob-pending'],
+    ]);
+
+    $alreadyPruned = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+        'payload' => ['purchaseRequest' => 'blob-completed'],
+    ]);
+
+    expect($pending->id)->toBeLessThan($alreadyPruned->id);
+
+    $this->artisan('sisp:prune-request-payloads')
+        ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($alreadyPruned->refresh()->payload)->not->toHaveKey('purchaseRequest')
+        ->and($pending->refresh()->payload)->toHaveKey('purchaseRequest');
+
+    $pending->update(['status' => 'failed']);
+
+    $this->artisan('sisp:prune-request-payloads')
+        ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($pending->refresh()->payload)->not->toHaveKey('purchaseRequest');
+});
+
 it('skips a transaction whose payload cannot be decrypted and continues pruning the rest of the batch', function (): void {
     $undecryptable = Transaction::factory()->create([
         'status' => 'completed',
@@ -201,6 +232,40 @@ it('skips a transaction whose payload cannot be decrypted and continues pruning 
         ->assertSuccessful();
 
     expect($undecryptable->refresh()->payload)->toBe('not-a-valid-ciphertext')
+        ->and($undecryptable->request_payload_pruned_at)->toBeNull()
         ->and($healthy->refresh()->payload)->not->toHaveKey('purchaseRequest')
         ->and($healthy->payload)->toHaveKey('posID');
+});
+
+it('retries a transaction whose payload could not be decrypted on the next run', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(92),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    $encryptedPayload = DB::table(config('sisp.tables.transactions'))
+        ->where('id', $transaction->id)
+        ->value('payload');
+
+    DB::table(config('sisp.tables.transactions'))
+        ->where('id', $transaction->id)
+        ->update(['payload' => 'not-a-valid-ciphertext']);
+
+    $this->artisan('sisp:prune-request-payloads')
+        ->expectsOutput('No SISP request payloads needed pruning.')
+        ->assertSuccessful();
+
+    expect($transaction->refresh()->request_payload_pruned_at)->toBeNull();
+
+    DB::table(config('sisp.tables.transactions'))
+        ->where('id', $transaction->id)
+        ->update(['payload' => $encryptedPayload]);
+
+    $this->artisan('sisp:prune-request-payloads')
+        ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($transaction->refresh()->payload)->not->toHaveKey('purchaseRequest')
+        ->and($transaction->request_payload_pruned_at)->not->toBeNull();
 });

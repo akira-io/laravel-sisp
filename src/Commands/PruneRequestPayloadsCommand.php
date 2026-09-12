@@ -11,7 +11,6 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 #[Signature('sisp:prune-request-payloads
@@ -27,8 +26,6 @@ final class PruneRequestPayloadsCommand extends Command
         TransactionStatus::refunded->value,
     ];
 
-    private const string CURSOR_CACHE_KEY = 'sisp:prune-request-payloads:cursor';
-
     public function handle(Repository $config): int
     {
         $olderThan = $this->option('older-than');
@@ -43,27 +40,20 @@ final class PruneRequestPayloadsCommand extends Command
         }
 
         $limit = (int) ($this->option('limit') ?: 100);
-
-        $cursor = (int) Cache::get(self::CURSOR_CACHE_KEY, 0);
-        $lastId = $cursor;
         $pruned = 0;
 
         Transaction::query()
             ->whereIn('status', self::TERMINAL_STATUSES)
             ->where('created_at', '<=', now()->subDays($days))
-            ->where('id', '>', $cursor)
+            ->whereNull('request_payload_pruned_at')
             ->orderBy('id')
             ->limit($limit)
             ->get()
-            ->each(function (Transaction $transaction) use (&$pruned, &$lastId): void {
-                if ($this->prune($transaction)) {
+            ->each(function (Transaction $transaction) use (&$pruned): void {
+                if ($this->prune($transaction) === true) {
                     $pruned++;
                 }
-
-                $lastId = max($lastId, (int) $transaction->id);
             });
-
-        Cache::forever(self::CURSOR_CACHE_KEY, $lastId);
 
         if ($pruned === 0) {
             $this->info('No SISP request payloads needed pruning.');
@@ -76,7 +66,7 @@ final class PruneRequestPayloadsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function prune(Transaction $transaction): bool
+    private function prune(Transaction $transaction): ?bool
     {
         /** @var array<string, mixed>|string $payload */
         $payload = $transaction->payload;
@@ -86,10 +76,15 @@ final class PruneRequestPayloadsCommand extends Command
                 'transaction_id' => $transaction->id,
             ]);
 
-            return false;
+            return null;
         }
 
         if (! array_key_exists('purchaseRequest', $payload)) {
+            TransactionLogContext::run(
+                'prune',
+                fn (): bool => $transaction->update(['request_payload_pruned_at' => now()])
+            );
+
             return false;
         }
 
@@ -97,7 +92,10 @@ final class PruneRequestPayloadsCommand extends Command
 
         TransactionLogContext::run(
             'prune',
-            fn (): bool => $transaction->update(['payload' => $payload])
+            fn (): bool => $transaction->update([
+                'payload' => $payload,
+                'request_payload_pruned_at' => now(),
+            ])
         );
 
         return true;
