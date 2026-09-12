@@ -239,7 +239,7 @@ The callback must match:
 If any value does not match, the transaction is marked `failed` with `merchant_response` set to `callback_details_mismatch`.
 
 ### 9.5 Error Response Parsing
-`GetPaymentErrorResponseAction` (deprecated) and `ErrorMessageType` (deprecated) were built on the assumption that `6` is an error code. However, `6` is the callback's `messageType`, meaning "transaction processed with error" - it carries no reason itself. The real refusal reason arrives in `merchantRespErrorCode` and is now stored in `Transaction::$error_message`, which is the authoritative source for the customer-facing refusal message.
+`GetPaymentErrorResponseAction` (deprecated) and `ErrorMessageType` (deprecated) were built on the assumption that `6` is an error code. However, `6` is the callback's `messageType`, meaning "transaction processed with error" - it carries no reason itself. The reason arrives separately. SISP designates `merchantRespAdditionalErrorMessage` as the text to show the customer, falling back to `merchantRespScreenError` and then `merchantRespErrorDescription`; whichever is present lands in `Transaction::$error_message`. The short code from `merchantRespErrorCode` is stored alongside it in `Transaction::$error_code`, and real traffic shows it can be a letter rather than one of the digits the specification lists.
 
 The deprecated action transforms ISO-8583 error codes into structured responses for backwards compatibility with views that still read its shape:
 - Categorizes error: card, funds, security, validation, system, issuer
