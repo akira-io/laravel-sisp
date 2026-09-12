@@ -49,7 +49,6 @@ final readonly class CallbackController
         if ($transaction instanceof Transaction) {
             try {
                 $this->cancelTransaction->handle($transaction);
-                $this->updateInvoiceStatus->handle($transaction, $transaction->status);
             } catch (LogicException) {
             }
         }
@@ -60,20 +59,15 @@ final readonly class CallbackController
     private function resolveCancelledTransaction(Request $request): ?Transaction
     {
         $merchantRef = $request->string('merchantRef')->toString();
+        $merchantSession = $request->string('merchantSession')->toString();
 
-        if ($merchantRef === '') {
+        if ($merchantRef === '' || $merchantSession === '') {
             return null;
         }
 
         $query = Transaction::query()->where('merchant_ref', $merchantRef);
 
-        $merchantSession = $request->string('merchantSession')->toString();
-
-        if ($merchantSession !== '') {
-            $query->where('merchant_session', $merchantSession);
-        }
-
-        return $query->first();
+        return $query->where('merchant_session', $merchantSession)->first();
     }
 
     private function handleGetRequest(): mixed
