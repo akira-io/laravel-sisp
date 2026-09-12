@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 
 it('removes the purchase request from an old terminal transaction', function (): void {
     $transaction = Transaction::factory()->create([
@@ -116,4 +117,56 @@ it('honours an explicit limit', function (): void {
     $this->artisan('sisp:prune-request-payloads', ['--limit' => 1])
         ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
         ->assertSuccessful();
+});
+
+it('rejects a negative window instead of deleting personal data outside the retention policy', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now(),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    $this->artisan('sisp:prune-request-payloads', ['--older-than' => -5])
+        ->expectsOutput('The --older-than option cannot be negative.')
+        ->assertFailed();
+
+    expect($transaction->refresh()->payload)->toHaveKey('purchaseRequest');
+});
+
+it('treats an explicit zero window as every terminal transaction, whatever its age', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now(),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    $this->artisan('sisp:prune-request-payloads', ['--older-than' => 0])->assertSuccessful();
+
+    expect($transaction->refresh()->payload)->not->toHaveKey('purchaseRequest');
+});
+
+it('skips a transaction whose payload cannot be decrypted and continues pruning the rest of the batch', function (): void {
+    $undecryptable = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(92),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    DB::table(config('sisp.tables.transactions'))
+        ->where('id', $undecryptable->id)
+        ->update(['payload' => 'not-a-valid-ciphertext']);
+
+    $healthy = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+        'payload' => ['posID' => '90', 'purchaseRequest' => 'base64-blob'],
+    ]);
+
+    $this->artisan('sisp:prune-request-payloads')
+        ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($undecryptable->refresh()->payload)->toBe('not-a-valid-ciphertext')
+        ->and($healthy->refresh()->payload)->not->toHaveKey('purchaseRequest')
+        ->and($healthy->payload)->toHaveKey('posID');
 });

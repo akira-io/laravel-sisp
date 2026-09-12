@@ -11,6 +11,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Support\Facades\Log;
 
 #[Signature('sisp:prune-request-payloads
                             {--older-than= : Minimum transaction age in days}
@@ -27,7 +28,17 @@ final class PruneRequestPayloadsCommand extends Command
 
     public function handle(Repository $config): int
     {
-        $days = (int) ($this->option('older-than') ?: $config->get('sisp.prune_request_payloads_after_days', 90));
+        $olderThan = $this->option('older-than');
+        $days = $olderThan !== null
+            ? (int) $olderThan
+            : (int) $config->get('sisp.prune_request_payloads_after_days', 90);
+
+        if ($days < 0) {
+            $this->error('The --older-than option cannot be negative.');
+
+            return self::FAILURE;
+        }
+
         $limit = (int) ($this->option('limit') ?: 100);
 
         $pruned = 0;
@@ -57,7 +68,16 @@ final class PruneRequestPayloadsCommand extends Command
 
     private function prune(Transaction $transaction): bool
     {
+        /** @var array<string, mixed>|string $payload */
         $payload = $transaction->payload;
+
+        if (! is_array($payload)) {
+            Log::warning('Skipped pruning an undecryptable SISP transaction payload.', [
+                'transaction_id' => $transaction->id,
+            ]);
+
+            return false;
+        }
 
         if (! array_key_exists('purchaseRequest', $payload)) {
             return false;
