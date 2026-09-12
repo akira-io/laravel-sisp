@@ -177,3 +177,79 @@ it('cancels the invoice alongside the transaction', function (): void {
     expect($transaction->refresh()->status->value)->toBe('cancelled')
         ->and($invoice->refresh()->status->value)->toBe('cancelled');
 });
+
+it('ignores a cancelled callback that carries no merchant session', function (): void {
+    Event::fake([TransactionCancelled::class]);
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-NO-SESSION',
+        'merchant_session' => 'MS-NO-SESSION',
+        'status' => 'pending',
+    ]);
+
+    $this->post(route('sisp.callback'), [
+        'merchantRef' => 'MR-NO-SESSION',
+        'UserCancelled' => 'true',
+    ])->assertRedirect('/home');
+
+    expect($transaction->refresh()->status->value)->toBe('pending')
+        ->and($transaction->cancelled_at)->toBeNull();
+
+    Event::assertNotDispatched(TransactionCancelled::class);
+});
+
+it('leaves the invoice untouched when it refuses to cancel a terminal transaction', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-PAID',
+        'merchant_session' => 'MS-PAID',
+        'status' => 'completed',
+    ]);
+
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $transaction->id,
+        'invoice_number' => 'INV-PAID-1',
+        'invoice_date' => now(),
+        'status' => 'paid',
+    ]);
+
+    $this->post(route('sisp.callback'), [
+        'merchantRef' => 'MR-PAID',
+        'merchantSession' => 'MS-PAID',
+        'UserCancelled' => 'true',
+    ])->assertRedirect('/home');
+
+    expect($transaction->refresh()->status->value)->toBe('completed')
+        ->and($invoice->refresh()->status->value)->toBe('paid');
+});
+
+it('rate limits repeated cancellation attempts against the same reference', function (): void {
+    Transaction::factory()->create([
+        'merchant_ref' => 'MR-FLOOD',
+        'merchant_session' => 'MS-FLOOD',
+        'status' => 'pending',
+    ]);
+
+    $payload = [
+        'merchantRef' => 'MR-FLOOD',
+        'merchantSession' => 'MS-FLOOD',
+        'UserCancelled' => 'true',
+    ];
+
+    foreach (range(1, 10) as $ignored) {
+        $this->post(route('sisp.callback'), $payload)->assertRedirect('/home');
+    }
+
+    $this->post(route('sisp.callback'), $payload)->assertTooManyRequests();
+});
+
+it('does not rate limit callbacks that are not cancellations', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-NOT-LIMITED',
+        'merchant_session' => 'MS-NOT-LIMITED',
+        'status' => 'pending',
+    ]);
+
+    foreach (range(1, 20) as $ignored) {
+        $this->get(route('sisp.callback', ['ref' => $transaction->merchant_ref]))->assertOk();
+    }
+});

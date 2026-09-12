@@ -497,7 +497,7 @@ return [
         'payment' => [Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class],
         'retry' => [],
         'refund' => ['web', 'auth'],
-        'callback' => ['throttle:60,1'],
+        'callback' => ['throttle:sisp-callback'],
     ],
 
 ];
