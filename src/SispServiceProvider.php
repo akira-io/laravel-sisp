@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp;
 
 use Akira\Sisp\Commands\DoctorCommand;
+use Akira\Sisp\Commands\ExpirePendingTransactionsCommand;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
 use Akira\Sisp\Commands\ReconcilePendingTransactionsCommand;
 use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
@@ -44,6 +45,7 @@ final class SispServiceProvider extends PackageServiceProvider
                 LaravelSispInstallCommand::class,
                 RegenerateMissingInvoicePdfsCommand::class,
                 ReconcilePendingTransactionsCommand::class,
+                ExpirePendingTransactionsCommand::class,
                 TransactionStatusCommand::class,
                 DoctorCommand::class,
             ]);
