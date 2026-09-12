@@ -6,6 +6,8 @@ namespace Akira\Sisp\ValueObjects;
 
 final readonly class CallbackPayload
 {
+    public const string ERROR_MESSAGE_TYPE = '6';
+
     public function __construct(
         public string $merchantRef,
         public string $merchantSession,
@@ -31,13 +33,25 @@ final readonly class CallbackPayload
         public bool $currencyProvided = true,
         public bool $transactionCodeProvided = true,
         public bool $posIDProvided = true,
+        public string $errorCode = '',
+        public string $errorDescription = '',
+        public string $errorDetail = '',
+        public string $screenError = '',
+        public string $fingerprintVersion = '',
+        public string $languageMessages = '',
+        public bool $userCancelled = false,
+        /** @var array<string, mixed> */
+        public array $raw = [],
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function from(array $data): self
     {
         return new self(
-            merchantRef: $data['merchantRespMerchantRef'] ?? '',
-            merchantSession: $data['merchantRespMerchantSession'] ?? '',
+            merchantRef: $data['merchantRespMerchantRef'] ?? $data['merchantRef'] ?? '',
+            merchantSession: $data['merchantRespMerchantSession'] ?? $data['merchantSession'] ?? '',
             timeStamp: $data['merchantRespTimeStamp'] ?? '',
             amount: ($data['merchantRespPurchaseAmount'] ?? 0),
             currency: $data['currency'] ?? '',
@@ -56,13 +70,32 @@ final readonly class CallbackPayload
             clientReceipt: $data['merchantRespClientReceipt'] ?? '',
             additionalErrorMessage: $data['merchantRespAdditionalErrorMessage'] ?? '',
             merchantRespCp: $data['merchantRespCP'] ?? '',
-            reloadCode: $data['reloadCode'] ?? '',
+            reloadCode: $data['merchantRespReloadCode'] ?? $data['reloadCode'] ?? '',
             currencyProvided: array_key_exists('currency', $data),
             transactionCodeProvided: array_key_exists('transactionCode', $data),
             posIDProvided: array_key_exists('posID', $data),
+            errorCode: (string) ($data['merchantRespErrorCode'] ?? ''),
+            errorDescription: (string) ($data['merchantRespErrorDescription'] ?? ''),
+            errorDetail: (string) ($data['merchantRespErrorDetail'] ?? ''),
+            screenError: (string) ($data['merchantRespScreenError'] ?? ''),
+            fingerprintVersion: (string) ($data['resultFingerPrintVersion'] ?? ''),
+            languageMessages: (string) ($data['languageMessages'] ?? ''),
+            userCancelled: filter_var(
+                $data['userCancelled'] ?? $data['UserCancelled'] ?? false,
+                FILTER_VALIDATE_BOOL,
+            ),
+            raw: $data,
         );
     }
 
+    public function isError(): bool
+    {
+        return $this->messageType === self::ERROR_MESSAGE_TYPE;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [
@@ -84,11 +117,17 @@ final readonly class CallbackPayload
             'merchantRespEntityCode' => $this->entityCode,
             'merchantRespClientReceipt' => $this->clientReceipt,
             'merchantRespAdditionalErrorMessage' => $this->additionalErrorMessage,
-            'reloadCode' => $this->reloadCode,
-
+            'merchantRespReloadCode' => $this->reloadCode,
+            'merchantRespErrorCode' => $this->errorCode,
+            'merchantRespErrorDescription' => $this->errorDescription,
+            'merchantRespErrorDetail' => $this->errorDetail,
+            'merchantRespScreenError' => $this->screenError,
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function withoutFingerprint(): array
     {
         $data = $this->toArray();
