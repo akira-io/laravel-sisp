@@ -42,6 +42,11 @@ final readonly class BuildSandboxPayloadAction
             default => 'P',
         };
 
+        $successType = SuccessMessageType::tryFrom($messageType);
+        $merchantResp = $successType instanceof SuccessMessageType
+            ? $successType->expectedMerchantResponses()[0]
+            : '00';
+
         $payload = [
             'messageType' => $messageType,
             'merchantRespCP' => '01',
@@ -51,7 +56,7 @@ final readonly class BuildSandboxPayloadAction
             'merchantRespPurchaseAmount' => $amount,
             'merchantRespMessageID' => 'MSG-'.Str::random(8),
             'merchantRespPan' => '****-****-****-1234',
-            'merchantResp' => '00',
+            'merchantResp' => $merchantResp,
             'merchantRespTimeStamp' => $timestamp,
             'merchantRespReferenceNumber' => Str::random(12),
             'merchantRespEntityCode' => '10010',

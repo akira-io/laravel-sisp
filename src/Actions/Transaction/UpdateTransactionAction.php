@@ -22,7 +22,7 @@ final readonly class UpdateTransactionAction
 
     public function handle(Transaction $transaction, CallbackPayload $payload, ?TransactionAttempt $attempt = null): bool
     {
-        $status = $this->mapStatus->handle($payload->messageType);
+        $status = $this->mapStatus->handle($payload->messageType, $payload->merchantResponse);
 
         return DB::transaction(function () use ($attempt, $payload, $status, $transaction): bool {
             if ($attempt instanceof TransactionAttempt) {

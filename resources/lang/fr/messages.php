@@ -70,6 +70,8 @@ return [
             'enrollmentRequest' => 'Demande d\'Inscription',
             'tokenPayment' => 'Paiement par Jeton',
             'tokenCancel' => 'Annulation de Jeton',
+            'refund' => 'Remboursement traité',
+            'partialRefund' => 'Remboursement partiel traité',
         ],
     ],
     'payment' => [
