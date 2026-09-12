@@ -45,7 +45,11 @@ final readonly class CallbackController
 
     private function isCancellation(Request $request): bool
     {
-        return $request->boolean('UserCancelled') || $request->boolean('userCancelled');
+        if ($request->boolean('UserCancelled')) {
+            return true;
+        }
+
+        return $request->boolean('userCancelled');
     }
 
     private function handleUserCancellation(Request $request): RedirectResponse
