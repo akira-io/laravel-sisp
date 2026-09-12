@@ -16,6 +16,8 @@ final readonly class UpdateTransactionAction
         private MapTransactionStatusAction $mapStatus,
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
+        private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage,
+        private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
     ) {}
 
     public function handle(Transaction $transaction, CallbackPayload $payload, ?TransactionAttempt $attempt = null): bool
@@ -46,6 +48,9 @@ final readonly class UpdateTransactionAction
                     'fingerprint' => $payload->fingerprint,
                     'payload' => $transaction->payload,
                     'status' => $status,
+                    'error_code' => $payload->errorCode !== '' ? $payload->errorCode : null,
+                    'error_message' => $this->resolveCustomerErrorMessage->handle($payload),
+                    'callback_raw_payload' => $this->maskCallbackRawPayload->handle($payload->raw),
                 ])
             );
         });

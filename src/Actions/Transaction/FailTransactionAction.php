@@ -16,6 +16,8 @@ final readonly class FailTransactionAction
     public function __construct(
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
+        private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage,
+        private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
     ) {}
 
     public function handle(
@@ -47,6 +49,9 @@ final readonly class FailTransactionAction
                     'response_code' => $payload->merchantRespCp,
                     'fingerprint' => $payload->fingerprint,
                     'status' => TransactionStatus::failed,
+                    'error_code' => $payload->errorCode !== '' ? $payload->errorCode : null,
+                    'error_message' => $this->resolveCustomerErrorMessage->handle($payload),
+                    'callback_raw_payload' => $this->maskCallbackRawPayload->handle($payload->raw),
                 ])
             );
 
