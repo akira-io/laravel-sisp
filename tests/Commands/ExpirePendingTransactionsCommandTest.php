@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 
 it('cancels a pending transaction older than the window', function (): void {
     $transaction = Transaction::factory()->create([
@@ -117,6 +118,60 @@ it('rejects a zero window instead of expiring transactions created moments ago',
         ->assertFailed();
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
+});
+
+it('expires a pending transaction whose message_type is an empty string', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'pending',
+        'message_type' => '',
+        'created_at' => now()->subDays(31),
+    ]);
+
+    $this->artisan('sisp:expire-pending')->assertSuccessful();
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::cancelled);
+});
+
+it('leaves a pending transaction with a real message_type alone', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'pending',
+        'message_type' => '8',
+        'created_at' => now()->subDays(31),
+    ]);
+
+    $this->artisan('sisp:expire-pending')->assertSuccessful();
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
+});
+
+it('skips a transaction that cannot be cancelled and still processes the rest of the batch', function (): void {
+    $racy = Transaction::factory()->create([
+        'status' => 'pending',
+        'message_type' => null,
+        'created_at' => now()->subDays(31),
+    ]);
+
+    $stillPending = Transaction::factory()->create([
+        'status' => 'pending',
+        'message_type' => null,
+        'created_at' => now()->subDays(31),
+    ]);
+
+    Transaction::retrieved(function (Transaction $transaction) use ($racy): void {
+        if ($transaction->getKey() === $racy->getKey()) {
+            DB::table(config('sisp.tables.transactions'))
+                ->where('id', $racy->getKey())
+                ->update(['status' => TransactionStatus::completed->value]);
+        }
+    });
+
+    $this->artisan('sisp:expire-pending')
+        ->expectsOutput('Expired 1 pending SISP transactions older than 30 days.')
+        ->expectsOutput('Skipped 1 transactions that could not be cancelled.')
+        ->assertSuccessful();
+
+    expect($racy->refresh()->status)->toBe(TransactionStatus::completed)
+        ->and($stillPending->refresh()->status)->toBe(TransactionStatus::cancelled);
 });
 
 it('is idempotent across two runs', function (): void {
