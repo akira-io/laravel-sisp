@@ -458,7 +458,7 @@ foreach ($riskMetadata as $metadata) {
 
 ## Cancel Payment
 
-Cancel a pending or failed transaction.
+Cancel a pending transaction.
 
 ```php
 use Akira\Sisp\Actions\CancelTransactionAction;

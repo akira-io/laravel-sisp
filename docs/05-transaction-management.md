@@ -120,7 +120,7 @@ Timestamp-only updates are ignored. Encrypted payload values are stored in decry
 
 ## Cancel Transaction
 
-Cancel a pending or failed transaction:
+Cancel a pending transaction:
 
 ```php
 use Akira\Sisp\Actions\CancelTransactionAction;
@@ -142,11 +142,17 @@ try {
 
 Can be cancelled:
 - `pending` - Awaiting SISP response
-- `failed` - Payment failed
 
 Cannot be cancelled:
 - `completed` - Payment successful
 - `cancelled` - Already cancelled
+- `failed` - The gateway already gave a verdict, and cancelling would overwrite it and take the retry away
+- `refunded` - The refund is the final state
+
+The transaction row is locked for the duration, so a cancellation racing the
+success callback cannot write over a payment that has just completed. Cancelling
+also cancels the invoice attached to the transaction, in the same database
+transaction.
 
 ### Cancel via Route
 

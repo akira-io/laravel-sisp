@@ -678,7 +678,7 @@ app(BuildPurchaseRequestAction::class)->handle(
 
 ### CancelTransactionAction
 
-Cancel a pending or failed transaction.
+Cancel a pending transaction.
 
 ```php
 app(CancelTransactionAction::class)->handle(
@@ -800,7 +800,8 @@ Handles the SISP callback route.
 // Renders the payment response for a known merchant reference.
 
 // POST /sisp/callback
-// 1. Redirects cancelled requests.
+// 1. Cancels the transaction and its invoice on a user cancellation,
+//    which SISP posts as { merchantRef, merchantSession, UserCancelled }.
 // 2. Validates the callback fingerprint before transaction lookup.
 // 3. Requires merchant reference and merchant session.
 // 4. Redirects duplicate callbacks when transaction_id is already set.
@@ -1177,7 +1178,7 @@ POST   /sisp/sandbox           -> SandboxController
 GET    /sisp/countries         -> CountriesController
 ```
 
-State-changing route middleware is configurable via `config('sisp.middleware.payment')`, `config('sisp.middleware.retry')`, and `config('sisp.middleware.refund')`. The callback route remains outside this configuration so SISP callbacks are not blocked by browser-only middleware.
+State-changing route middleware is configurable via `config('sisp.middleware.payment')`, `config('sisp.middleware.retry')`, `config('sisp.middleware.refund')`, and `config('sisp.middleware.callback')`. The callback route never receives the browser `web` group so SISP callbacks are not blocked by browser-only middleware.
 
 Route names:
 
