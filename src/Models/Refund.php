@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Akira\Sisp\Models;
 
 use Akira\Sisp\Support\SispAmount;
+use Akira\Sisp\Traits\EncryptsAttributes;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read  int $id
  * @property-read  int $transaction_id
  * @property-read  float $amount
- * @property-read  int $amount_cents
+ * @property-read  int $amount_thousandths
  * @property-read  string|null $reason
  * @property-read  array<string, mixed>|null $request
  * @property-read  Transaction $transaction
@@ -22,12 +24,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'transaction_id',
     'amount',
-    'amount_cents',
     'reason',
     'request',
 ])]
 final class Refund extends Model
 {
+    use EncryptsAttributes;
+    use HasFactory;
+
     public function getTable(): string
     {
         return config('sisp.tables.refunds', 'sisp_refunds');
@@ -43,9 +47,15 @@ final class Refund extends Model
     {
         return [
             'amount' => 'float',
-            'amount_cents' => 'integer',
-            'request' => 'array',
+            'amount_thousandths' => 'integer',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
+    }
+
+    protected function encryptable(): array
+    {
+        return ['request'];
     }
 
     protected function amount(): Attribute
@@ -53,7 +63,7 @@ final class Refund extends Model
         return Attribute::make(
             set: fn (float|int|string $amount): array => [
                 'amount' => (float) $amount,
-                'amount_cents' => SispAmount::toCents($amount),
+                'amount_thousandths' => SispAmount::toThousandths($amount),
             ],
         );
     }
