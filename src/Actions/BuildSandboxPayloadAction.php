@@ -37,7 +37,7 @@ final readonly class BuildSandboxPayloadAction
 
         $messageType = match ($status) {
             'success' => SuccessMessageType::purchase->value,
-            'failed' => '6',
+            'failed' => CallbackPayload::ERROR_MESSAGE_TYPE,
             default => 'P',
         };
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Akira\Sisp\Actions\Transaction\FailTransactionAction;
 use Akira\Sisp\Actions\Transaction\UpdateTransactionAction;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\DB;
 
@@ -153,6 +154,28 @@ it('persists the error fields and masked raw payload on a successful update', fu
     expect($transaction->error_code)->toBeNull()
         ->and($transaction->error_message)->toBeNull()
         ->and($transaction->callback_raw_payload['merchantRespPan'])->toBe('************1111');
+});
+
+it('masks the PAN in the transaction attempt callback payload', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $attempt = TransactionAttempt::factory()
+        ->forTransaction($transaction)
+        ->create([
+            'merchant_ref' => $transaction->merchant_ref,
+            'merchant_session' => $transaction->merchant_session,
+            'attempt_session' => $transaction->merchant_session,
+            'status' => 'pending',
+        ]);
+
+    resolve(UpdateTransactionAction::class)->handle($transaction, CallbackPayload::from([
+        'messageType' => '8',
+        'merchantResp' => 'C',
+        'merchantRespMerchantRef' => $attempt->merchant_ref,
+        'merchantRespMerchantSession' => $attempt->merchant_session,
+        'merchantRespPan' => '4111111111111111',
+    ]), $attempt);
+
+    expect($attempt->refresh()->callback_payload['merchantRespPan'])->toBe('************1111');
 });
 
 it('ignores the additional error message SISP sends alongside a success callback', function (): void {

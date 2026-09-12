@@ -10,6 +10,10 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class UpdateTransactionAttemptAction
 {
+    public function __construct(
+        private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
+    ) {}
+
     public function handle(
         TransactionAttempt $attempt,
         CallbackPayload $payload,
@@ -23,7 +27,7 @@ final readonly class UpdateTransactionAttemptAction
             'response_code' => $payload->merchantRespCp,
             'merchant_response' => $failureReason ?? $payload->merchantResponse,
             'fingerprint' => $payload->fingerprint,
-            'callback_payload' => $payload->toArray(),
+            'callback_payload' => $this->maskCallbackRawPayload->handle($payload->toArray()),
             'failure_reason' => $failureReason,
             'callback_received_at' => now(),
         ]);
