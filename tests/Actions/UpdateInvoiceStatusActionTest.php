@@ -84,7 +84,6 @@ it('does not generate pdf if it already exists when transaction completes', func
     $transaction = Transaction::factory()->create(['status' => 'completed']);
     $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
 
-    // Simulate PDF already exists
     $invoice->update(['pdf_path' => 'invoices/existing.pdf']);
 
     $action = resolve(UpdateInvoiceStatusAction::class);
@@ -108,10 +107,8 @@ it('does not generate pdf when transaction is not completed', function (): void 
 
 it('handles transaction without invoice gracefully', function (): void {
     $transaction = Transaction::factory()->create(['status' => 'pending']);
-    // Don't create an invoice
 
     $action = resolve(UpdateInvoiceStatusAction::class);
-    // Should not throw an exception
     $action->handle($transaction, TransactionStatus::pending);
 
     expect(true)->toBeTrue();
@@ -143,5 +140,30 @@ it('does not fail the payment flow when pdf generation throws', function (): voi
     $invoice->refresh();
 
     expect($invoice->status)->toBe(InvoiceStatus::paid)
+        ->and($invoice->pdf_path)->toBeNull();
+});
+
+it('updates invoice status to cancelled when transaction is cancelled', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'cancelled']);
+    $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
+
+    resolve(UpdateInvoiceStatusAction::class)->handle($invoice->transaction, TransactionStatus::cancelled);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::cancelled)
+        ->and($invoice->pdf_path)->toBeNull();
+});
+
+it('updates invoice status to refunded when transaction is refunded', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'refunded']);
+    $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
+    $invoice->update(['status' => InvoiceStatus::paid->value]);
+
+    resolve(UpdateInvoiceStatusAction::class)->handle($invoice->transaction, TransactionStatus::refunded);
+
+    $invoice->refresh();
+
+    expect($invoice->status)->toBe(InvoiceStatus::refunded)
         ->and($invoice->pdf_path)->toBeNull();
 });
