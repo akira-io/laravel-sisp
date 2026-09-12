@@ -30,6 +30,7 @@ final readonly class UpdateInvoiceStatusAction
             TransactionStatus::completed => InvoiceStatus::paid,
             TransactionStatus::failed => InvoiceStatus::cancelled,
             TransactionStatus::pending => InvoiceStatus::pending,
+            TransactionStatus::cancelled, TransactionStatus::refunded => InvoiceStatus::cancelled,
         };
 
         $invoice->update(['status' => $invoiceStatus->value]);
@@ -39,11 +40,6 @@ final readonly class UpdateInvoiceStatusAction
         }
     }
 
-    /**
-     * PDF generation must never fail the payment flow: the transaction is
-     * already completed at this point and missing PDF files can be recovered
-     * later with the regenerate command.
-     */
     private function generatePdfQuietly(Invoice $invoice, Transaction $transaction): void
     {
         try {

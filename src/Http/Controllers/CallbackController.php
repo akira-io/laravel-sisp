@@ -49,6 +49,7 @@ final readonly class CallbackController
         if ($transaction instanceof Transaction) {
             try {
                 $this->cancelTransaction->handle($transaction);
+                $this->updateInvoiceStatus->handle($transaction, $transaction->status);
             } catch (LogicException) {
             }
         }

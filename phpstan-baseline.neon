@@ -31,12 +31,6 @@ parameters:
 			path: src/Actions/StoreRequestMetadataAction.php
 
 		-
-			message: '#^Match expression does not handle remaining values\: Akira\\Sisp\\Enums\\TransactionStatus\:\:cancelled\|Akira\\Sisp\\Enums\\TransactionStatus\:\:refunded$#'
-			identifier: match.unhandled
-			count: 1
-			path: src/Actions/UpdateInvoiceStatusAction.php
-
-		-
 			message: '#^Method Akira\\Sisp\\Commands\\LaravelSispInstallCommand\:\:publishAssets\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
