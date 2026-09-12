@@ -39,6 +39,7 @@ final class SispServiceProvider extends PackageServiceProvider
                 'add_fiscal_fields_to_sisp_tables',
                 'update_laravel_sisp_transactions_add_callback_error_fields',
                 'create_sisp_refunds_table',
+                'update_laravel_sisp_transactions_add_status_created_at_index',
             ])
             ->hasTranslations()
             ->hasRoutes('web')

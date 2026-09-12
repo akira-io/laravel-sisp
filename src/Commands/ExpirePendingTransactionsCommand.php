@@ -11,6 +11,9 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
+use LogicException;
 
 #[Signature('sisp:expire-pending
                             {--older-than= : Minimum pending age in days}
@@ -33,7 +36,7 @@ final class ExpirePendingTransactionsCommand extends Command
 
         $transactions = Transaction::query()
             ->where('status', TransactionStatus::pending->value)
-            ->whereNull('message_type')
+            ->where(fn (Builder $query): Builder => $query->whereNull('message_type')->orWhere('message_type', ''))
             ->where('created_at', '<=', now()->subDays($days))
             ->oldest()
             ->limit($limit)
@@ -45,11 +48,28 @@ final class ExpirePendingTransactionsCommand extends Command
             return self::SUCCESS;
         }
 
+        $expired = 0;
+        $skipped = 0;
+
         foreach ($transactions as $transaction) {
-            $cancel->handle($transaction, 'expired');
+            try {
+                $cancel->handle($transaction, 'expired');
+                $expired++;
+            } catch (LogicException $exception) {
+                $skipped++;
+
+                Log::warning('Skipped expiring a SISP transaction that changed state before it could be cancelled.', [
+                    'transaction_id' => $transaction->id,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
         }
 
-        $this->info("Expired {$transactions->count()} pending SISP transactions older than {$days} days.");
+        $this->info("Expired {$expired} pending SISP transactions older than {$days} days.");
+
+        if ($skipped > 0) {
+            $this->info("Skipped {$skipped} transactions that could not be cancelled.");
+        }
 
         return self::SUCCESS;
     }
