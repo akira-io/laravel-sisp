@@ -145,6 +145,40 @@ it('treats an explicit zero window as every terminal transaction, whatever its a
     expect($transaction->refresh()->payload)->not->toHaveKey('purchaseRequest');
 });
 
+it('makes progress across successive runs instead of re-selecting the same rows', function (): void {
+    $first = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(95),
+        'payload' => ['purchaseRequest' => 'blob-1'],
+    ]);
+
+    $second = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(93),
+        'payload' => ['purchaseRequest' => 'blob-2'],
+    ]);
+
+    $third = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+        'payload' => ['purchaseRequest' => 'blob-3'],
+    ]);
+
+    $this->artisan('sisp:prune-request-payloads', ['--limit' => 2])
+        ->expectsOutput('Pruned the purchase request payload from 2 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($first->refresh()->payload)->not->toHaveKey('purchaseRequest')
+        ->and($second->refresh()->payload)->not->toHaveKey('purchaseRequest')
+        ->and($third->refresh()->payload)->toHaveKey('purchaseRequest');
+
+    $this->artisan('sisp:prune-request-payloads', ['--limit' => 2])
+        ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($third->refresh()->payload)->not->toHaveKey('purchaseRequest');
+});
+
 it('skips a transaction whose payload cannot be decrypted and continues pruning the rest of the batch', function (): void {
     $undecryptable = Transaction::factory()->create([
         'status' => 'completed',

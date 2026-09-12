@@ -11,6 +11,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 #[Signature('sisp:prune-request-payloads
@@ -25,6 +26,8 @@ final class PruneRequestPayloadsCommand extends Command
         TransactionStatus::cancelled->value,
         TransactionStatus::refunded->value,
     ];
+
+    private const string CURSOR_CACHE_KEY = 'sisp:prune-request-payloads:cursor';
 
     public function handle(Repository $config): int
     {
@@ -41,19 +44,26 @@ final class PruneRequestPayloadsCommand extends Command
 
         $limit = (int) ($this->option('limit') ?: 100);
 
+        $cursor = (int) Cache::get(self::CURSOR_CACHE_KEY, 0);
+        $lastId = $cursor;
         $pruned = 0;
 
         Transaction::query()
             ->whereIn('status', self::TERMINAL_STATUSES)
             ->where('created_at', '<=', now()->subDays($days))
-            ->oldest()
+            ->where('id', '>', $cursor)
+            ->orderBy('id')
             ->limit($limit)
             ->get()
-            ->each(function (Transaction $transaction) use (&$pruned): void {
+            ->each(function (Transaction $transaction) use (&$pruned, &$lastId): void {
                 if ($this->prune($transaction)) {
                     $pruned++;
                 }
+
+                $lastId = max($lastId, (int) $transaction->id);
             });
+
+        Cache::forever(self::CURSOR_CACHE_KEY, $lastId);
 
         if ($pruned === 0) {
             $this->info('No SISP request payloads needed pruning.');
