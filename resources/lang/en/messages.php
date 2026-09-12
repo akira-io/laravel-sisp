@@ -70,6 +70,8 @@ return [
             'enrollmentRequest' => 'Enrollment Request',
             'tokenPayment' => 'Token Payment',
             'tokenCancel' => 'Token Cancel',
+            'refund' => 'Refund processed',
+            'partialRefund' => 'Partial refund processed',
         ],
     ],
     'payment' => [

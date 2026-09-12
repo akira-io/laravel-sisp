@@ -70,6 +70,8 @@ return [
             'enrollmentRequest' => 'Pedido de Inscrição',
             'tokenPayment' => 'Pagamento com Token',
             'tokenCancel' => 'Cancelamento de Token',
+            'refund' => 'Reembolso processado',
+            'partialRefund' => 'Reembolso parcial processado',
         ],
     ],
     'payment' => [
