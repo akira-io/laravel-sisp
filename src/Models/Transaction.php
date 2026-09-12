@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  int $id
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
+ * @property-read  \Illuminate\Support\Carbon|null $request_payload_pruned_at
  * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
  * @property-read  string $merchant_session
@@ -68,6 +69,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'merchant_response',
     'fingerprint',
     'payload',
+    'request_payload_pruned_at',
     'customer_name',
     'customer_email',
     'customer_phone',
@@ -153,6 +155,7 @@ final class Transaction extends Model
             'updated_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'request_payload_pruned_at' => 'datetime',
         ];
     }
 

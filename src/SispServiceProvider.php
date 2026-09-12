@@ -40,6 +40,7 @@ final class SispServiceProvider extends PackageServiceProvider
                 'update_laravel_sisp_transactions_add_callback_error_fields',
                 'create_sisp_refunds_table',
                 'update_laravel_sisp_transactions_add_status_created_at_index',
+                'update_laravel_sisp_transactions_add_request_payload_pruned_at',
             ])
             ->hasTranslations()
             ->hasRoutes('web')
