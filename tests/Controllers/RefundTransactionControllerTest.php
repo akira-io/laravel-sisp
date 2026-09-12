@@ -3,213 +3,214 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Http\Controllers\RefundTransactionController;
 use Akira\Sisp\Models\Transaction;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Gate;
+
+final class RefundRouteUser implements Authenticatable
+{
+    public function __construct(
+        public int $id = 1,
+        public string $email = 'buyer@example.com',
+    ) {}
+
+    public function getAuthIdentifierName(): string
+    {
+        return 'id';
+    }
+
+    public function getAuthIdentifier(): int
+    {
+        return $this->id;
+    }
+
+    public function getAuthPasswordName(): string
+    {
+        return 'password';
+    }
+
+    public function getAuthPassword(): string
+    {
+        return '';
+    }
+
+    public function getRememberToken(): ?string
+    {
+        return null;
+    }
+
+    public function setRememberToken($value): void {}
+
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
+    }
+
+    public function can(string $ability, mixed $arguments = []): bool
+    {
+        return Gate::forUser($this)->check($ability, $arguments);
+    }
+}
+
+function refundableTransaction(float $amount = 100.0): Transaction
+{
+    return Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => $amount,
+        'customer_email' => 'buyer@example.com',
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+}
+
+function allowRefunds(bool $allowed = true): void
+{
+    Gate::define('refund', fn (RefundRouteUser $user, Transaction $transaction): bool => $allowed);
+}
 
 it('refunds a completed transaction and returns json', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => TransactionStatus::completed->value,
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 100.0, 'reason' => 'test']);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public string $email = 'buyer@example.com';
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 100.0, 'reason' => 'test'])
+        ->assertOk()
+        ->assertJsonPath('success', true);
 
-        public function can(string $ability, mixed $subject): bool
-        {
-            return $ability === 'refund' && $subject instanceof Transaction;
-        }
-    });
-
-    $response = $controller($t, $request);
-
-    expect($response->getStatusCode())->toBe(200);
-    $data = $response->getData(true);
-    expect($data['success'])->toBeTrue();
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::refunded)
+        ->and($transaction->merchant_response)->toBe('test::100');
 });
 
-it('returns 400 when refund amount exceeds transaction', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => 'completed',
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+it('defaults the reason when the payload omits it', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 150.0]);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public string $email = 'buyer@example.com';
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 100.0])
+        ->assertOk();
 
-        public function can(string $ability, mixed $subject): bool
-        {
-            return $ability === 'refund' && $subject instanceof Transaction;
-        }
-    });
-
-    $response = $controller($t, $request);
-    expect($response->getStatusCode())->toBe(400);
+    expect($transaction->refresh()->merchant_response)->toBe('user_refund::100');
 });
 
 it('allows partial refund amounts', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => 'completed',
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 50.0]);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public function can(string $ability, mixed $subject): bool
-        {
-            return $ability === 'refund' && $subject instanceof Transaction;
-        }
-    });
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 50.0])
+        ->assertOk()
+        ->assertJsonPath('success', true);
 
-    $response = $controller($t, $request);
-    expect($response->getStatusCode())->toBe(200)
-        ->and($response->getData(true)['success'])->toBeTrue()
-        ->and($t->refresh()->payload['refunds'][0]['request']['transactionCode'])->toBe('8');
+    expect($transaction->refresh()->payload['refunds'][0]['request']['transactionCode'])->toBe('8');
 });
 
-it('returns 403 when user is not authorized for the transaction', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => TransactionStatus::completed->value,
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+it('returns 400 when refund amount exceeds transaction', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 10.0]);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public string $email = 'intruder@example.com';
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 150.0])
+        ->assertStatus(400)
+        ->assertJsonPath('success', false);
 
-        public function can(string $ability, mixed $subject): bool
-        {
-            return false;
-        }
-    });
-
-    $response = $controller($t, $request);
-
-    expect($response->getStatusCode())->toBe(403);
-    $data = $response->getData(true);
-    expect($data['success'])->toBeFalse();
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
 
-it('returns 403 when customer email matches but user lacks refund ability', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => TransactionStatus::completed->value,
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+it('returns 403 when the gate denies the refund', function (): void {
+    allowRefunds(false);
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 10.0]);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public string $email = 'buyer@example.com';
+    $this->actingAs(new RefundRouteUser(2, 'intruder@example.com'))
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 10.0])
+        ->assertForbidden()
+        ->assertJsonPath('success', false)
+        ->assertJsonPath('message', 'Unauthorized to refund this transaction.');
 
-        public function can(string $ability, mixed $subject): bool
-        {
-            return false;
-        }
-    });
-
-    $response = $controller($t, $request);
-
-    expect($response->getStatusCode())->toBe(403)
-        ->and($response->getData(true)['success'])->toBeFalse()
-        ->and($t->refresh()->status)->toBe(TransactionStatus::completed);
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
 
-it('returns 403 when no authenticated user is present', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => TransactionStatus::completed->value,
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+it('returns 403 when the customer email matches but the gate still denies', function (): void {
+    allowRefunds(false);
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 10.0]);
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 10.0])
+        ->assertForbidden();
 
-    $response = $controller($t, $request);
-
-    expect($response->getStatusCode())->toBe(403);
-    $data = $response->getData(true);
-    expect($data['success'])->toBeFalse();
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
 
-it('returns 403 when user has no email and no refund ability', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => TransactionStatus::completed->value,
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+it('rejects unauthenticated refund attempts', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 10.0]);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public function can(string $ability, mixed $subject): bool
-        {
-            return false;
-        }
-    });
+    $this->postJson(route('sisp.refund', $transaction), ['amount' => 10.0])
+        ->assertUnauthorized();
 
-    $response = $controller($t, $request);
-
-    expect($response->getStatusCode())->toBe(403);
-    $data = $response->getData(true);
-    expect($data['success'])->toBeFalse();
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
 
-it('allows authorized users through can refund ability', function (): void {
-    $t = Transaction::factory()->create([
-        'status' => TransactionStatus::completed->value,
-        'amount' => 100.0,
-        'customer_email' => 'buyer@example.com',
-        'transaction_id' => '123',
-        'response_code' => '5',
-    ]);
+it('rejects an array amount instead of refunding one unit', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    $controller = resolve(RefundTransactionController::class);
-    $request = Request::create(route('sisp.refund', $t), 'POST', ['amount' => 100.0, 'reason' => 'policy_allowed']);
-    $request->setUserResolver(fn (): object => new class
-    {
-        public string $email = 'intruder@example.com';
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => ['x']])
+        ->assertStatus(422)
+        ->assertJsonPath('success', false)
+        ->assertJsonValidationErrors('amount');
 
-        public function can(string $ability, mixed $subject): bool
-        {
-            return $ability === 'refund' && $subject instanceof Transaction;
-        }
-    });
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed)
+        ->and($transaction->payload['refunds'] ?? [])->toBe([]);
+});
 
-    $response = $controller($t, $request);
-    $data = $response->getData(true);
+it('rejects an array reason instead of failing with a type error', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
 
-    expect($response->getStatusCode())->toBe(200)
-        ->and($data['success'])->toBeTrue();
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 10.0, 'reason' => ['x']])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('reason');
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+});
+
+it('rejects invalid amounts', function (mixed $amount): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => $amount])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('amount');
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+})->with([
+    'zero' => [0],
+    'negative' => [-5],
+    'non numeric' => ['abc'],
+    'empty' => [''],
+]);
+
+it('requires an amount', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), [])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('amount');
+});
+
+it('answers 403 before validating when the gate denies the refund', function (): void {
+    allowRefunds(false);
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => ['x']])
+        ->assertForbidden()
+        ->assertJsonMissingPath('errors');
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
