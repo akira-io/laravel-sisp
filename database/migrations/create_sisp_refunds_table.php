@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
-use Akira\Sisp\Support\SispAmount;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -23,16 +23,14 @@ return new class extends Migration
             $table->foreignId('transaction_id')
                 ->constrained($transactionsTable)
                 ->cascadeOnDelete();
-            $table->decimal('amount', 13, 2);
-            $table->bigInteger('amount_cents');
+            $table->bigInteger('amount_thousandths');
+            $table->decimal('amount', 13, 3);
             $table->string('reason')->nullable();
             $table->longText('request')->nullable();
             $table->timestamps();
-
-            $table->index('transaction_id');
         });
 
-        $this->copyLegacyRefunds($refundsTable);
+        $this->copyLegacyRefunds();
     }
 
     public function down(): void
@@ -40,14 +38,14 @@ return new class extends Migration
         Schema::dropIfExists(config('sisp.tables.refunds', 'sisp_refunds'));
     }
 
-    private function copyLegacyRefunds(string $refundsTable): void
+    private function copyLegacyRefunds(): void
     {
         $copied = 0;
         $unreadable = [];
 
         Transaction::query()
             ->orderBy('id')
-            ->chunkById(100, function (Collection $transactions) use (&$copied, &$unreadable, $refundsTable): void {
+            ->chunkById(100, function (Collection $transactions) use (&$copied, &$unreadable): void {
                 foreach ($transactions as $transaction) {
                     $payload = $transaction->getAttribute('payload');
 
@@ -67,27 +65,22 @@ return new class extends Migration
                         continue;
                     }
 
-                    foreach ($refunds as $refund) {
-                        if (! is_array($refund)) {
-                            continue;
-                        }
+                    $entries = array_values(array_filter($refunds, is_array(...)));
 
-                        $amount = (float) ($refund['amount'] ?? 0);
-
-                        DB::table($refundsTable)->insert([
-                            'transaction_id' => $transaction->getKey(),
-                            'amount' => $amount,
-                            'amount_cents' => SispAmount::toCents($amount),
-                            'reason' => $refund['reason'] ?? null,
-                            'request' => json_encode($refund['request'] ?? [], JSON_THROW_ON_ERROR),
-                            'created_at' => $transaction->getAttribute('refunded_at') ?? now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        $copied++;
+                    if ($entries === []) {
+                        continue;
                     }
+
+                    $copied += DB::transaction(
+                        fn (): int => $this->insertRefunds($transaction, $entries)
+                    );
                 }
             });
+
+        Log::info('SISP refund history copied into the refunds table.', [
+            'copied' => $copied,
+            'unreadable_transaction_ids' => $unreadable,
+        ]);
 
         if ($unreadable !== []) {
             Log::warning('SISP refund history could not be read for some transactions.', [
@@ -95,5 +88,30 @@ return new class extends Migration
                 'copied' => $copied,
             ]);
         }
+    }
+
+    /**
+     * @param  array<int, array<array-key, mixed>>  $entries
+     */
+    private function insertRefunds(Transaction $transaction, array $entries): int
+    {
+        $createdAt = $transaction->getAttribute('refunded_at') ?? now();
+
+        foreach ($entries as $entry) {
+            $amount = $entry['amount'] ?? 0;
+            $reason = $entry['reason'] ?? null;
+            $request = $entry['request'] ?? [];
+
+            $refund = new Refund();
+            $refund->setAttribute('transaction_id', $transaction->getKey());
+            $refund->setAttribute('amount', is_numeric($amount) ? $amount : 0);
+            $refund->setAttribute('reason', is_string($reason) ? $reason : null);
+            $refund->setAttribute('request', is_array($request) ? $request : []);
+            $refund->setAttribute('created_at', $createdAt);
+            $refund->setAttribute('updated_at', now());
+            $refund->save();
+        }
+
+        return count($entries);
     }
 };
