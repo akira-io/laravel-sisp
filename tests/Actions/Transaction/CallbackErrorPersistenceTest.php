@@ -154,3 +154,89 @@ it('persists the error fields and masked raw payload on a successful update', fu
         ->and($transaction->error_message)->toBeNull()
         ->and($transaction->callback_raw_payload['merchantRespPan'])->toBe('************1111');
 });
+
+it('ignores the additional error message SISP sends alongside a success callback', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    resolve(UpdateTransactionAction::class)->handle($transaction, CallbackPayload::from([
+        'messageType' => '8',
+        'merchantResp' => 'C',
+        'merchantRespMerchantRef' => $transaction->merchant_ref,
+        'merchantRespMerchantSession' => $transaction->merchant_session,
+        'merchantRespAdditionalErrorMessage' => '000',
+    ]));
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('completed')
+        ->and($transaction->error_code)->toBeNull()
+        ->and($transaction->error_message)->toBeNull();
+});
+
+it('clears a stale error message left by an earlier failed attempt once the transaction succeeds', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'pending',
+        'error_code' => '3',
+        'error_message' => 'Saldo do cartao insuficiente',
+    ]);
+
+    resolve(UpdateTransactionAction::class)->handle($transaction, CallbackPayload::from([
+        'messageType' => '8',
+        'merchantResp' => 'C',
+        'merchantRespMerchantRef' => $transaction->merchant_ref,
+        'merchantRespMerchantSession' => $transaction->merchant_session,
+    ]));
+
+    $transaction->refresh();
+
+    expect($transaction->error_code)->toBeNull()
+        ->and($transaction->error_message)->toBeNull();
+});
+
+it('does not persist the message or raw payload from a callback whose fingerprint failed validation', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    resolve(FailTransactionAction::class)->handle(
+        $transaction,
+        CallbackPayload::from([
+            'messageType' => '6',
+            'merchantRespMerchantRef' => $transaction->merchant_ref,
+            'merchantRespMerchantSession' => $transaction->merchant_session,
+            'merchantRespErrorCode' => '3',
+            'merchantRespAdditionalErrorMessage' => 'texto escolhido pelo atacante',
+            'merchantRespPan' => '4111111111111111',
+        ]),
+        'invalid_callback_fingerprint',
+        trustPayload: false,
+    );
+
+    $transaction->refresh();
+
+    expect($transaction->status->value)->toBe('failed')
+        ->and($transaction->merchant_response)->toBe('invalid_callback_fingerprint')
+        ->and($transaction->error_code)->toBeNull()
+        ->and($transaction->error_message)->toBeNull()
+        ->and($transaction->callback_raw_payload)->toBeNull();
+});
+
+it('still persists the message and raw payload for a legitimately signed refusal', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    resolve(FailTransactionAction::class)->handle(
+        $transaction,
+        CallbackPayload::from([
+            'messageType' => '6',
+            'merchantRespMerchantRef' => $transaction->merchant_ref,
+            'merchantRespMerchantSession' => $transaction->merchant_session,
+            'merchantRespErrorCode' => '3',
+            'merchantRespAdditionalErrorMessage' => 'Saldo do cartao insuficiente',
+        ]),
+        'callback_details_mismatch',
+    );
+
+    $transaction->refresh();
+
+    expect($transaction->error_code)->toBe('3')
+        ->and($transaction->error_message)->toBe('Saldo do cartao insuficiente')
+        ->and($transaction->callback_raw_payload)->not->toBeNull();
+});

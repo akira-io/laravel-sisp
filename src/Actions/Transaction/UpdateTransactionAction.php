@@ -48,8 +48,8 @@ final readonly class UpdateTransactionAction
                     'fingerprint' => $payload->fingerprint,
                     'payload' => $transaction->payload,
                     'status' => $status,
-                    'error_code' => $payload->errorCode !== '' ? $payload->errorCode : null,
-                    'error_message' => $this->resolveCustomerErrorMessage->handle($payload),
+                    'error_code' => $payload->isError() && $payload->errorCode !== '' ? $payload->errorCode : null,
+                    'error_message' => $payload->isError() ? $this->resolveCustomerErrorMessage->handle($payload) : null,
                     'callback_raw_payload' => $this->maskCallbackRawPayload->handle($payload->raw),
                 ])
             );

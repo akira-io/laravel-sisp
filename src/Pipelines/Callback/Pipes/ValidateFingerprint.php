@@ -26,6 +26,7 @@ final readonly class ValidateFingerprint implements CallbackPipe
                 $context->payload,
                 'invalid_callback_fingerprint',
                 $context->attempt(),
+                trustPayload: false,
             );
 
             if ($context->transactionStatusPropagated) {

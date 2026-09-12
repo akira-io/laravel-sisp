@@ -79,7 +79,9 @@ it('short-circuits and fails the transaction when the fingerprint is invalid', f
     expect($context->failed())->toBeTrue()
         ->and($context->failureReason)->toBe('invalid_callback_fingerprint')
         ->and($context->transaction()->status->value)->toBe('failed')
-        ->and($context->transaction()->merchant_response)->toBe('invalid_callback_fingerprint');
+        ->and($context->transaction()->merchant_response)->toBe('invalid_callback_fingerprint')
+        ->and($context->transaction()->error_message)->toBeNull()
+        ->and($context->transaction()->callback_raw_payload)->toBeNull();
 
     Event::assertDispatched(PaymentFailed::class);
 });
