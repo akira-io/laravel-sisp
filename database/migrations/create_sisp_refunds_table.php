@@ -18,17 +18,19 @@ return new class extends Migration
         $transactionsTable = config('sisp.tables.transactions', 'sisp_transactions');
         $refundsTable = config('sisp.tables.refunds', 'sisp_refunds');
 
-        Schema::create($refundsTable, function (Blueprint $table) use ($transactionsTable): void {
-            $table->id();
-            $table->foreignId('transaction_id')
-                ->constrained($transactionsTable)
-                ->cascadeOnDelete();
-            $table->bigInteger('amount_thousandths');
-            $table->decimal('amount', 13, 3);
-            $table->string('reason')->nullable();
-            $table->longText('request')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable($refundsTable)) {
+            Schema::create($refundsTable, function (Blueprint $table) use ($transactionsTable): void {
+                $table->id();
+                $table->foreignId('transaction_id')
+                    ->constrained($transactionsTable)
+                    ->cascadeOnDelete();
+                $table->bigInteger('amount_thousandths');
+                $table->decimal('amount', 13, 3);
+                $table->string('reason')->nullable();
+                $table->longText('request')->nullable();
+                $table->timestamps();
+            });
+        }
 
         $this->copyLegacyRefunds();
     }
@@ -40,13 +42,23 @@ return new class extends Migration
 
     private function copyLegacyRefunds(): void
     {
+        $refundsTable = config('sisp.tables.refunds', 'sisp_refunds');
         $copied = 0;
         $unreadable = [];
 
         Transaction::query()
             ->orderBy('id')
-            ->chunkById(100, function (Collection $transactions) use (&$copied, &$unreadable): void {
+            ->chunkById(100, function (Collection $transactions) use ($refundsTable, &$copied, &$unreadable): void {
+                $alreadyMigrated = DB::table($refundsTable)
+                    ->whereIn('transaction_id', $transactions->modelKeys())
+                    ->pluck('transaction_id')
+                    ->all();
+
                 foreach ($transactions as $transaction) {
+                    if (in_array($transaction->getKey(), $alreadyMigrated, true)) {
+                        continue;
+                    }
+
                     $payload = $transaction->getAttribute('payload');
 
                     if (! is_array($payload)) {

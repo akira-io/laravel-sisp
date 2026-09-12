@@ -202,6 +202,31 @@ it('copies the legacy history into encrypted rows when the migration runs', func
         ->toBe(91.965);
 });
 
+it('does not duplicate rows when the migration copy step runs twice', function (): void {
+    $transaction = Transaction::factory()->create([
+        'amount' => 100.0,
+        'status' => TransactionStatus::completed->value,
+        'payload' => [
+            'refunds' => [
+                ['amount' => 8.035, 'reason' => 'legacy', 'request' => ['merchantRef' => 'MREF-LEGACY-9']],
+            ],
+        ],
+    ]);
+
+    $refundsTable = config('sisp.tables.refunds');
+
+    Schema::dropIfExists($refundsTable);
+
+    $migration = require dirname(__DIR__, 2).'/database/migrations/create_sisp_refunds_table.php';
+    $migration->up();
+    $migration->up();
+
+    expect(Refund::query()->where('transaction_id', $transaction->id)->count())->toBe(1);
+
+    expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))
+        ->toBe(91.965);
+});
+
 it('ignores a legacy refunds key that is not a list', function (): void {
     $transaction = Transaction::factory()->create([
         'amount' => 100.0,
