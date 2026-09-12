@@ -247,6 +247,46 @@ No manual configuration needed.
 
 Invalid POST callbacks are rejected by `CallbackController` before transaction lookup or duplicate checks. Signed callbacks are then checked for required merchant reference and merchant session values before processing.
 
+### Callback Fingerprint Formulas
+
+SISP signs a success callback and an error callback with two different formulas, each concatenating a fixed, ordered list of fields before hashing with SHA-512 and base64-encoding the digest. `ValidatePaymentResponseFingerprintAction` picks the formula from `messageType`: exactly `6` uses the error formula, anything else (including a known `SuccessMessageType` case, an unrecognised value, or a null/empty `messageType`) uses the success formula (see the `messageType` table in [Payment Flow](./04-payment-flow.md#91-fingerprint-validation)).
+
+**Success formula** (specification section 2.4.2.1, `PaymentResponseFingerPrintAction`):
+
+1. Encoded `posAutCode`
+2. `messageType`
+3. `merchantRespCP` (clearing period)
+4. `merchantRespTid`
+5. `merchantRespMerchantRef`
+6. `merchantRespMerchantSession`
+7. `merchantRespPurchaseAmount`, in thousandths
+8. `merchantRespMessageID`
+9. `merchantRespPan`
+10. `merchantResp`
+11. `merchantRespTimeStamp`
+12. `merchantRespReferenceNumber`
+13. `merchantRespEntityCode`
+14. `merchantRespClientReceipt`
+15. `merchantRespAdditionalErrorMessage`
+16. `merchantRespReloadCode`
+
+**Error formula** (specification section 2.4.2.2, `PaymentErrorResponseFingerPrintAction`):
+
+1. Encoded `posAutCode`
+2. `messageType`
+3. `merchantRespMessageID`
+4. `merchantRespErrorCode`
+5. `merchantRespErrorDetail`
+6. `merchantRespErrorDescription`
+7. `merchantRespMerchantRef`
+8. `merchantRespMerchantSession`
+9. `merchantRespAdditionalErrorMessage`
+10. `merchantRespTimeStamp`
+
+The error formula puts error detail before error description; a transcription slip commonly swaps the two. `merchantRespErrorCode` is not guaranteed to be numeric: real refused callbacks from production SISP carry letter codes (for example `F`), so neither formula assumes a digit.
+
+Both formulas need the plaintext `posAutCode` (the encoded value comes from `PostAutCode`, which hashes it), a merchant-specific secret this package never logs or exposes. A fingerprint captured from production traffic cannot be reproduced or verified without that secret.
+
 ## Data Encryption
 
 Sensitive customer fields are automatically encrypted:

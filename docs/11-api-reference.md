@@ -746,7 +746,9 @@ app(GenerateInvoicePdfAction::class)->handle(
 
 ### GetPaymentErrorResponseAction
 
-Transform SISP error codes into structured, user-friendly error responses.
+> **Deprecated.** Built on `ErrorMessageType`, which no longer matches what SISP actually sends. Kept only for consumers of published views that still read its output shape. Read the refusal reason from `Transaction::$error_message` instead.
+
+Transform an `ErrorMessageType` case into a structured, user-friendly error response.
 
 ```php
 $action = app(GetPaymentErrorResponseAction::class);
@@ -756,14 +758,14 @@ $errorResponse = $action->handle(
     ErrorMessageType $errorType
 ): PaymentErrorResponse
 
-// $errorResponse contains:
+// $errorResponse contains, for ErrorMessageType::invalidMerchant:
 [
-    'code' => 'card_declined',           // SISP error code identifier
-    'label' => 'Card Declined',          // Human-readable label (translated)
-    'category' => 'card',                 // Error category
-    'categoryLabel' => 'Card Issue',      // Category label (translated)
-    'action' => 'use-different-card',    // Suggested action for user
-    'actionLabel' => 'Try Another Card', // Action label (translated)
+    'code' => '3',                                // merchantRespErrorCode, as sent by SISP
+    'label' => 'Invalid merchant',                // Human-readable label (translated)
+    'category' => 'validation',                   // Error category
+    'categoryLabel' => 'Invalid Details',          // Category label (translated)
+    'action' => 'contact-support',                // Suggested action for user
+    'actionLabel' => 'Contact customer support',   // Action label (translated)
 ]
 ```
 
@@ -874,54 +876,64 @@ Protects the payment route from duplicate submissions.
 
 ### ErrorMessageType
 
-SISP payment error codes with categories and suggested actions.
+> **Deprecated.** The SISP `messageType` is not an ISO-8583 code: only `6` exists on the wire, and it means "transaction processed with error". This enum's numeric cases are the ISO-8583 vocabulary the package used to assume `merchantRespErrorCode` mapped to; real traffic shows `merchantRespErrorCode` can be a letter (for example `F`), so the digits-only table below is not authoritative. Read the refusal reason from `Transaction::$error_message` instead.
 
 ```php
-// Card Issues (user's card cannot be used)
-ErrorMessageType::cardDeclined           // "6"
-ErrorMessageType::cardExpired            // Generic card error
-ErrorMessageType::cardBlocked            // Card is blocked
-ErrorMessageType::invalidCardNumber      // Invalid card format
+ErrorMessageType::referToCardIssuer          // "1"
+ErrorMessageType::invalidMerchant            // "3"
+ErrorMessageType::cardRetained                // "4"
+ErrorMessageType::transactionRefused          // "5"
+ErrorMessageType::issuerError                 // "6"
+ErrorMessageType::invalidTransaction          // "12"
+ErrorMessageType::invalidAmount               // "13"
+ErrorMessageType::invalidCard                 // "14"
+ErrorMessageType::formatError                 // "30"
+ErrorMessageType::cardExpired                 // "33"
+ErrorMessageType::fraudSuspected              // "34"
+ErrorMessageType::restrictedCard              // "36"
+ErrorMessageType::pinTriesExceeded            // "38"
+ErrorMessageType::cardLost                    // "41"
+ErrorMessageType::cardStolen                  // "43"
+ErrorMessageType::insufficientFunds           // "51"
+ErrorMessageType::incorrectPin                // "55"
+ErrorMessageType::transactionNotAllowed       // "57"
+ErrorMessageType::transactionNotAllowedTerminal // "58"
+ErrorMessageType::amountExceedsLimit          // "61"
+ErrorMessageType::cardRestrictedByCountry     // "62"
+ErrorMessageType::transactionCountExceeded    // "65"
+ErrorMessageType::cardBlocked                 // "76"
+ErrorMessageType::processingError             // "77"
+ErrorMessageType::cardNotActivated            // "78"
+ErrorMessageType::expirationDateError         // "80"
+ErrorMessageType::encryptionError             // "81"
+ErrorMessageType::authenticationError         // "82"
+ErrorMessageType::securityVerificationFailure // "83"
+ErrorMessageType::issuerUnavailable           // "91"
+ErrorMessageType::financialInstitutionNotFound // "92"
+ErrorMessageType::transactionDuplication      // "94"
+ErrorMessageType::systemError                 // "96"
+ErrorMessageType::communicationTimeout        // "97"
+ErrorMessageType::invalidFingerprint          // "98"
+ErrorMessageType::genericError                // "99"
 
-// Insufficient Funds
-ErrorMessageType::insufficientFunds      // Not enough balance
-ErrorMessageType::transactionLimitExceeded // Amount exceeds limit
-
-// Security Issues
-ErrorMessageType::fraudDetected          // Transaction flagged
-ErrorMessageType::cvvFailed              // Invalid CVV/CVC
-ErrorMessageType::suspiciousActivity     // Unusual pattern detected
-
-// Validation Issues
-ErrorMessageType::invalidAmount          // Amount invalid
-ErrorMessageType::invalidCurrency        // Currency mismatch
-ErrorMessageType::invalidMerchant        // Merchant not configured
-ErrorMessageType::missingField           // Required field missing
-
-// System/Gateway Issues
-ErrorMessageType::gatewayTimeout         // SISP timeout
-ErrorMessageType::processingError        // Generic processing error
-ErrorMessageType::serviceUnavailable     // SISP down
-ErrorMessageType::bankRejected           // Bank rejected transaction
-
-// Issuer Issues
-ErrorMessageType::issuerDecline          // Card issuer declined
-ErrorMessageType::issuerError            // Issuer system error
-
-// Unknown/Other
-ErrorMessageType::unknownError           // Unclassified error
-ErrorMessageType::other                  // Catch-all
-
-// Translated labels available for: EN (English), PT (Portuguese)
+// category(): card|funds|security|validation|system|issuer|unknown
+// action(): a suggested next step per case, e.g. contact-issuer, retry, use-different-card
+// Translated labels available for: EN (English), PT (Portuguese), FR (French)
 ```
 
 ### SuccessMessageType
 
-SISP success response message types.
+SISP success response message types, matched against `messageType`. `expectedMerchantResponses()` gives the `merchantResp` values that count as success for that type.
 
 ```php
-SuccessMessageType::purchase             // "P" - Purchase transaction
-SuccessMessageType::other                // "O" - Other transaction type
+SuccessMessageType::purchase             // "8"  -> expects merchantResp "C"
+SuccessMessageType::servicePayment       // "P"  -> expects merchantResp "C"
+SuccessMessageType::phoneRecharge        // "M"  -> expects merchantResp "C"
+SuccessMessageType::enrollmentRequest    // "A"  -> expects merchantResp "0"
+SuccessMessageType::tokenPayment         // "B"  -> expects merchantResp "0"
+SuccessMessageType::tokenCancel          // "C"  -> expects merchantResp "0"
+SuccessMessageType::refund               // "10" -> expects merchantResp "" (empty)
+SuccessMessageType::partialRefund        // "?"  -> expects merchantResp "" (empty)
 ```
 
 ## Exceptions
