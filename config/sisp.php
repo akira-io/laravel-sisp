@@ -214,6 +214,7 @@ return [
         'blacklist' => env('SISP_TABLE_BLACKLIST', 'sisp_blacklist'),
         'transaction_logs' => env('SISP_TABLE_TRANSACTION_LOGS', 'sisp_transaction_logs'),
         'payment_intents' => env('SISP_TABLE_PAYMENT_INTENTS', 'sisp_payment_intents'),
+        'refunds' => env('SISP_TABLE_REFUNDS', 'sisp_refunds'),
     ],
 
     /*

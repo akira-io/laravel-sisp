@@ -44,6 +44,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  string $formatted_amount
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionItem> $items
  * @property-read  \Illuminate\Database\Eloquent\Collection<int, TransactionAttempt> $attempts
+ * @property-read  \Illuminate\Database\Eloquent\Collection<int, Refund> $refunds
  * @property-read  TransactionAttempt|null $currentAttempt
  * @property-read  Invoice|null $invoice
  * @property-read  \Illuminate\Support\Carbon|null $created_at
@@ -127,6 +128,12 @@ final class Transaction extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(TransactionLog::class, 'transaction_id');
+    }
+
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'transaction_id');
     }
 
     protected static function booted(): void
