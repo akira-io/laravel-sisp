@@ -41,6 +41,7 @@ The following actions kept their **`handle()` signatures and behavior**, but the
 | `HandleCallbackAction` | 4 dependencies | `HandleCallbackPipeline` |
 | `QueryTransactionStatusAction` | `LoadConfig`, `SispCredentialsResolver` | `SispManager` |
 | `DeterminePaymentEndpointAction` | `SispCredentialsResolver` | `SispManager` |
+| `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
 
 ### 1.3 Callback fingerprint validation moved behind a contract (action required if you stubbed it)
 
