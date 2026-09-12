@@ -482,7 +482,7 @@ InvoiceStatus::cancelled          // Cancelled
 use Akira\Sisp\Facades\Sisp;
 
 $response = Sisp::queryTransactionStatus($transaction);
-$response = Sisp::queryTransactionStatus('R20260523235959');
+$response = Sisp::queryTransactionStatus('R20260523235959K7M2QX9TBV');
 
 $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 ```

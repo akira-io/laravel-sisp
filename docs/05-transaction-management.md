@@ -168,7 +168,7 @@ Use SISP status reconciliation when a transaction stays `pending` because the au
 Check the status in SISP without changing the local transaction:
 
 ```bash
-php artisan sisp:transaction-status R20260523235959
+php artisan sisp:transaction-status R20260523235959K7M2QX9TBV
 ```
 
 The command prints:

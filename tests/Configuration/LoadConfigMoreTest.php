@@ -9,8 +9,8 @@ beforeEach(function (): void {
 });
 
 it('returns sane defaults and configured values for getters', function (): void {
-    expect($this->cfg->getMerchantReference())->toMatch('/^R\d{14}$/')
-        ->and($this->cfg->getMerchantSession())->toMatch('/^S\d{14}$/')
+    expect($this->cfg->getMerchantReference())->toMatch('/^R\d{14}[A-Z0-9]{10}$/')
+        ->and($this->cfg->getMerchantSession())->toMatch('/^S\d{14}[A-Z0-9]{10}$/')
         ->and($this->cfg->getTimeStamp())->toMatch('/^\d{4}-\d{2}-\d{2} /');
 
     config()->set('sisp.currency', 'XYZ');
