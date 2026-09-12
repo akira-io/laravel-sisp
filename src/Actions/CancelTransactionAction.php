@@ -13,10 +13,14 @@ use LogicException;
 
 final readonly class CancelTransactionAction
 {
+    public function __construct(
+        private UpdateInvoiceStatusAction $updateInvoiceStatus,
+    ) {}
+
     public function handle(Transaction $transaction, string $reason = 'user_cancelled'): Transaction
     {
-        DB::transaction(function () use ($transaction, $reason): void {
-            $locked = Transaction::query()->lockForUpdate()->find($transaction->id);
+        $cancelled = DB::transaction(function () use ($transaction, $reason): Transaction {
+            $locked = $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
 
             if (! $locked instanceof Transaction || $this->cannotBeCancelled($locked)) {
                 $status = $locked instanceof Transaction ? $locked->status->value : $transaction->status->value;
@@ -26,23 +30,26 @@ final readonly class CancelTransactionAction
 
             TransactionLogContext::run(
                 'cancel',
-                fn (): bool => $transaction->update([
+                fn (): bool => $locked->update([
                     'status' => TransactionStatus::cancelled->value,
                     'message_type' => 'cancelled',
                     'merchant_response' => $reason,
                     'cancelled_at' => now(),
                 ])
             );
+
+            $this->updateInvoiceStatus->handle($locked, TransactionStatus::cancelled);
+
+            return $locked;
         });
 
-        event(new TransactionCancelled($transaction, $reason));
+        event(new TransactionCancelled($cancelled, $reason));
 
-        return $transaction;
+        return $cancelled;
     }
 
     private function cannotBeCancelled(Transaction $transaction): bool
     {
-
         return in_array($transaction->status->value, ['completed', 'cancelled', 'failed', 'refunded'], true);
     }
 }
