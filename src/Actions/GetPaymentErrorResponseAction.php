@@ -9,7 +9,7 @@ use Akira\Sisp\ValueObjects\PaymentErrorResponse;
 
 /**
  * @deprecated Built on Akira\Sisp\Enums\ErrorMessageType, which no longer
- *             matches SISP's actual behaviour. Kept only for consumers of
+ *             matches what SISP actually sends. Kept only for consumers of
  *             published views that still read its output shape.
  */
 final readonly class GetPaymentErrorResponseAction
