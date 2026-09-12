@@ -22,12 +22,27 @@ it('cancels a pending transaction and dispatches event', function (): void {
     Event::assertDispatched(Akira\Sisp\Events\TransactionCancelled::class);
 });
 
-it('cannot cancel completed or already cancelled transactions', function (): void {
-    $completed = Transaction::factory()->create(['status' => 'completed']);
-    $cancelled = Transaction::factory()->create(['status' => 'cancelled']);
+it('cannot cancel a transaction in a terminal status', function (string $status): void {
+    $transaction = Transaction::factory()->create(['status' => $status]);
 
-    expect(fn () => resolve(CancelTransactionAction::class)->handle($completed))
+    expect(fn () => resolve(CancelTransactionAction::class)->handle($transaction))
+        ->toThrow(LogicException::class)
+        ->and($transaction->refresh()->status->value)->toBe($status)
+        ->and($transaction->cancelled_at)->toBeNull();
+})->with(['completed', 'cancelled', 'failed', 'refunded']);
+
+it('leaves the gateway response untouched when it refuses to cancel a failed transaction', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'failed',
+        'merchant_response' => 'Insufficient funds',
+        'message_type' => '8',
+    ]);
+
+    expect(fn () => resolve(CancelTransactionAction::class)->handle($transaction))
         ->toThrow(LogicException::class);
-    expect(fn () => resolve(CancelTransactionAction::class)->handle($cancelled))
-        ->toThrow(LogicException::class);
+
+    $transaction->refresh();
+
+    expect($transaction->merchant_response)->toBe('Insufficient funds')
+        ->and($transaction->message_type)->toBe('8');
 });
