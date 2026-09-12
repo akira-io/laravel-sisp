@@ -20,7 +20,15 @@ final class ExpirePendingTransactionsCommand extends Command
 {
     public function handle(Repository $config, CancelTransactionAction $cancel): int
     {
-        $days = (int) ($this->option('older-than') ?: $config->get('sisp.expire_pending_after_days', 30));
+        $olderThan = $this->option('older-than');
+        $days = $olderThan !== null ? (int) $olderThan : (int) $config->get('sisp.expire_pending_after_days', 30);
+
+        if ($days < 0) {
+            $this->error('The --older-than option cannot be negative.');
+
+            return self::FAILURE;
+        }
+
         $limit = (int) ($this->option('limit') ?: 100);
 
         $transactions = Transaction::query()
