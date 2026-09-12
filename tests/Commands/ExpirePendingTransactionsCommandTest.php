@@ -99,22 +99,24 @@ it('rejects a negative window instead of expiring transactions created moments a
     ]);
 
     $this->artisan('sisp:expire-pending', ['--older-than' => -5])
-        ->expectsOutput('The --older-than option cannot be negative.')
+        ->expectsOutput('The --older-than option must be at least 1 day.')
         ->assertFailed();
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
 });
 
-it('treats an explicit zero window as everything without a callback, whatever its age', function (): void {
+it('rejects a zero window instead of expiring transactions created moments ago', function (): void {
     $transaction = Transaction::factory()->create([
         'status' => 'pending',
         'message_type' => null,
         'created_at' => now(),
     ]);
 
-    $this->artisan('sisp:expire-pending', ['--older-than' => 0])->assertSuccessful();
+    $this->artisan('sisp:expire-pending', ['--older-than' => 0])
+        ->expectsOutput('The --older-than option must be at least 1 day.')
+        ->assertFailed();
 
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::cancelled);
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
 });
 
 it('is idempotent across two runs', function (): void {
