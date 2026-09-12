@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Route;
 it('publishes middleware defaults for configurable state-changing routes', function (): void {
     expect(config('sisp.middleware.payment'))->toBe([ProtectPaymentRoute::class])
         ->and(config('sisp.middleware.retry'))->toBe([])
-        ->and(config('sisp.middleware.refund'))->toBe(['web', 'auth']);
+        ->and(config('sisp.middleware.refund'))->toBe(['web', 'auth'])
+        ->and(config('sisp.middleware.callback'))->toBe(['throttle:sisp-callback']);
 });
 
 it('uses published middleware defaults for payment and retry routes', function (): void {
@@ -63,3 +64,22 @@ function withReloadedSispRoutes(callable $callback): void
         $router->setRoutes($originalRoutes);
     }
 }
+
+it('rate limits the callback route', function (): void {
+    withReloadedSispRoutes(function (): void {
+        $callbackRoute = Route::getRoutes()->getByName('sisp.callback');
+
+        expect($callbackRoute->gatherMiddleware())->toContain('throttle:sisp-callback');
+    });
+});
+
+it('uses configurable middleware for the callback route', function (): void {
+    config()->set('sisp.middleware.callback', ['throttle:5,1']);
+
+    withReloadedSispRoutes(function (): void {
+        $callbackRoute = Route::getRoutes()->getByName('sisp.callback');
+
+        expect($callbackRoute->gatherMiddleware())->toContain('throttle:5,1')
+            ->and($callbackRoute->gatherMiddleware())->not->toContain('throttle:sisp-callback');
+    });
+});

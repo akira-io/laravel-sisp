@@ -207,7 +207,7 @@ The API sends HTTP Basic authentication using `SISP_PORTAL_ID:SISP_PORTAL_PASSWO
 Query a transaction without changing local data:
 
 ```bash
-php artisan sisp:transaction-status R20260523235959
+php artisan sisp:transaction-status R20260523235959K7M2QX9TBV
 ```
 
 Query by local transaction ID and update it only when SISP returns a successful status API result:
@@ -227,7 +227,7 @@ use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 
 $response = Sisp::queryTransactionStatus($transaction);
-$response = Sisp::queryTransactionStatus('R20260523235959');
+$response = Sisp::queryTransactionStatus('R20260523235959K7M2QX9TBV');
 
 $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 ```
@@ -313,10 +313,17 @@ Customize middleware assigned to package routes in `config/sisp.php`:
     'payment' => [Akira\Sisp\Http\Middleware\ProtectPaymentRoute::class],
     'retry' => [],
     'refund' => ['web', 'auth'],
+    'callback' => ['throttle:sisp-callback'],
 ],
 ```
 
-Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default. The callback route is intentionally not part of this configuration because SISP must be able to post callbacks without browser CSRF middleware.
+Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default.
+
+The callback route never receives the browser `web` group, because SISP must be able to post callbacks without CSRF middleware.
+
+It does carry the `sisp-callback` limiter, registered by the package. That limiter applies only to requests carrying `UserCancelled` and keys on the merchant reference: SISP sends no fingerprint on the cancellation callback, so that branch is identified by nothing but the reference, and the limit bounds how fast one reference can be hit. Successful callbacks are exempt, because they carry a fingerprint and because throttling them would drop a payment the gateway has already taken.
+
+This is deliberately separate from `sisp.rate_limiting`, which is a per-IP application-level control with its own table and blacklist (see [Security](07-security.md)). Replace the middleware if you would rather use one mechanism for both.
 
 ## Security Configuration
 

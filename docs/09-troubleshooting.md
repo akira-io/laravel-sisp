@@ -303,13 +303,18 @@ tail -f storage/logs/laravel.log | grep -i signature
 
 ### Callback redirects before processing
 
+A truthy `UserCancelled` no longer redirects without processing. The controller
+resolves the transaction from `merchantRef` and `merchantSession`, cancels it
+and its invoice, dispatches `TransactionCancelled`, and only then redirects.
+Nothing happens if either key is missing, if no transaction matches, or if the
+transaction is already in a terminal status.
+
 The controller redirects without processing when:
 
-1. `UserCancelled` is truthy
-2. The request is a GET without a valid `ref` query parameter
-3. The POST fingerprint is invalid
-4. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
-5. The callback was already processed and the transaction already has a SISP transaction ID
+1. The request is a GET without a valid `ref` query parameter
+2. The POST fingerprint is invalid
+3. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
+4. The callback was already processed and the transaction already has a SISP transaction ID
 
 Duplicate callbacks redirect with an `info` flash message: `This payment has already been processed.`
 

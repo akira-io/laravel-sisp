@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Controllers;
 
+use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
@@ -16,6 +17,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use LogicException;
 
 final readonly class CallbackController
 {
@@ -24,12 +26,13 @@ final readonly class CallbackController
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private LoadConfig $config,
+        private CancelTransactionAction $cancelTransaction,
     ) {}
 
     public function __invoke(Request $request): mixed
     {
         if ($request->boolean('UserCancelled')) {
-            return redirect(config('sisp.redirect_url', '/'));
+            return $this->handleUserCancellation($request);
         }
 
         if ($request->isMethod('get')) {
@@ -37,6 +40,34 @@ final readonly class CallbackController
         }
 
         return $this->handlePostRequest($request);
+    }
+
+    private function handleUserCancellation(Request $request): RedirectResponse
+    {
+        $transaction = $this->resolveCancelledTransaction($request);
+
+        if ($transaction instanceof Transaction) {
+            try {
+                $this->cancelTransaction->handle($transaction);
+            } catch (LogicException) {
+            }
+        }
+
+        return redirect(config('sisp.redirect_url', '/'));
+    }
+
+    private function resolveCancelledTransaction(Request $request): ?Transaction
+    {
+        $merchantRef = $request->string('merchantRef')->toString();
+        $merchantSession = $request->string('merchantSession')->toString();
+
+        if ($merchantRef === '' || $merchantSession === '') {
+            return null;
+        }
+
+        $query = Transaction::query()->where('merchant_ref', $merchantRef);
+
+        return $query->where('merchant_session', $merchantSession)->first();
     }
 
     private function handleGetRequest(): mixed

@@ -12,7 +12,9 @@ it('generates a SISP merchant session with the recommended timestamp format', fu
         $gen = resolve(MerchantSessionGeneratorAction::class);
         $session = $gen();
 
-        expect($session)->toBe('S20260523101112');
+        expect($session)->toStartWith('S20260523101112')
+            ->and($session)->toMatch('/^S\\d{14}[A-Z0-9]{10}$/')
+            ->and($gen())->not->toBe($session);
     } finally {
         Date::setTestNow();
     }

@@ -12,7 +12,9 @@ it('generates a SISP merchant reference with the recommended timestamp format', 
         $gen = resolve(MerchantReferenceGeneratorAction::class);
         $ref = $gen();
 
-        expect($ref)->toBe('R20260523101112');
+        expect($ref)->toStartWith('R20260523101112')
+            ->and($ref)->toMatch('/^R\\d{14}[A-Z0-9]{10}$/')
+            ->and($gen())->not->toBe($ref);
     } finally {
         Date::setTestNow();
     }

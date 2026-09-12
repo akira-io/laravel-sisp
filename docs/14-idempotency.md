@@ -162,6 +162,8 @@ Callback attempt updates and transaction updates are wrapped in a single databas
 ],
 ```
 
+The default reference and session generators emit a timestamp followed by ten random characters, for example `R20260523235959K7M2QX9TBV`. The random tail is what keeps two payments started in the same second apart, and it also stops a third party from guessing a live reference: the cancellation callback carries no fingerprint, so the reference is the only thing standing between an unauthenticated request and a pending transaction. A custom generator that emits a predictable value gives that protection up.
+
 Because these generators are configurable, the package assumes they can collide. The database enforces uniqueness for:
 
 - transaction `merchant_ref`

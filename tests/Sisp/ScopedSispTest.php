@@ -53,8 +53,8 @@ it('scoped sisp uses credentials and restores resolver', function (): void {
         ->and($payload['languageMessages'])->toBe('EN')
         ->and($payload['urlMerchantResponse'])->toBe('https://scoped.example.com/callback');
 
-    expect($scoped->getMerchantReference())->toMatch('/^R\d{14}$/')
-        ->and($scoped->getMerchantSession())->toMatch('/^S\d{14}$/')
+    expect($scoped->getMerchantReference())->toMatch('/^R\d{14}[A-Z0-9]{10}$/')
+        ->and($scoped->getMerchantSession())->toMatch('/^S\d{14}[A-Z0-9]{10}$/')
         ->and($scoped->getTimeStamp())->toBeString()
         ->and($scoped->getTimeStamp())->not->toBe('')
         ->and($scoped->getDefaultTransactionCode())->toBe('7')
