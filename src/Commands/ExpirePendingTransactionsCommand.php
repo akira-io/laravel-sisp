@@ -23,8 +23,8 @@ final class ExpirePendingTransactionsCommand extends Command
         $olderThan = $this->option('older-than');
         $days = $olderThan !== null ? (int) $olderThan : (int) $config->get('sisp.expire_pending_after_days', 30);
 
-        if ($days < 0) {
-            $this->error('The --older-than option cannot be negative.');
+        if ($days < 1) {
+            $this->error('The --older-than option must be at least 1 day.');
 
             return self::FAILURE;
         }
