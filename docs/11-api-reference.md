@@ -472,6 +472,7 @@ InvoiceStatus::issued             // Sent to customer
 InvoiceStatus::paid               // Payment confirmed
 InvoiceStatus::overdue            // Past due date
 InvoiceStatus::cancelled          // Cancelled
+InvoiceStatus::refunded           // Payment refunded in full
 ```
 
 ## Facade API

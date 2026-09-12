@@ -10,53 +10,69 @@ use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\RefundRequest;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final readonly class RefundTransactionAction
 {
-    public function __construct(private BuildRefundRequestAction $buildRefundRequest) {}
+    public function __construct(
+        private BuildRefundRequestAction $buildRefundRequest,
+        private UpdateInvoiceStatusAction $updateInvoiceStatus,
+    ) {}
 
     public function handle(
         Transaction $transaction,
         float $refundAmount,
         string $reason = 'user_refund',
     ): Transaction {
-        if (! $this->canBeRefunded($transaction)) {
-            throw new LogicException(
-                "Transaction with status '{$transaction->status->value}' cannot be refunded."
-            );
-        }
-
         throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
-        $refundThousandths = SispAmount::toThousandths($refundAmount);
-        $refundableThousandths = $this->refundableThousandths($transaction);
+        $refunded = DB::transaction(function () use ($transaction, $refundAmount, $reason): Transaction {
+            $locked = $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
 
-        throw_if($refundThousandths <= 0, LogicException::class, 'Refund amount must be greater than 0.');
+            if (! $locked instanceof Transaction || ! $this->canBeRefunded($locked)) {
+                $status = $locked instanceof Transaction ? $locked->status->value : $transaction->status->value;
 
-        throw_if(
-            $refundThousandths > $refundableThousandths,
-            LogicException::class,
-            "Refund amount ({$refundAmount}) exceeds refundable balance."
-        );
+                throw new LogicException("Transaction with status '{$status}' cannot be refunded.");
+            }
 
-        $request = $this->buildRefundRequest($transaction, $refundAmount);
-        $payload = $this->appendRefundPayload($transaction, $request->toArray(), $reason);
-        $remainingThousandths = $refundableThousandths - $refundThousandths;
+            $refundThousandths = SispAmount::toThousandths($refundAmount);
+            $refundableThousandths = $this->refundableThousandths($locked);
 
-        TransactionLogContext::run(
-            'refund',
-            fn (): bool => $transaction->update([
-                'status' => $remainingThousandths === 0 ? TransactionStatus::refunded->value : TransactionStatus::completed->value,
-                'merchant_response' => "{$reason}::{$refundAmount}",
-                'payload' => $payload,
-                'refunded_at' => now(),
-            ])
-        );
+            throw_if($refundThousandths <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
-        event(new TransactionRefunded($transaction, $refundAmount, $reason));
+            throw_if(
+                $refundThousandths > $refundableThousandths,
+                LogicException::class,
+                "Refund amount ({$refundAmount}) exceeds refundable balance."
+            );
 
-        return $transaction;
+            $request = $this->buildRefundRequest($locked, $refundAmount);
+            $payload = $this->appendRefundPayload($locked, $request->toArray(), $reason);
+            $status = $refundableThousandths === $refundThousandths
+                ? TransactionStatus::refunded
+                : TransactionStatus::completed;
+
+            TransactionLogContext::run(
+                'refund',
+                fn (): bool => $locked->update([
+                    'status' => $status->value,
+                    'merchant_response' => "{$reason}::{$refundAmount}",
+                    'payload' => $payload,
+                    'refunded_at' => now(),
+                ])
+            );
+
+            if ($status === TransactionStatus::refunded) {
+                $this->updateInvoiceStatus->handle($locked, $status);
+            }
+
+            return $locked;
+        });
+
+        event(new TransactionRefunded($refunded, $refundAmount, $reason));
+
+        return $refunded;
     }
 
     private function canBeRefunded(Transaction $transaction): bool

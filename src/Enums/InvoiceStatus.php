@@ -11,4 +11,5 @@ enum InvoiceStatus: string
     case paid = 'paid';
     case overdue = 'overdue';
     case cancelled = 'cancelled';
+    case refunded = 'refunded';
 }

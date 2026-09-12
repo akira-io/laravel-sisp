@@ -88,7 +88,7 @@ $invoice = $transaction->invoice;
 
 if ($invoice) {
     echo $invoice->pdf_path;       // Path to PDF file
-    echo $invoice->status;         // pending/issued/paid/overdue/cancelled
+    echo $invoice->status;         // pending/issued/paid/overdue/cancelled/refunded
 }
 ```
 
@@ -312,6 +312,7 @@ Cannot be refunded:
 - Refund operations use the dedicated refund FingerPrint with version `2`
 - Successful full refunds preserve the original transaction amount and change status to `refunded`
 - Successful partial refunds preserve the transaction as `completed` until the known refunded balance reaches the original amount
+- A full refund moves the associated invoice to `refunded` in the same database transaction; partial refunds leave the invoice on `paid`
 - For refunds on a different day, SISP may require enough daily purchase liquidity to cover the refunded amount
 - For DCC transactions, refund in the original transaction currency
 

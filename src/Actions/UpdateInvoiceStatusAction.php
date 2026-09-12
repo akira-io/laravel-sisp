@@ -30,7 +30,8 @@ final readonly class UpdateInvoiceStatusAction
             TransactionStatus::completed => InvoiceStatus::paid,
             TransactionStatus::failed => InvoiceStatus::cancelled,
             TransactionStatus::pending => InvoiceStatus::pending,
-            TransactionStatus::cancelled, TransactionStatus::refunded => InvoiceStatus::cancelled,
+            TransactionStatus::cancelled => InvoiceStatus::cancelled,
+            TransactionStatus::refunded => InvoiceStatus::refunded,
         };
 
         $invoice->update(['status' => $invoiceStatus->value]);

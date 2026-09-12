@@ -41,7 +41,7 @@ These are used on every invoice PDF.
 $invoice->invoice_number;     // Generated number (e.g., INV-20250101-001)
 $invoice->invoice_date;       // Date invoice was created
 $invoice->due_date;           // Due date (7 days from creation by default)
-$invoice->status;             // pending/issued/paid/overdue/cancelled
+$invoice->status;             // pending/issued/paid/overdue/cancelled/refunded
 $invoice->customer_name;      // Customer name from transaction
 $invoice->customer_email;     // Customer email from transaction
 $invoice->customer_city;      // Customer city from transaction
@@ -76,6 +76,7 @@ match ($invoice->status) {
     InvoiceStatus::paid => /* Payment confirmed */,
     InvoiceStatus::overdue => /* Past due date */,
     InvoiceStatus::cancelled => /* Cancelled */,
+    InvoiceStatus::refunded => /* Payment refunded in full */,
 };
 ```
 
