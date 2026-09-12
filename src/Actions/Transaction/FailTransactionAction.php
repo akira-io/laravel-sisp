@@ -29,7 +29,7 @@ final readonly class FailTransactionAction
     ): bool {
         return DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction, $trustPayload): bool {
             if ($attempt instanceof TransactionAttempt) {
-                $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse);
+                $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse, $trustPayload);
 
                 if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
                     return false;

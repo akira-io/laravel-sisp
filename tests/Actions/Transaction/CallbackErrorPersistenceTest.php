@@ -242,6 +242,41 @@ it('does not persist the message or raw payload from a callback whose fingerprin
         ->and($transaction->callback_raw_payload)->toBeNull();
 });
 
+it('does not persist the attacker payload into the attempt row from a callback whose fingerprint failed validation', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $attempt = TransactionAttempt::factory()
+        ->forTransaction($transaction)
+        ->create([
+            'merchant_ref' => $transaction->merchant_ref,
+            'merchant_session' => $transaction->merchant_session,
+            'attempt_session' => $transaction->merchant_session,
+            'status' => 'pending',
+        ]);
+
+    resolve(FailTransactionAction::class)->handle(
+        $transaction,
+        CallbackPayload::from([
+            'messageType' => '6',
+            'merchantRespMerchantRef' => $attempt->merchant_ref,
+            'merchantRespMerchantSession' => $attempt->merchant_session,
+            'merchantRespErrorCode' => '3',
+            'merchantRespAdditionalErrorMessage' => 'texto escolhido pelo atacante',
+            'merchantRespPan' => '4111111111111111',
+        ]),
+        'invalid_callback_fingerprint',
+        $attempt,
+        trustPayload: false,
+    );
+
+    expect($attempt->refresh()->callback_payload)->toBeNull();
+
+    $stored = DB::table(config('sisp.tables.transaction_attempts'))
+        ->where('id', $attempt->id)
+        ->value('callback_payload');
+
+    expect($stored)->toBeNull();
+});
+
 it('still persists the message and raw payload for a legitimately signed refusal', function (): void {
     $transaction = Transaction::factory()->create(['status' => 'pending']);
 

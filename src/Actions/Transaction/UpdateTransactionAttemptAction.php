@@ -19,6 +19,7 @@ final readonly class UpdateTransactionAttemptAction
         CallbackPayload $payload,
         TransactionStatus $status,
         ?string $failureReason = null,
+        bool $trustPayload = true,
     ): bool {
         return $attempt->update([
             'status' => $status,
@@ -27,7 +28,7 @@ final readonly class UpdateTransactionAttemptAction
             'response_code' => $payload->merchantRespCp,
             'merchant_response' => $failureReason ?? $payload->merchantResponse,
             'fingerprint' => $payload->fingerprint,
-            'callback_payload' => $this->maskCallbackRawPayload->handle($payload->toArray()),
+            'callback_payload' => $trustPayload ? $this->maskCallbackRawPayload->handle($payload->toArray()) : null,
             'failure_reason' => $failureReason,
             'callback_received_at' => now(),
         ]);
