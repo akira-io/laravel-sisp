@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Enums\ErrorMessageType;
@@ -18,6 +19,7 @@ final readonly class BuildSandboxPayloadAction
 {
     public function __construct(
         private PaymentResponseFingerPrintAction $generateFingerprint,
+        private PaymentErrorResponseFingerPrintAction $generateErrorFingerprint,
         private SispCredentialsResolver $resolver,
     ) {}
 
@@ -64,7 +66,9 @@ final readonly class BuildSandboxPayloadAction
 
         $callbackPayload = CallbackPayload::from($payload);
 
-        $fingerprint = $this->generateFingerprint->handle($callbackPayload);
+        $fingerprint = $callbackPayload->isError()
+            ? $this->generateErrorFingerprint->handle($callbackPayload)
+            : $this->generateFingerprint->handle($callbackPayload);
 
         $payload['resultFingerPrint'] = $fingerprint;
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\BuildSandboxPayloadAction;
+use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 
 beforeEach(function (): void {
@@ -32,6 +33,34 @@ it('builds sandbox payload for unknown status as P', function (): void {
 
     $payload = resolve(BuildSandboxPayloadAction::class)->handle($data, 'other');
     expect($payload->messageType)->toBe('P');
+});
+
+it('signs a failed sandbox payload with a fingerprint that passes validation', function (): void {
+    $data = PaymentRequestData::from([
+        'amount' => 10.0,
+        'merchantRef' => 'ref-failed',
+        'merchantSession' => 'sess-failed',
+        'currency' => '132',
+    ]);
+
+    $payload = resolve(BuildSandboxPayloadAction::class)->handle($data, 'failed');
+
+    expect(resolve(ValidatePaymentResponseFingerprintAction::class)->handle($payload))
+        ->toBeTrue();
+});
+
+it('signs a completed sandbox payload with a fingerprint that passes validation', function (): void {
+    $data = PaymentRequestData::from([
+        'amount' => 10.0,
+        'merchantRef' => 'ref-completed',
+        'merchantSession' => 'sess-completed',
+        'currency' => '132',
+    ]);
+
+    $payload = resolve(BuildSandboxPayloadAction::class)->handle($data, 'completed');
+
+    expect(resolve(ValidatePaymentResponseFingerprintAction::class)->handle($payload))
+        ->toBeTrue();
 });
 
 it('refuses to generate sandbox payloads when sandbox mode is disabled', function (): void {

@@ -41,7 +41,6 @@ The following actions kept their **`handle()` signatures and behavior**, but the
 | `HandleCallbackAction` | 4 dependencies | `HandleCallbackPipeline` |
 | `QueryTransactionStatusAction` | `LoadConfig`, `SispCredentialsResolver` | `SispManager` |
 | `DeterminePaymentEndpointAction` | `SispCredentialsResolver` | `SispManager` |
-| `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
 
 ### 1.3 Callback fingerprint validation moved behind a contract (action required if you stubbed it)
 
@@ -179,3 +178,32 @@ These are fixes and clarifications shipped in 2.0 — listed so nothing surprise
 - [ ] Sandbox payment flow verified end to end
 
 For the full v2 design, see [docs/12-architecture.md](docs/12-architecture.md).
+
+---
+
+## Upgrading from 2.1 to 2.2
+
+`ValidatePaymentResponseFingerprintAction` now validates SISP error callbacks
+(`messageType = 6`) with their own fingerprint formula instead of the success
+formula, and `BuildSandboxPayloadAction` signs sandbox error payloads with
+that same formula so they validate correctly. Both constructors gained a
+second dependency:
+
+| Class | 2.1 constructor | 2.2 constructor |
+| --- | --- | --- |
+| `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
+| `BuildSandboxPayloadAction` | `PaymentResponseFingerPrintAction`, `SispCredentialsResolver` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction`, `SispCredentialsResolver` |
+
+If you resolve them through the container (`app(...)`, `resolve(...)`,
+constructor injection), nothing breaks. If you instantiate them manually with
+`new`, pass the added dependency:
+
+```php
+// 2.1 — no longer compiles
+new ValidatePaymentResponseFingerprintAction($successFingerprint);
+new BuildSandboxPayloadAction($successFingerprint, $resolver);
+
+// 2.2
+new ValidatePaymentResponseFingerprintAction($successFingerprint, $errorFingerprint);
+new BuildSandboxPayloadAction($successFingerprint, $errorFingerprint, $resolver);
+```
