@@ -48,6 +48,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  Invoice|null $invoice
  * @property-read  \Illuminate\Support\Carbon|null $created_at
  * @property-read  \Illuminate\Support\Carbon|null $updated_at
+ * @property-read  array<string, mixed>|null $callback_raw_payload
+ * @property-read  string|null $error_code
+ * @property-read  string|null $error_message
  */
 #[UseFactory(TransactionFactory::class)]
 #[Fillable([
@@ -78,6 +81,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'customer_tax_name',
     'customer_tax_entity_type',
     'customer_tax_address',
+    'callback_raw_payload',
+    'error_code',
+    'error_message',
 ])]
 final class Transaction extends Model
 {
@@ -154,6 +160,7 @@ final class Transaction extends Model
     {
         return [
             'payload',
+            'callback_raw_payload',
         ];
     }
 
