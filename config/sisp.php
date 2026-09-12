@@ -314,6 +314,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Request Payload Pruning
+    |--------------------------------------------------------------------------
+    |
+    | The 3-D Secure purchaseRequest blob is removed from terminal
+    | transactions once they are older than this window. See
+    | sisp:prune-request-payloads.
+    |
+    */
+    'prune_request_payloads_after_days' => env('SISP_PRUNE_REQUEST_PAYLOADS_AFTER_DAYS', 90),
+
+    /*
+    |--------------------------------------------------------------------------
     | Blade Template Rendering
     |--------------------------------------------------------------------------
     |
