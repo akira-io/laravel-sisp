@@ -21,6 +21,7 @@ Route::match(['get', 'post'], 'sisp/retry-payment', RetryPaymentController::clas
 
 Route::match(['get', 'post'], 'sisp/callback', CallbackController::class)
     ->withoutMiddleware('web')
+    ->middleware(config()->array('sisp.middleware.callback', ['throttle:60,1']))
     ->name('sisp.callback');
 
 Route::get('sisp/cancel', CancelTransactionController::class)
