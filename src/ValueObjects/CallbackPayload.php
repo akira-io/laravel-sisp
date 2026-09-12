@@ -84,7 +84,7 @@ final readonly class CallbackPayload
             languageMessages: (string) ($data['languageMessages'] ?? ''),
             userCancelled: filter_var(
                 $data['userCancelled'] ?? $data['UserCancelled'] ?? false,
-                FILTER_VALIDATE_BOOL,
+                FILTER_VALIDATE_BOOLEAN,
             ),
             raw: $data,
         );
