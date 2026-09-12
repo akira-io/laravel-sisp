@@ -336,9 +336,19 @@ POST to `/sisp/refund/{transaction}`:
 ```php
 POST /sisp/refund/{transaction}
 {
-    "amount": 500.00
+    "amount": 500.00,
+    "reason": "customer_request"
 }
 ```
+
+`amount` is required, numeric and must be greater than zero. `reason` is optional, a string of at most 255 characters, and defaults to `user_refund`.
+
+Responses:
+
+- `200` the refund succeeded, with the updated transaction in the body
+- `400` the transaction cannot be refunded, or the amount exceeds the refundable balance
+- `403` the authenticated user is not allowed to refund this transaction
+- `422` the payload failed validation, with the messages under `errors`
 
 Dispatches `TransactionRefunded` event.
 

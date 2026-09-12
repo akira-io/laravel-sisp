@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Http\Requests\RefundTransactionRequest;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use LogicException;
 
 final readonly class RefundTransactionController
@@ -16,20 +16,14 @@ final readonly class RefundTransactionController
         private RefundTransactionAction $refundTransaction,
     ) {}
 
-    public function __invoke(Transaction $transaction, Request $request): JsonResponse
+    public function __invoke(Transaction $transaction, RefundTransactionRequest $request): JsonResponse
     {
-        if (! $this->isAuthorizedForTransaction($request, $transaction)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to refund this transaction.',
-            ], 403);
-        }
-
-        $refundAmount = (float) $request->input('amount');
-        $reason = $request->input('reason', 'user_refund');
-
         try {
-            $transaction = $this->refundTransaction->handle($transaction, $refundAmount, $reason);
+            $transaction = $this->refundTransaction->handle(
+                $transaction,
+                $request->refundAmount(),
+                $request->refundReason(),
+            );
 
             return response()->json([
                 'success' => true,
@@ -42,16 +36,5 @@ final readonly class RefundTransactionController
                 'message' => $e->getMessage(),
             ], 400);
         }
-    }
-
-    private function isAuthorizedForTransaction(Request $request, Transaction $transaction): bool
-    {
-        $user = $request->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        return $user->can('refund', $transaction);
     }
 }
