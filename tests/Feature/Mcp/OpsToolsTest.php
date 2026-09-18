@@ -25,7 +25,7 @@ it('builds a payment request without persisting a transaction', function (): voi
 
 it('rejects a non-positive amount', function (): void {
     SispOpsServer::tool(BuildPaymentRequestTool::class, ['amount' => 0])
-        ->assertHasErrors();
+        ->assertHasErrors(['amount']);
 });
 
 it('fetches a transaction by merchant reference', function (): void {
@@ -46,21 +46,22 @@ it('fetches a transaction by id', function (): void {
 
 it('errors when a transaction is not found', function (): void {
     SispOpsServer::tool(GetTransactionTool::class, ['transaction' => 'missing'])
-        ->assertHasErrors();
+        ->assertHasErrors(['No transaction found for "missing".']);
 });
 
 it('lists transactions filtered by status', function (): void {
-    Transaction::factory()->completed()->create();
-    Transaction::factory()->pending()->create();
+    Transaction::factory()->completed()->create(['merchant_ref' => 'REF-DONE']);
+    Transaction::factory()->pending()->create(['merchant_ref' => 'REF-WAITING']);
 
     SispOpsServer::tool(ListTransactionsTool::class, ['status' => 'completed'])
         ->assertOk()
-        ->assertSee('completed');
+        ->assertSee(['REF-DONE', '"count":1'])
+        ->assertDontSee('REF-WAITING');
 });
 
 it('rejects an invalid status filter', function (): void {
     SispOpsServer::tool(ListTransactionsTool::class, ['status' => 'bogus'])
-        ->assertHasErrors();
+        ->assertHasErrors(['Invalid status']);
 });
 
 it('queries the live transaction status', function (): void {
@@ -101,13 +102,28 @@ it('reconciles a pending transaction', function (): void {
     expect($transaction->fresh()->status)->toBe(TransactionStatus::completed);
 });
 
-it('prefers an exact id over a numeric merchant reference', function (): void {
-    $target = Transaction::factory()->create();
-    Transaction::factory()->create(['merchant_ref' => (string) $target->id]);
+it('refuses a numeric identifier that matches two transactions', function (): void {
+    $byId = Transaction::factory()->pending()->create();
+    $byRef = Transaction::factory()->pending()->create(['merchant_ref' => (string) $byId->id]);
 
-    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => (string) $target->id])
+    SispOpsServer::tool(CancelTransactionTool::class, ['transaction' => (string) $byId->id])
+        ->assertHasErrors(['Prefix it with "id:" or "ref:"']);
+
+    expect($byId->fresh()->status)->toBe(TransactionStatus::pending)
+        ->and($byRef->fresh()->status)->toBe(TransactionStatus::pending);
+});
+
+it('resolves an explicit id or merchant reference prefix', function (): void {
+    $byId = Transaction::factory()->create(['merchant_ref' => 'REF-BY-ID-PREFIX']);
+    Transaction::factory()->create(['merchant_ref' => (string) $byId->id]);
+
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => 'id:'.$byId->id])
         ->assertOk()
-        ->assertSee($target->merchant_ref);
+        ->assertSee('REF-BY-ID-PREFIX');
+
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => 'ref:'.$byId->id])
+        ->assertOk()
+        ->assertSee('"merchant_ref":"'.$byId->id.'"');
 });
 
 it('queries the gateway with the stored merchant reference when given an id', function (): void {
@@ -173,7 +189,21 @@ it('builds a payment request with the customer fields it is given', function ():
         'customerCity' => 'Praia',
         'customerAddress' => 'Rua 1',
         'customerPhone' => '',
-    ])->assertOk()->assertSee('payment_request');
+    ])->assertOk()->assertSee(['payment_request', 'Preview only'])->assertDontSee('"fingerprint"');
+});
+
+it('previews the 3-d secure purchase request without a fingerprint', function (): void {
+    config()->set('sisp.is_3dsec', '1');
+
+    SispOpsServer::tool(BuildPaymentRequestTool::class, [
+        'amount' => 1500.0,
+        'customerEmail' => 'buyer@example.com',
+        'customerCountry' => 'CV',
+        'customerCity' => 'Praia',
+        'customerAddress' => 'Rua 1',
+        'customerPostalCode' => '7600',
+        'customerPhone' => '+2389990000',
+    ])->assertOk()->assertSee('purchaseRequest')->assertDontSee('"fingerprint"');
 });
 
 it('explains why a 3-d secure payment request cannot be built', function (): void {
@@ -192,6 +222,27 @@ it('lists transactions inside a date window', function (): void {
         'to' => now()->toIso8601String(),
         'limit' => 5,
     ])->assertOk()->assertSee('REF-NEW')->assertDontSee('REF-OLD');
+});
+
+it('includes the whole day when the upper bound is a bare date', function (): void {
+    Transaction::factory()->create(['merchant_ref' => 'REF-EVENING', 'created_at' => '2026-09-17 21:30:00']);
+    Transaction::factory()->create(['merchant_ref' => 'REF-NEXT-DAY', 'created_at' => '2026-09-18 00:00:01']);
+
+    SispOpsServer::tool(ListTransactionsTool::class, ['from' => '2026-09-17', 'to' => '2026-09-17'])
+        ->assertOk()
+        ->assertSee('REF-EVENING')
+        ->assertDontSee('REF-NEXT-DAY');
+});
+
+it('converts a bound with an offset to the application timezone', function (): void {
+    config()->set('app.timezone', 'UTC');
+    Transaction::factory()->create(['merchant_ref' => 'REF-BEFORE', 'created_at' => '2026-09-17 08:59:00']);
+    Transaction::factory()->create(['merchant_ref' => 'REF-AFTER', 'created_at' => '2026-09-17 09:30:00']);
+
+    SispOpsServer::tool(ListTransactionsTool::class, ['from' => '2026-09-17T10:00:00+01:00'])
+        ->assertOk()
+        ->assertSee('REF-AFTER')
+        ->assertDontSee('REF-BEFORE');
 });
 
 it('reports a missing transaction on every transaction tool', function (string $tool, array $arguments): void {

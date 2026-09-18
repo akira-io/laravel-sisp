@@ -14,6 +14,7 @@ use Akira\Sisp\Mcp\Tools\Ops\RefundTransactionTool;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
 use Laravel\Mcp\Facades\Mcp;
 
 beforeEach(function (): void {
@@ -102,7 +103,7 @@ it('requires the refund policy on top of the mcp ability, like the http refund r
 
     SispWebOpsServer::actingAs(mcpOperator())
         ->tool(RefundTransactionTool::class, ['transaction' => 'REF-POLICY', 'amount' => 100])
-        ->assertHasErrors(['Not authorized to refund transactions.']);
+        ->assertHasErrors(['Not authorized to refund this transaction']);
 
     expect($transaction->fresh()->status)->toBe(TransactionStatus::completed);
 
@@ -140,4 +141,91 @@ it('denies unauthenticated calls over http even when the route has no auth middl
         ->toContain('Not authorized')
         ->not->toContain('REF-HTTP')
         ->not->toContain('victim');
+});
+
+it('asks the gate for the operation each tool performs', function (string $tool, string $operation, array $arguments): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => true, 'msg' => 'Approved'])]);
+    allowMcpOperations($operation);
+    Gate::define('refund', fn (GenericUser $user, Transaction $subject): bool => true);
+    Transaction::factory()->completed()->create([
+        'merchant_ref' => 'REF-OP',
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    SispWebOpsServer::actingAs(mcpOperator())
+        ->tool($tool, $arguments)
+        ->assertHasNoErrors();
+})->with([
+    'get' => [GetTransactionTool::class, 'view', ['transaction' => 'REF-OP']],
+    'list' => [ListTransactionsTool::class, 'list', []],
+    'query' => [QueryTransactionStatusTool::class, 'query', ['transaction' => 'REF-OP']],
+    'reconcile' => [ReconcileTransactionTool::class, 'reconcile', ['transaction' => 'REF-OP']],
+    'build' => [BuildPaymentRequestTool::class, 'build', ['amount' => 100]],
+    'refund' => [RefundTransactionTool::class, 'refund', ['transaction' => 'REF-OP', 'amount' => 10]],
+]);
+
+it('asks the ability the host configured', function (): void {
+    config()->set('sisp.mcp.web.ability', 'operate-payments');
+    Gate::define('operate-payments', fn (GenericUser $user, string $operation, ?Transaction $transaction = null): bool => true);
+    Transaction::factory()->create(['merchant_ref' => 'REF-CUSTOM']);
+
+    SispWebOpsServer::actingAs(mcpOperator())
+        ->tool(GetTransactionTool::class, ['transaction' => 'REF-CUSTOM'])
+        ->assertOk()
+        ->assertSee('REF-CUSTOM');
+});
+
+it('does not tell a web caller whether a transaction exists', function (): void {
+    allowMcpOperations('list');
+    Transaction::factory()->create(['merchant_ref' => 'REF-EXISTS']);
+
+    $message = 'Not authorized to view this transaction, or it does not exist.';
+
+    SispWebOpsServer::actingAs(mcpOperator())
+        ->tool(GetTransactionTool::class, ['transaction' => 'REF-EXISTS'])
+        ->assertHasErrors([$message]);
+
+    SispWebOpsServer::actingAs(mcpOperator())
+        ->tool(GetTransactionTool::class, ['transaction' => 'REF-MISSING'])
+        ->assertHasErrors([$message]);
+});
+
+it('lists only the transactions the operator may view', function (): void {
+    $visible = Transaction::factory()->create(['merchant_ref' => 'REF-MINE']);
+    Transaction::factory()->create(['merchant_ref' => 'REF-THEIRS']);
+
+    Gate::define('sisp-mcp', fn (GenericUser $user, string $operation, ?Transaction $transaction = null): bool => $operation === 'list' || $transaction?->is($visible) === true);
+
+    SispWebOpsServer::actingAs(mcpOperator())
+        ->tool(ListTransactionsTool::class, [])
+        ->assertOk()
+        ->assertSee(['REF-MINE', '"count":1'])
+        ->assertDontSee('REF-THEIRS');
+});
+
+it('refuses destructive tools on the web server unless they are exposed', function (string $tool): void {
+    config()->set('sisp.mcp.web.expose_destructive', false);
+    allowMcpOperations('refund', 'cancel');
+    $transaction = Transaction::factory()->pending()->create(['merchant_ref' => 'REF-HIDDEN']);
+
+    SispWebOpsServer::actingAs(mcpOperator())
+        ->tool($tool, ['transaction' => 'REF-HIDDEN', 'amount' => 10])
+        ->assertHasErrors();
+
+    expect($transaction->fresh()->status)->toBe(TransactionStatus::pending);
+})->with([RefundTransactionTool::class, CancelTransactionTool::class]);
+
+it('protects the web route with authentication and a throttle by default', function (): void {
+    config()->set('sisp.mcp.local', false);
+    config()->set('sisp.mcp.web.enabled', true);
+    config()->set('sisp.mcp.web.middleware', (require dirname(__DIR__, 3).'/config/sisp.php')['mcp']['web']['middleware']);
+    require dirname(__DIR__, 3).'/routes/ai.php';
+
+    expect(Mcp::getWebServer('sisp/mcp')?->gatherMiddleware())
+        ->toContain('auth:sanctum')
+        ->toContain('throttle:60,1');
 });

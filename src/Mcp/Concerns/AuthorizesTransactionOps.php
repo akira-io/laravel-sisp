@@ -18,21 +18,28 @@ trait AuthorizesTransactionOps
 
     private function authorizedTransaction(Request $request, string $operation): Transaction|Response
     {
-        $identifier = (string) $request->get('transaction');
-        $transaction = $this->resolveTransaction($identifier);
+        $transaction = $this->resolveTransaction((string) $request->get('transaction'));
+        $onWeb = $request->user() instanceof Authenticatable;
 
-        if (! $transaction instanceof Transaction) {
-            return $this->transactionNotFound($identifier);
+        if ($transaction instanceof Response) {
+            return $onWeb ? $this->notAuthorizedForTransaction($operation) : $transaction;
         }
 
-        return $this->denyUnlessAuthorized($request, $operation, $transaction) ?? $transaction;
+        return $this->isAuthorized($request, $operation, $transaction)
+            ? $transaction
+            : $this->notAuthorizedForTransaction($operation);
     }
 
-    private function denyUnlessAuthorized(Request $request, string $operation, ?Transaction $transaction = null): ?Response
+    private function denyUnlessAuthorized(Request $request, string $operation): ?Response
     {
-        return $this->isAuthorized($request, $operation, $transaction)
+        return $this->isAuthorized($request, $operation, null)
             ? null
             : Response::error("Not authorized to {$operation} transactions.");
+    }
+
+    private function notAuthorizedForTransaction(string $operation): Response
+    {
+        return Response::error("Not authorized to {$operation} this transaction, or it does not exist.");
     }
 
     private function isAuthorized(Request $request, string $operation, ?Transaction $transaction): bool

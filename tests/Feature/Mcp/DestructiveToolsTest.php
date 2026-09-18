@@ -60,7 +60,7 @@ it('fails to cancel a completed transaction', function (): void {
     $transaction = Transaction::factory()->completed()->create();
 
     SispOpsServer::tool(CancelTransactionTool::class, ['transaction' => (string) $transaction->id])
-        ->assertHasErrors();
+        ->assertHasErrors(["Transaction with status 'completed' cannot be cancelled."]);
 });
 
 it('validates the refund payload with the http refund request rules', function (array $arguments, string $field): void {
