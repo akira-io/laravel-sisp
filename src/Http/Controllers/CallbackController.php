@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use LogicException;
 
 final readonly class CallbackController
@@ -86,7 +87,7 @@ final readonly class CallbackController
     {
         $merchantRef = $request->query('ref');
 
-        if (! $merchantRef || ! $request->hasValidSignature()) {
+        if (! $merchantRef || ! $request->hasValidSignature(absolute: false)) {
             return redirect(config('sisp.redirect_url', '/'));
         }
 
@@ -145,7 +146,11 @@ final readonly class CallbackController
             return false;
         }
 
-        return ! $this->validateFingerprint->handle($payload);
+        try {
+            return ! $this->validateFingerprint->handle($payload);
+        } catch (InvalidArgumentException) {
+            return true;
+        }
     }
 
     private function isAlreadyProcessed(CallbackPayload $payload): bool

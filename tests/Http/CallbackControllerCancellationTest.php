@@ -295,6 +295,6 @@ it('does not rate limit callbacks that are not cancellations', function (): void
     ]);
 
     foreach (range(1, 20) as $ignored) {
-        $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref]))->assertOk();
+        $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false))->assertOk();
     }
 });

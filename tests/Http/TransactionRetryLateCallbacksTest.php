@@ -48,7 +48,7 @@ it('does not let a late failed callback from a superseded attempt overwrite the 
     );
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-LATE-FAILED-CALLBACK']);
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-LATE-FAILED-CALLBACK'], absolute: false);
 
     $transaction->refresh();
     $attempts = $transaction->attempts()->orderBy('attempt_number')->get();
@@ -99,7 +99,7 @@ it('promotes the transaction when a late successful callback belongs to a supers
     );
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-LATE-SUCCESS-CALLBACK']);
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-LATE-SUCCESS-CALLBACK'], absolute: false);
 
     $transaction->refresh();
     $attempts = $transaction->attempts()->orderBy('attempt_number')->get();

@@ -15,6 +15,7 @@ final readonly class BuildPaymentResultUrlAction
             'sisp.callback',
             now()->addMinutes(30),
             ['ref' => $transaction->merchant_ref],
+            absolute: false,
         );
     }
 }
