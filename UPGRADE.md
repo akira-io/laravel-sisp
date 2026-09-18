@@ -1,3 +1,252 @@
+# Upgrading from 2.x to 3.0
+
+Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and four new migrations must be published and run.
+
+**Estimated effort:**
+
+| Your usage profile | Effort |
+| --- | --- |
+| Routes, payment form, callbacks, events, facade only | Publish and run the new migrations |
+| Parsing or storing the merchant reference or session | Review [the new reference format](#merchant-reference-and-session-format-action-required-if-you-parse-or-size-them) |
+| Code that matches on `InvoiceStatus` or filters invoices by status | Review [the refunded invoice status](#refunded-invoice-status-action-required-if-you-match-or-filter-on-invoicestatus) |
+| Calling `CancelTransactionAction` or `POST /sisp/refund/{transaction}` yourself | Review [cancellation](#cancellation-refuses-failed-and-refunded-transactions-action-required-if-you-cancel-them) and [refund validation](#refund-endpoint-validates-its-payload-action-required-if-you-call-it) |
+| Instantiating package actions with `new` | Review the [constructor changes](#constructor-signatures-action-required-only-if-you-instantiate-with-new) |
+
+---
+
+## Breaking changes in 3.0
+
+### Merchant reference and session format (action required if you parse or size them)
+
+The default generators append ten random uppercase letters and digits to the timestamp, so a reference is no longer guessable and two payments started in the same second no longer collide:
+
+| | 2.x | 3.0 |
+| --- | --- | --- |
+| `merchantReference` | `R20260523235959` (15 characters) | `R20260523235959K7M2QX9TBV` (25 characters) |
+| `merchantSession` | `S20260523235959` (15 characters) | `S20260523235959K7M2QX9TBV` (25 characters) |
+
+The package columns are `string` (255 characters), so they need no change. Update anything of your own that assumes 15 characters or parses the timestamp out of the value.
+
+To keep the 2.x shape, point `sisp.generators` at your own class implementing `Akira\Sisp\Contracts\Generator`:
+
+```php
+namespace App\Sisp;
+
+use Akira\Sisp\Contracts\Generator;
+
+final readonly class LegacyMerchantReferenceGenerator implements Generator
+{
+    public function __invoke(): string
+    {
+        return 'R'.now()->format('YmdHis');
+    }
+}
+```
+
+```php
+// config/sisp.php
+'generators' => [
+    'merchantSession' => App\Sisp\LegacyMerchantSessionGenerator::class,
+    'merchantReference' => App\Sisp\LegacyMerchantReferenceGenerator::class,
+    'timeStamp' => Akira\Sisp\Actions\Generators\TimeStampGeneratorAction::class,
+],
+```
+
+Only do this if something outside the package requires it. With the 2.x shape both values are the second the payment started, and the session is the reference with `S` in place of `R`, so anyone can enumerate them. That matters in two places:
+
+- The customer cancellation callback carries no fingerprint. The reference and session are the only things identifying the transaction it cancels, so guessable values let a third party cancel pending payments.
+- `GET /sisp/callback?ref=<merchantReference>` renders the payment result page for that reference, so guessable references let a third party read other customers' payment results.
+
+### Cancellation refuses failed and refunded transactions (action required if you cancel them)
+
+`CancelTransactionAction::handle()` throws `LogicException` for transactions in `completed`, `cancelled`, `failed` or `refunded` status. In 2.x only `completed` and `cancelled` were refused, so a failed or refunded transaction could be moved to `cancelled`.
+
+The action now reads the transaction back with `lockForUpdate()` inside a database transaction and runs the status check against the locked row, so two concurrent cancellations cannot both succeed. It also moves the linked invoice to `cancelled` in the same database transaction.
+
+If you call the action yourself, catch `LogicException` for these statuses or check the status first.
+
+### Refunded invoice status (action required if you match or filter on `InvoiceStatus`)
+
+`InvoiceStatus` has a new `refunded` case. A full refund moves the invoice to `refunded` in the same database transaction as the transaction status; a partial refund leaves the transaction `completed` and the invoice untouched.
+
+| Transaction event | Invoice status in 2.x | Invoice status in 3.0 |
+| --- | --- | --- |
+| Full refund | unchanged (normally `paid`) | `refunded` |
+| Cancellation | unchanged | `cancelled` |
+
+- An exhaustive `match` over `InvoiceStatus` without a `default` arm raises `UnhandledMatchError` on a refunded invoice. Add the `refunded` arm.
+- A query or report counting `paid` invoices no longer includes fully refunded ones. Query `refunded` explicitly where you need them.
+
+The `status` column is a plain string, so no data migration is required. Invoices refunded before the upgrade keep the status they had.
+
+### Refund endpoint validates its payload (action required if you call it)
+
+`RefundTransactionController::__invoke()` now receives `RefundTransactionRequest` instead of `Illuminate\Http\Request`. `POST /sisp/refund/{transaction}` validates:
+
+| Field | Rules |
+| --- | --- |
+| `amount` | `required`, `numeric`, `gt:0` |
+| `reason` | `sometimes`, `string`, `max:255` |
+
+An invalid payload is rejected with **HTTP 422**:
+
+```json
+{
+    "success": false,
+    "message": "The refund request is invalid.",
+    "errors": { "amount": ["..."] }
+}
+```
+
+In 2.x the amount went through a `(float)` cast, so a missing or malformed amount either failed later with a 400 or 500, or was coerced into a different amount and refunded. Authorization is unchanged: the request still requires `$user->can('refund', $transaction)` and answers 403 otherwise. If you extended or called the controller directly, pass a `RefundTransactionRequest`.
+
+### Constructor signatures (action required only if you instantiate with `new`)
+
+Every `handle()` signature stays backward compatible: `MapTransactionStatusAction`, `Transaction\FailTransactionAction` and `Transaction\UpdateTransactionAttemptAction` gained an optional trailing parameter, and nothing else changed. Resolving these classes through the container (`app(...)`, `resolve(...)`, constructor injection) keeps working; only manual `new` calls need the new arguments.
+
+| Class | 2.x constructor | 3.0 constructor |
+| --- | --- | --- |
+| `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
+| `BuildSandboxPayloadAction` | `PaymentResponseFingerPrintAction`, `SispCredentialsResolver` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction`, `SispCredentialsResolver` |
+| `CancelTransactionAction` | none | `UpdateInvoiceStatusAction` |
+| `RefundTransactionAction` | `BuildRefundRequestAction` | `BuildRefundRequestAction`, `UpdateInvoiceStatusAction` |
+| `RenderPaymentResponseAction` | `GetPaymentErrorResponseAction`, `GetPaymentResponseTranslationsAction`, `CanRetryPaymentAction`, `InertiaAvailability` | `GetPaymentResponseTranslationsAction`, `CanRetryPaymentAction`, `InertiaAvailability` |
+| `Transaction\UpdateTransactionAction` | `MapTransactionStatusAction`, `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
+| `Transaction\FailTransactionAction` | `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
+| `Transaction\UpdateTransactionAttemptAction` | none | `MaskCallbackRawPayloadAction` |
+| `CallbackController` | `RenderPaymentResponseBasedOnConfigAction`, `StoreRequestMetadataAction`, `UpdateInvoiceStatusAction`, `LoadConfig` | `RenderPaymentResponseBasedOnConfigAction`, `StoreRequestMetadataAction`, `UpdateInvoiceStatusAction`, `CancelTransactionAction`, `LoadConfig` |
+
+```php
+// 2.x
+new ValidatePaymentResponseFingerprintAction($successFingerprint);
+new BuildSandboxPayloadAction($successFingerprint, $resolver);
+
+// 3.0
+new ValidatePaymentResponseFingerprintAction($successFingerprint, $errorFingerprint);
+new BuildSandboxPayloadAction($successFingerprint, $errorFingerprint, $resolver);
+```
+
+`CallbackPayload` gained constructor parameters too, all optional and appended after the existing ones, so existing calls keep compiling.
+
+---
+
+## Database migrations (action required)
+
+3.0 ships four new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+
+| Migration | What it does |
+| --- | --- |
+| `update_laravel_sisp_transactions_add_callback_error_fields` | Adds `callback_raw_payload`, `error_code` and `error_message` to the transactions table. The callback writes these columns, so this migration must run before 3.0 serves callbacks. |
+| `create_sisp_refunds_table` | Creates the refunds table (`sisp.tables.refunds`, default `sisp_refunds`) and copies the refund history stored in each transaction's `payload['refunds']` into it. The copy skips transactions already present in the table, so it is safe to re-run after an interruption. Transactions whose payload cannot be read are listed in a `SISP refund history could not be read for some transactions.` warning in the log. |
+| `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
+| `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
+
+```bash
+php artisan vendor:publish --tag=sisp-migrations
+php artisan migrate
+```
+
+Publishing keeps the migrations you already published under their original file names and only adds the new ones.
+
+Plan the deploy around these points:
+
+- **Run the upgrade in maintenance mode** (`php artisan down`), or at least stop taking refunds, from the moment `migrate` starts until 3.0 serves every request. The callback writes the new columns, and once a transaction has rows in the refunds table 3.0 counts refunds only from that table. A refund that a still-running 2.x release records after the copy lands only in `payload['refunds']`, so 3.0 would overstate the refundable amount and allow the same money to be refunded twice. Zero-downtime deploys that run `migrate` before switching releases hit exactly this window.
+- **Large transactions tables take time and locks.** The refunds copy reads every transaction, payload included, and writes one row per refund; on PostgreSQL and SQLite the whole migration runs in one database transaction, so an interrupted run starts over. The index on `status` and `created_at` is created without `CONCURRENTLY`, which blocks writes to the transactions table on PostgreSQL while it builds, and on MySQL before 8.0.29 the new columns rebuild the table. Run it in a low-traffic window, or create the `status`/`created_at` index yourself beforehand: the migration skips an index that already exists.
+- **Back up before rolling back.** Rolling back `update_laravel_sisp_transactions_add_callback_error_fields` drops `error_code`, `error_message` and `callback_raw_payload` for good. Rolling back the refunds table loses nothing, because every refund is still mirrored in `payload['refunds']`.
+
+The refund history is still appended to `payload['refunds']` as well, so code reading it keeps working. New code should read `$transaction->refunds()` (`Akira\Sisp\Models\Refund`).
+
+---
+
+## New commands (opt-in)
+
+Two cleanup commands ship with 3.0. Neither is scheduled by the package; register the ones you want in `routes/console.php`.
+
+| Command | What it does | Default window |
+| --- | --- | --- |
+| `sisp:expire-pending` | Cancels `pending` transactions that never received a callback, with the reason `expired`. `--older-than` must be at least `1`. | 30 days (`SISP_EXPIRE_PENDING_AFTER_DAYS`) |
+| `sisp:prune-request-payloads` | Removes the 3-D Secure `purchaseRequest` blob from `completed`, `failed`, `cancelled` and `refunded` transactions. | 90 days (`SISP_PRUNE_REQUEST_PAYLOADS_AFTER_DAYS`) |
+
+Both accept `--older-than=<days>` and `--limit=<count>` (default 100 per run).
+
+```php
+// routes/console.php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('sisp:expire-pending')->weekly();
+Schedule::command('sisp:prune-request-payloads')->monthly();
+```
+
+If you maintain a customized `config/sisp.php`, the new keys are optional and fall back to the defaults above:
+
+```php
+'tables' => [
+    // ...
+    'refunds' => env('SISP_TABLE_REFUNDS', 'sisp_refunds'),
+],
+
+'expire_pending_after_days' => env('SISP_EXPIRE_PENDING_AFTER_DAYS', 30),
+
+'prune_request_payloads_after_days' => env('SISP_PRUNE_REQUEST_PAYLOADS_AFTER_DAYS', 90),
+
+'middleware' => [
+    // ...
+    'callback' => ['throttle:sisp-callback'],
+],
+```
+
+See [docs/09-troubleshooting.md](docs/09-troubleshooting.md#cleanup-commands) for the rationale behind each window.
+
+---
+
+## Behavioral notes
+
+- **`TransactionCancelled` fires in more places.** In 2.x the customer cancellation callback (`UserCancelled`) only redirected and left the transaction `pending`. In 3.0 it cancels the matching pending transaction through `CancelTransactionAction`, which dispatches `TransactionCancelled` with the reason `user_cancelled`. `sisp:expire-pending` dispatches it too, with the reason `expired`. The signed `/sisp/cancel` route also defaults to `user_cancelled`, so a listener cannot tell it apart from the callback by the reason alone. Listeners written for the explicit cancellation path (the signed `/sisp/cancel` route or your own calls to `CancelTransactionAction`) now also run for these two.
+- **The cancellation callback requires both identifiers.** It only cancels a `pending` transaction matching a non-empty `merchantRef` and `merchantSession`. The callback route now carries the `throttle:sisp-callback` middleware; override it with `sisp.middleware.callback`. Do not rely on it to protect guessable references.
+- **Status comes from the documented message type table.** Only `messageType = 6` fails a transaction. A known success message type completes it only when `merchantResp` has the expected value; otherwise the transaction stays `pending` and a warning is logged.
+- **Refused callbacks keep their reason.** The error fingerprint formula validates SISP refusals, and the refusal code and message are stored in `error_code` and `error_message` and shown on the response screen. The raw callback is stored encrypted in `callback_raw_payload`, with the card number masked to its last four digits, and encrypted attributes are redacted in `sisp_transaction_logs`.
+- **Deprecations.** `ErrorMessageType` and `GetPaymentErrorResponseAction` are deprecated and no longer used by the package. They remain for published views that read the old error array shape.
+
+---
+
+## Upgrade steps
+
+In your application repository:
+
+```bash
+composer require akira/laravel-sisp:^3.0
+php artisan vendor:publish --tag=sisp-migrations
+```
+
+Commit the updated `composer.lock` and the published migrations. Then deploy with the application in maintenance mode, so neither the old nor the new code serves requests while the schema changes:
+
+```bash
+php artisan down
+composer install --no-dev
+php artisan migrate --force
+php artisan optimize:clear
+php artisan up
+```
+
+Finally, run a sandbox payment end to end (`SISP_SANDBOX=true`), one refused payment and one customer cancellation, and confirm each transaction and invoice ends in the expected status.
+
+---
+
+## Checklist
+
+- [ ] `composer require akira/laravel-sisp:^3.0`
+- [ ] Migrations published and run inside a maintenance window, with a backup taken first
+- [ ] Nothing of your own assumes a 15-character merchant reference or session
+- [ ] `match` expressions and invoice queries handle `InvoiceStatus::refunded`
+- [ ] Direct calls to `CancelTransactionAction` handle `LogicException` for `failed` and `refunded` transactions
+- [ ] Clients of `POST /sisp/refund/{transaction}` handle a 422 response
+- [ ] No manual `new` instantiation of the classes in the constructor table
+- [ ] `TransactionCancelled` listeners reviewed for the callback and `expire-pending` paths
+- [ ] `sisp:expire-pending` and `sisp:prune-request-payloads` scheduled, if you want them
+- [ ] Sandbox payment, refusal and cancellation verified end to end
+
+---
+
 # Upgrading from 1.x to 2.0
 
 This guide walks existing installations through the upgrade to v2, which targets **Laravel 13** and **PHP 8.5** and reorganizes the package internals around builders, drivers, and pipelines.
@@ -28,8 +277,6 @@ Upgrade your application to Laravel 13 and PHP 8.5 first, then:
 ```bash
 composer require akira/laravel-sisp:^2.0
 ```
-
-> **Note:** `^2.0` resolves once the `v2.0.0` tag is published. Before that, the development line is installable with `composer require akira/laravel-sisp:2.x-dev`.
 
 ### 1.2 Constructor signatures of public actions (action required if you resolve them with custom arguments)
 
@@ -178,32 +425,3 @@ These are fixes and clarifications shipped in 2.0 — listed so nothing surprise
 - [ ] Sandbox payment flow verified end to end
 
 For the full v2 design, see [docs/12-architecture.md](docs/12-architecture.md).
-
----
-
-## Upgrading from 2.1 to 2.2
-
-`ValidatePaymentResponseFingerprintAction` now validates SISP error callbacks
-(`messageType = 6`) with their own fingerprint formula instead of the success
-formula, and `BuildSandboxPayloadAction` signs sandbox error payloads with
-that same formula so they validate correctly. Both constructors gained a
-second dependency:
-
-| Class | 2.1 constructor | 2.2 constructor |
-| --- | --- | --- |
-| `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
-| `BuildSandboxPayloadAction` | `PaymentResponseFingerPrintAction`, `SispCredentialsResolver` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction`, `SispCredentialsResolver` |
-
-If you resolve them through the container (`app(...)`, `resolve(...)`,
-constructor injection), nothing breaks. If you instantiate them manually with
-`new`, pass the added dependency:
-
-```php
-// 2.1 — no longer compiles
-new ValidatePaymentResponseFingerprintAction($successFingerprint);
-new BuildSandboxPayloadAction($successFingerprint, $resolver);
-
-// 2.2
-new ValidatePaymentResponseFingerprintAction($successFingerprint, $errorFingerprint);
-new BuildSandboxPayloadAction($successFingerprint, $errorFingerprint, $resolver);
-```

@@ -156,14 +156,18 @@ transaction.
 
 ### Cancel via Route
 
-GET `/sisp/cancel`:
+GET `/sisp/cancel` only accepts a signed URL. Generate one in your application and redirect the customer to it:
 
 ```php
-// From your application
-GET /sisp/cancel?transaction_id=uuid-here&reason=user_cancelled
+use Illuminate\Support\Facades\URL;
+
+$url = URL::temporarySignedRoute('sisp.cancel', now()->addMinutes(30), [
+    'transaction_id' => $transaction->id,
+    'reason' => 'user_cancelled',
+]);
 ```
 
-Dispatches `TransactionCancelled` event.
+An unsigned or expired URL is rejected with 403. A successful cancellation dispatches the `TransactionCancelled` event.
 
 ## Status Reconciliation
 

@@ -20,7 +20,7 @@ php artisan laravel-sisp:install
 ```json
 {
   "require": {
-    "akira/laravel-sisp": "^2.0"
+    "akira/laravel-sisp": "^3.0"
   }
 }
 ```
@@ -67,7 +67,7 @@ $transaction = Sisp::reconcileTransactionStatus($transaction);
 $countries = Sisp::countries();
 ```
 
-## Requirements (v2)
+## Requirements
 
 - PHP 8.5+
 - Laravel 13+
@@ -144,7 +144,7 @@ The package also uses native Laravel 13 syntax throughout: `#[Fillable]`, `#[Use
 - [FAQ](docs/10-faq.md)
 - [API Reference](docs/11-api-reference.md)
 - [Architecture (v2)](docs/12-architecture.md)
-- [Upgrade Guide (1.x → 2.0)](UPGRADE.md)
+- [Upgrade Guide (2.x → 3.0 and 1.x → 2.0)](UPGRADE.md)
 - [Idempotency](docs/14-idempotency.md)
 
 Reference documentation is maintained in this repository under [`docs`](docs).
