@@ -269,13 +269,14 @@ The controller updates the linked invoice status after the transaction is update
 - `PaymentPending` - Still processing
 
 ### 9.11 Response Rendering
-The POST callback redirects to:
+The POST callback redirects to a temporary signed URL, valid for 30 minutes:
 
 ```php
-route('sisp.callback', ['ref' => $transaction->merchant_ref])
+app(BuildPaymentResultUrlAction::class)->handle($transaction);
+// URL::temporarySignedRoute('sisp.callback', now()->addMinutes(30), ['ref' => $transaction->merchant_ref])
 ```
 
-The GET callback renders the payment response for the `ref` query parameter. Missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
+The GET callback renders the payment response for the `ref` query parameter only when the signature is valid. Unsigned, expired, missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
 
 ## Step 10: Timeout Reconciliation
 

@@ -17,7 +17,7 @@ it('cancels a pending transaction from a signed request and redirects', function
         'reason' => 'user_cancelled',
         'merchantRef' => 'MR-C',
     ]))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-C']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-C']);
 
     expect($t->refresh()->status->value)->toBe('cancelled');
 });
@@ -50,7 +50,7 @@ it('cancels a pending transaction resolved by transaction_id from a signed reque
         'reason' => 'user_cancelled',
         'transaction_id' => 'TXN-EXT-001',
     ]))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-C3']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-C3']);
 
     expect($t->refresh()->status->value)->toBe('cancelled');
 });
@@ -108,7 +108,7 @@ it('cancels the invoice when cancelling from the signed route', function (): voi
     ]);
 
     $this->get(URL::signedRoute('sisp.cancel', ['merchantRef' => 'MR-SIGNED-INV']))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-SIGNED-INV']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-SIGNED-INV']);
 
     expect($transaction->refresh()->status->value)->toBe('cancelled')
         ->and($invoice->refresh()->status->value)->toBe('cancelled');

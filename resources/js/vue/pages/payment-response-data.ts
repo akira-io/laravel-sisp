@@ -5,7 +5,6 @@ export interface TransactionData {
     formatted_amount: string;
     currency: string;
     merchant_ref: string;
-    merchant_session: string;
     message_type?: string;
 }
 

@@ -53,7 +53,6 @@ final readonly class RenderPaymentResponseAction
                 'formatted_amount' => $transaction->formatted_amount,
                 'currency' => $transaction->currency,
                 'merchant_ref' => $transaction->merchant_ref,
-                'merchant_session' => $transaction->merchant_session,
                 'message_type' => $transaction->message_type,
             ],
             'error' => $this->getStructuredError($transaction),
