@@ -82,12 +82,17 @@ final readonly class CallbackPayload
             screenError: (string) ($data['merchantRespScreenError'] ?? ''),
             fingerprintVersion: (string) ($data['resultFingerPrintVersion'] ?? ''),
             languageMessages: (string) ($data['languageMessages'] ?? ''),
-            userCancelled: filter_var(
-                $data['userCancelled'] ?? $data['UserCancelled'] ?? false,
-                FILTER_VALIDATE_BOOLEAN,
-            ),
+            userCancelled: self::indicatesUserCancellation($data),
             raw: $data,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function indicatesUserCancellation(array $data): bool
+    {
+        return array_any(['UserCancelled', 'userCancelled'], fn (string $key): bool => filter_var($data[$key] ?? false, FILTER_VALIDATE_BOOLEAN));
     }
 
     public function isError(): bool

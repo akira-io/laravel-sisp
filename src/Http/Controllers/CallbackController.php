@@ -32,7 +32,7 @@ final readonly class CallbackController
 
     public function __invoke(Request $request): mixed
     {
-        if ($this->isCancellation($request)) {
+        if (CallbackPayload::indicatesUserCancellation($request->all())) {
             return $this->handleUserCancellation($request);
         }
 
@@ -41,15 +41,6 @@ final readonly class CallbackController
         }
 
         return $this->handlePostRequest($request);
-    }
-
-    private function isCancellation(Request $request): bool
-    {
-        if ($request->boolean('UserCancelled')) {
-            return true;
-        }
-
-        return $request->boolean('userCancelled');
     }
 
     private function handleUserCancellation(Request $request): RedirectResponse

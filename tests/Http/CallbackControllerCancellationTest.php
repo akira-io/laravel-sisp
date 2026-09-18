@@ -222,7 +222,7 @@ it('leaves the invoice untouched when it refuses to cancel a terminal transactio
         ->and($invoice->refresh()->status->value)->toBe('paid');
 });
 
-it('rate limits repeated cancellation attempts against the same reference', function (): void {
+it('rate limits repeated cancellation attempts against the same reference', function (string $flag): void {
     Transaction::factory()->create([
         'merchant_ref' => 'MR-FLOOD',
         'merchant_session' => 'MS-FLOOD',
@@ -232,7 +232,7 @@ it('rate limits repeated cancellation attempts against the same reference', func
     $payload = [
         'merchantRef' => 'MR-FLOOD',
         'merchantSession' => 'MS-FLOOD',
-        'UserCancelled' => 'true',
+        $flag => '1',
     ];
 
     foreach (range(1, 10) as $ignored) {
@@ -240,6 +240,50 @@ it('rate limits repeated cancellation attempts against the same reference', func
     }
 
     $this->post(route('sisp.callback'), $payload)->assertTooManyRequests();
+})->with(['UserCancelled', 'userCancelled']);
+
+it('rate limits cancellation attempts that spread across references from one address', function (): void {
+    foreach (range(1, 30) as $attempt) {
+        $this->post(route('sisp.callback'), [
+            'merchantRef' => "MR-SPRAY-{$attempt}",
+            'merchantSession' => "MS-SPRAY-{$attempt}",
+            'userCancelled' => '1',
+        ])->assertRedirect('/home');
+    }
+
+    $this->post(route('sisp.callback'), [
+        'merchantRef' => 'MR-SPRAY-31',
+        'merchantSession' => 'MS-SPRAY-31',
+        'userCancelled' => '1',
+    ])->assertTooManyRequests();
+
+    $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2'])
+        ->post(route('sisp.callback'), [
+            'merchantRef' => 'MR-SPRAY-32',
+            'merchantSession' => 'MS-SPRAY-32',
+            'userCancelled' => '1',
+        ])->assertRedirect('/home');
+});
+
+it('keeps the reference budget apart from an address that looks like a reference', function (): void {
+    $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.3']);
+
+    foreach (range(1, 10) as $ignored) {
+        $this->post(route('sisp.callback'), [
+            'merchantRef' => '10.0.0.9',
+            'merchantSession' => 'MS-COLLIDE',
+            'UserCancelled' => '1',
+        ])->assertRedirect('/home');
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.9']);
+
+    foreach (range(1, 21) as $ignored) {
+        $this->post(route('sisp.callback'), [
+            'merchantSession' => 'MS-NO-REF',
+            'UserCancelled' => '1',
+        ])->assertRedirect('/home');
+    }
 });
 
 it('does not rate limit callbacks that are not cancellations', function (): void {
