@@ -1,6 +1,6 @@
 # Upgrading from 2.x to 3.0
 
-Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and four new migrations must be published and run.
+Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and five new migrations must be published and run.
 
 **Estimated effort:**
 
@@ -154,7 +154,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 
 ## Database migrations (action required)
 
-3.0 ships four new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+3.0 ships five new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
 
 | Migration | What it does |
 | --- | --- |
@@ -162,6 +162,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 | `create_sisp_refunds_table` | Creates the refunds table (`sisp.tables.refunds`, default `sisp_refunds`) and copies the refund history stored in each transaction's `payload['refunds']` into it. The copy skips transactions already present in the table, so it is safe to re-run after an interruption. Transactions whose payload cannot be read are listed in a `SISP refund history could not be read for some transactions.` warning in the log. |
 | `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
 | `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
+| `update_sisp_refunds_add_idempotency_key` | Adds a nullable `idempotency_key` column to the refunds table and a unique index on `transaction_id` and `idempotency_key`. It must run after `create_sisp_refunds_table`, and before 3.0 takes refunds. |
 
 ```bash
 php artisan vendor:publish --tag=sisp-migrations
@@ -229,6 +230,7 @@ See [docs/09-troubleshooting.md](docs/09-troubleshooting.md#cleanup-commands) fo
 - **The cancellation callback requires both identifiers.** It only cancels a `pending` transaction matching a non-empty `merchantRef` and `merchantSession`. The callback route now carries the `throttle:sisp-callback` middleware, which limits cancellation callbacks (`UserCancelled` or `userCancelled`) to 10 per minute per merchant reference and 30 per minute per IP address; override it with `sisp.middleware.callback`. Behind a load balancer, configure `TrustProxies` so customers do not share one address bucket. Do not rely on it to protect guessable references.
 - **Status comes from the documented message type table.** Only `messageType = 6` fails a transaction. A known success message type completes it only when `merchantResp` has the expected value; otherwise the transaction stays `pending` and a warning is logged.
 - **Refused callbacks keep their reason.** The error fingerprint formula validates SISP refusals, and the refusal code and message are stored in `error_code` and `error_message` and shown on the response screen. The raw callback is stored encrypted in `callback_raw_payload`, with the card number masked to its last four digits, and encrypted attributes are redacted in `sisp_transaction_logs`.
+- **Refunds accept an idempotency key.** `RefundTransactionAction::handle()` takes an optional fourth argument `?string $idempotencyKey`, `RefundBuilder` has `idempotencyKey()`, and `POST /sisp/refund/{transaction}` accepts `idempotency_key`. A retry with the same key and amount returns the transaction without refunding again or dispatching `TransactionRefunded`; the same key with another amount is refused with `LogicException` (400 on the route). Calls without a key behave as before, so a client that retries after a timeout without a key can still refund twice. See [docs/05-transaction-management.md](docs/05-transaction-management.md#idempotent-refunds).
 - **Deprecations.** `ErrorMessageType` and `GetPaymentErrorResponseAction` are deprecated and no longer used by the package. They remain for published views that read the old error array shape.
 
 ---
@@ -264,6 +266,7 @@ Finally, run a sandbox payment end to end (`SISP_SANDBOX=true`), one refused pay
 - [ ] `match` expressions and invoice queries handle `InvoiceStatus::refunded`
 - [ ] Direct calls to `CancelTransactionAction` handle `LogicException` for `failed` and `refunded` transactions
 - [ ] Clients of `POST /sisp/refund/{transaction}` handle a 422 response
+- [ ] Clients that retry `POST /sisp/refund/{transaction}` send an `idempotency_key`
 - [ ] No manual `new` instantiation of the classes in the constructor table
 - [ ] `TransactionCancelled` listeners reviewed for the callback and `expire-pending` paths
 - [ ] `sisp:expire-pending` and `sisp:prune-request-payloads` scheduled, if you want them
