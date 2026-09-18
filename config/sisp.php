@@ -231,6 +231,7 @@ return [
     'idempotency' => [
         'enabled' => env('SISP_IDEMPOTENCY_ENABLED', true),
         'request_keys' => ['idempotency_key', 'checkout_intent_id'],
+        'processing_timeout_seconds' => env('SISP_IDEMPOTENCY_PROCESSING_TIMEOUT', 600),
     ],
 
     /*
