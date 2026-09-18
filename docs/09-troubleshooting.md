@@ -514,6 +514,8 @@ php artisan sisp:expire-pending --older-than=14
 php artisan sisp:expire-pending --limit=200
 ```
 
+When `sisp.transaction_status.reconciliation_enabled` is on, the command asks SISP for each transaction's status before cancelling it. A transaction SISP reports as paid or refused is completed or failed instead of cancelled, and one SISP cannot be asked about stays `pending` for the next run. Without reconciliation it cancels on age alone, which can cancel a payment whose callback was lost.
+
 `--older-than` and `--limit` must be whole numbers; anything else fails the command. `--older-than` rejects any value below `1`: real timing against production SISP shows the gateway closes its own payment screens at 2m12s and 3m00s, so a transaction younger than a day can still legitimately resolve, and a window of `0` would cancel every uncallbacked pending transaction regardless of age.
 
 Register it, for example weekly:
