@@ -71,7 +71,7 @@ package-lock.json text eol=lf
 /.gitignore         export-ignore
 /phpunit.xml.dist   export-ignore
 /art                export-ignore
-/docs               export-ignore
+/docs/superpowers   export-ignore
 /tests              export-ignore
 /workbench          export-ignore
 /.editorconfig      export-ignore
