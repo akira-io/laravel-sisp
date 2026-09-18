@@ -594,7 +594,7 @@ $context->failed();        // bool
 $context->failureReason;   // 'invalid_callback_fingerprint' | 'callback_details_mismatch' | null
 ```
 
-Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`, `ValidateFingerprint`, `EnsureCallbackMatchesTransaction`, `ApplyTransactionStatus`, `DispatchPaymentEvents`. Custom pipes implement `Akira\Sisp\Contracts\CallbackPipe`. Failing pipes mark the transaction `failed`, dispatch `PaymentFailed`, and short-circuit the pipeline.
+Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`, `ValidateFingerprint`, `EnsureCallbackMatchesTransaction`, `ApplyTransactionStatus`, `DispatchPaymentEvents`. Custom pipes implement `Akira\Sisp\Contracts\CallbackPipe`. `ValidateFingerprint` short-circuits on a mismatch without writing to the transaction or dispatching events; the callback controller runs the same check before the pipeline while `ValidateFingerprint` is in `sisp.pipelines.callback`, and redirects to `sisp.redirect_url`. `EnsureCallbackMatchesTransaction` marks the transaction `failed`, dispatches `PaymentFailed`, and short-circuits.
 
 ## Contracts (v2)
 

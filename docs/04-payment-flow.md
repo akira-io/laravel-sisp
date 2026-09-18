@@ -67,7 +67,7 @@ Since v2, both halves of the flow are implemented as Laravel pipelines made of s
 | Pipe | Responsibility |
 | --- | --- |
 | `ResolveTransaction` | Finds the transaction by merchant reference and session |
-| `ValidateFingerprint` | Verifies the SHA512 callback fingerprint; fails the transaction and short-circuits on mismatch |
+| `ValidateFingerprint` | Verifies the SHA512 callback fingerprint; logs and short-circuits on mismatch without writing to the transaction |
 | `EnsureCallbackMatchesTransaction` | Reconciles amount, currency, transaction code, and POS ID |
 | `ApplyTransactionStatus` | Maps the SISP message type to a transaction status |
 | `DispatchPaymentEvents` | Dispatches `PaymentCompleted` / `PaymentFailed` / `PaymentPending` |

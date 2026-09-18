@@ -9,10 +9,12 @@ use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
+use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +30,7 @@ final readonly class CallbackController
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private CancelTransactionAction $cancelTransaction,
         private LoadConfig $config,
+        private CallbackFingerprintValidator $validateFingerprint,
     ) {}
 
     public function __invoke(Request $request): mixed
@@ -107,6 +110,14 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
+        if ($this->rejectsFingerprint($payload)) {
+            Log::warning('SISP callback rejected: the fingerprint does not match.', [
+                'merchant_ref' => $payload->merchantRef,
+            ]);
+
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
         if ($this->isAlreadyProcessed($payload)) {
             return redirect(config('sisp.redirect_url', '/'))->with('info', 'This payment has already been processed.');
         }
@@ -124,6 +135,15 @@ final readonly class CallbackController
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
         return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+    }
+
+    private function rejectsFingerprint(CallbackPayload $payload): bool
+    {
+        if (! in_array(ValidateFingerprint::class, $this->config->getCallbackPipes(), true)) {
+            return false;
+        }
+
+        return ! $this->validateFingerprint->handle($payload);
     }
 
     private function isAlreadyProcessed(CallbackPayload $payload): bool
