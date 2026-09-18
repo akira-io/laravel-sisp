@@ -137,6 +137,18 @@ it('reads the cancellation post in both spellings and without the prefix', funct
         ->and($payload->merchantSession)->toBe('S9');
 })->with(['userCancelled', 'UserCancelled']);
 
+it('treats the post as a cancellation when either spelling is truthy', function (array $flags, bool $expected): void {
+    expect(CallbackPayload::indicatesUserCancellation($flags))->toBe($expected)
+        ->and(CallbackPayload::from($flags)->userCancelled)->toBe($expected);
+})->with([
+    'lowercase only' => [['userCancelled' => '1'], true],
+    'capitalised only' => [['UserCancelled' => 'yes'], true],
+    'lowercase false, capitalised true' => [['userCancelled' => '0', 'UserCancelled' => 'true'], true],
+    'both false' => [['userCancelled' => 'false', 'UserCancelled' => '0'], false],
+    'absent' => [[], false],
+    'array value' => [['userCancelled' => ['1']], false],
+]);
+
 it('reads the reload code under the documented name', function (): void {
     $payload = CallbackPayload::from([
         'merchantRespMerchantRef' => 'R1',

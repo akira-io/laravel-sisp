@@ -13,6 +13,7 @@ use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
 use Akira\Sisp\Commands\TransactionStatusCommand;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Drivers\SispManager;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -75,12 +76,19 @@ final class SispServiceProvider extends PackageServiceProvider
 
     private function registerCallbackRateLimiter(): void
     {
-        RateLimiter::for('sisp-callback', function (Request $request): Limit {
-            if (! $request->boolean('UserCancelled')) {
+        RateLimiter::for('sisp-callback', function (Request $request): Limit|array {
+            if (! CallbackPayload::indicatesUserCancellation($request->all())) {
                 return Limit::none();
             }
 
-            return Limit::perMinute(10)->by((string) $request->input('merchantRef', $request->ip()));
+            $perAddress = Limit::perMinute(30)->by('ip:'.$request->ip());
+            $merchantRef = $request->string('merchantRef')->toString();
+
+            if ($merchantRef === '') {
+                return $perAddress;
+            }
+
+            return [Limit::perMinute(10)->by('ref:'.$merchantRef), $perAddress];
         });
     }
 
