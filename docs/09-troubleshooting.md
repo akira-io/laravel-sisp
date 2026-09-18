@@ -471,9 +471,9 @@ If status is still `pending`, callback wasn't processed. Check:
 4. The callback values match the stored transaction amount, currency, transaction code, and POS ID
 5. No exceptions were thrown in CallbackController (check logs)
 
-A pending transaction has three possible causes:
+A pending transaction has three possible causes (a transaction cancelled through `GET /sisp/cancel` or by `sisp:expire-pending` is `cancelled`, not `pending`):
 
-1. **Cancelled.** The user or merchant cancelled the transaction (`POST /sisp/cancel`), or `sisp:expire-pending` cancelled it for being too old. This is recorded, so check `sisp_transaction_logs` for a cancellation entry before assuming the callback is still missing.
+1. **Customer cancelled on the SISP page.** On 2.x the `UserCancelled` callback only logs `SISP callback reported that the customer cancelled the payment.` and leaves the transaction `pending` until `sisp:expire-pending` cancels it. Search the application log for that line and the merchant reference.
 2. **Callback never arrived.** SISP closes its own payment screens well before the transaction becomes stale (real timing puts the screens closing at 2m12s and 3m00s), so a customer who abandoned the gateway, or a network failure between SISP and the callback route, leaves the transaction indeterminate.
 3. **Callback carried an empty `messageType`.** `MapTransactionStatusAction` treats a null or unrecognised `messageType` as `pending` rather than guessing a status.
 
@@ -523,7 +523,7 @@ Register it, for example weekly:
 // routes/console.php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('sisp:expire-pending')->weekly();
+Schedule::command('sisp:expire-pending')->daily();
 ```
 
 #### sisp:prune-request-payloads

@@ -183,9 +183,9 @@ For the full v2 design, see [docs/12-architecture.md](docs/12-architecture.md).
 
 ## Upgrading from 2.1 to 2.2
 
-2.2 is a drop-in upgrade: `composer update` is enough for the application to
-keep taking payments. Public constructors, controller signatures and response
-codes stay as they were in 2.1.
+`composer update` is enough for the application to keep taking payments.
+Public constructors and controller signatures stay as they were in 2.1, and
+nothing below needs code changes, but section 4 lists behaviour that changed.
 
 ### 1. Publish and run the new migrations (recommended)
 
@@ -207,7 +207,9 @@ They are not required to boot. Until they run, callbacks skip the new error
 columns, refunds keep their history in the transaction payload as in 2.1, and
 `sisp:prune-request-payloads` exits with an error asking for the migrations.
 Once they run, the SISP refusal reason is stored on the transaction and refunds
-are recorded in `sisp_refunds`.
+are recorded in `sisp_refunds`. Rolling back
+`update_laravel_sisp_transactions_add_callback_error_fields` drops the stored
+refusal reasons and raw callbacks.
 
 ### 2. New maintenance commands (opt-in)
 
@@ -222,7 +224,9 @@ Schedule::command('sisp:prune-request-payloads')->monthly();
 ```
 
 - `sisp:expire-pending` cancels `pending` transactions with no SISP response
-  older than `sisp.expire_pending_after_days` (30 by default).
+  older than `sisp.expire_pending_after_days` (30 by default). It does not ask
+  SISP first: a payment whose callback was lost is cancelled too. Enable
+  `sisp:reconcile-pending` before scheduling it.
 - `sisp:prune-request-payloads` removes the stored 3-D Secure purchase request
   from terminal transactions older than `sisp.prune_request_payloads_after_days`
   (90 by default).
@@ -242,13 +246,29 @@ reference through the `sisp-callback` limiter.
 
 ### 4. Other behaviour changes
 
+- A callback whose fingerprint does not match is logged and redirected to
+  `sisp.redirect_url` without touching the transaction. In 2.1 it moved the
+  transaction to `failed`, cancelled its invoice and dispatched
+  `PaymentFailed`; anyone who guessed a merchant reference could do that.
+- Callback status follows the SISP `messageType` table. Only `6` means
+  `failed`; the other `ErrorMessageType` codes leave the transaction
+  `pending`. A success type means `completed` only when `merchantResp` is the
+  expected value (`C` for purchases, `0` for tokens, empty for refunds);
+  otherwise the transaction stays `pending` and a warning is logged.
+- `CallbackPayload::toArray()` emits `merchantRespReloadCode` instead of
+  `reloadCode`, which is the key now stored in the attempt's
+  `callback_payload`. `CallbackPayload::from()` reads both.
+- The `sisp-callback` limiter now applies to both `UserCancelled` and
+  `userCancelled`, ten a minute per client address.
+
 - `CancelTransactionAction` and `RefundTransactionAction` lock the transaction
   row while they decide and write, so they no longer race the success callback
   or each other. Cancelling a transaction also cancels its invoice. Failed and
   refunded transactions can still be cancelled.
 - `POST /sisp/refund/{transaction}` validates its payload. An array `amount`
   or a non-string `reason` now answers `400` with the messages under `errors`,
-  instead of refunding 1.00 or answering `500`.
+  instead of refunding 1.00 or answering `500`. A payload that 2.1 accepted
+  and refused with `400` still answers `400`.
 - Refused callbacks are validated with the SISP error fingerprint formula, and
   sandbox error payloads are signed with it.
 

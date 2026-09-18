@@ -189,7 +189,7 @@ After payment, SISP POSTs to `/sisp/callback` with:
 
 #### messageType Table
 
-`messageType` is a closed set. Anything outside it is treated as an error response.
+`messageType` is a closed set. `6` marks the transaction `failed`. A success type marks it `completed` only when `merchantResp` matches the expected value below; otherwise, and for an empty or unknown `messageType`, the transaction stays `pending`.
 
 | `messageType` | Meaning | Expected `merchantResp` |
 | --- | --- | --- |
@@ -202,7 +202,7 @@ After payment, SISP POSTs to `/sisp/callback` with:
 | `10` | Full refund | (empty) |
 | `?` | Partial refund | (empty) |
 | `6` | Error | n/a (`Transaction::$error_message` carries the refusal reason) |
-| null | Error (no callback received, or the callback carried an empty `messageType`) | n/a |
+| null | No verdict (no callback received, or the callback carried an empty `messageType`); the transaction stays `pending` | n/a |
 
 Invalid POST callbacks are redirected to `config('sisp.redirect_url', '/')` before any transaction lookup.
 

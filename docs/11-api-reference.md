@@ -678,7 +678,7 @@ app(BuildPurchaseRequestAction::class)->handle(
 
 ### CancelTransactionAction
 
-Cancel a pending transaction.
+Cancel a transaction that is not completed or already cancelled.
 
 ```php
 app(CancelTransactionAction::class)->handle(

@@ -120,7 +120,7 @@ Timestamp-only updates are ignored. Encrypted payload values are stored in decry
 
 ## Cancel Transaction
 
-Cancel a pending transaction:
+Cancel a transaction that is not completed or already cancelled:
 
 ```php
 use Akira\Sisp\Actions\CancelTransactionAction;

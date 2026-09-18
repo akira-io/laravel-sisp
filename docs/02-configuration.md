@@ -207,7 +207,7 @@ The API sends HTTP Basic authentication using `SISP_PORTAL_ID:SISP_PORTAL_PASSWO
 Query a transaction without changing local data:
 
 ```bash
-php artisan sisp:transaction-status R20260523235959K7M2QX9TBV
+php artisan sisp:transaction-status R20260523235959
 ```
 
 Query by local transaction ID and update it only when SISP returns a successful status API result:
@@ -227,7 +227,7 @@ use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 
 $response = Sisp::queryTransactionStatus($transaction);
-$response = Sisp::queryTransactionStatus('R20260523235959K7M2QX9TBV');
+$response = Sisp::queryTransactionStatus('R20260523235959');
 
 $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 ```
