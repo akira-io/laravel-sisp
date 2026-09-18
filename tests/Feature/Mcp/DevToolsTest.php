@@ -16,6 +16,7 @@ use Akira\Sisp\Mcp\Tools\Dev\SimulateSandboxCallbackTool;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Mcp\Server\Testing\TestResponse;
 
 it('searches the documentation', function (): void {
     SispDevServer::tool(SearchDocsTool::class, ['query' => 'idempotency'])
@@ -105,8 +106,7 @@ it('signs a simulated failure with the error fingerprint formula', function (): 
     $response = SispDevServer::tool(SimulateSandboxCallbackTool::class, ['amount' => 100, 'status' => 'failed'])
         ->assertOk();
 
-    $content = new ReflectionProperty($response, 'response')->getValue($response)->toArray()['result']['content'][0]['text'];
-    $callback = CallbackPayload::from(json_decode((string) $content, true)['callback']);
+    $callback = CallbackPayload::from(toolJson($response)['callback']);
 
     expect($callback->isError())->toBeTrue()
         ->and(resolve(ValidatePaymentResponseFingerprintAction::class)->handle($callback))->toBeTrue();
@@ -127,9 +127,9 @@ it('scaffolds only variables that config/sisp.php reads', function (string $mode
     $config = (string) file_get_contents(dirname(__DIR__, 3).'/config/sisp.php');
 
     $response = SispDevServer::tool(EnvScaffoldTool::class, ['mode' => $mode])->assertOk();
-    $env = json_decode(new ReflectionProperty($response, 'response')->getValue($response)->toArray()['result']['content'][0]['text'], true)['env'];
+    $env = toolJson($response)['env'];
 
-    preg_match_all('/^([A-Z0-9_]+)=/m', $env, $matches);
+    preg_match_all('/^([A-Z0-9_]+)=/m', is_string($env) ? $env : '', $matches);
 
     expect($matches[1])->not->toBeEmpty()
         ->each(fn ($variable) => $variable->toBeIn(preg_match_all("/env\\('([A-Z0-9_]+)'/", $config, $read) ? $read[1] : []));
@@ -171,7 +171,7 @@ it('rejects an unknown config key', function (): void {
 
 it('caps the number of documentation matches', function (): void {
     $response = SispDevServer::tool(SearchDocsTool::class, ['query' => 'sisp', 'limit' => 1])->assertOk();
-    $matches = json_decode(new ReflectionProperty($response, 'response')->getValue($response)->toArray()['result']['content'][0]['text'], true)['matches'];
+    $matches = toolJson($response)['matches'];
 
     expect($matches)->toHaveCount(1);
 });
@@ -213,7 +213,7 @@ it('answers a stored transaction so the callback pipeline accepts it', function 
     $transaction = Transaction::factory()->pending()->create(['amount' => 1250.0, 'merchant_ref' => 'REF-SANDBOX']);
 
     $response = SispDevServer::tool(SimulateSandboxCallbackTool::class, ['transaction' => 'REF-SANDBOX'])->assertOk();
-    $callback = json_decode(new ReflectionProperty($response, 'response')->getValue($response)->toArray()['result']['content'][0]['text'], true)['callback'];
+    $callback = toolJson($response)['callback'];
 
     expect($callback['merchantRespMerchantRef'])->toBe('REF-SANDBOX')
         ->and($callback['merchantRespMerchantSession'])->toBe($transaction->merchant_session);
@@ -234,3 +234,14 @@ it('requires an amount or a transaction to simulate', function (): void {
     SispDevServer::tool(SimulateSandboxCallbackTool::class, [])
         ->assertHasErrors(['amount']);
 });
+
+/**
+ * @return array<string, mixed>
+ */
+function toolJson(TestResponse $response): array
+{
+    $text = data_get(new ReflectionProperty($response, 'response')->getValue($response)?->toArray(), 'result.content.0.text');
+    $decoded = json_decode(is_string($text) ? $text : '', true);
+
+    return is_array($decoded) ? $decoded : [];
+}
