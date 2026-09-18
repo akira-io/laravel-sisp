@@ -7,6 +7,7 @@ namespace Akira\Sisp\Mcp\Tools\Ops;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
 use Akira\Sisp\Mcp\Concerns\ThrottlesGatewayCalls;
+use Akira\Sisp\Mcp\Support\GatewayText;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -45,8 +46,10 @@ final class QueryTransactionStatusTool extends Tool
             'result' => $status->result,
             'transaction_success' => $status->transactionSuccess,
             'payment_status' => $status->paymentStatus()->value,
-            'description' => $status->transactionStatusDescription,
-            'message' => $status->message,
+            'gateway' => GatewayText::wrap([
+                'description' => $status->transactionStatusDescription,
+                'message' => $status->message,
+            ]),
         ]);
     }
 
