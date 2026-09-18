@@ -316,13 +316,15 @@ migration has run, and is also kept in the transaction payload as in 2.1.
 ```php
 $transaction->refunds;               // Refund models, oldest first
 $transaction->refundedAmount();      // 55.5
-$transaction->refundableAmount();    // 44.5, the balance RefundTransactionAction still accepts
+$transaction->refundableAmount();    // 44.5, the balance RefundTransactionAction still accepts; 0 unless completed
 $transaction->isPartiallyRefunded(); // true while refunds exist and the status is not refunded
 ```
 
-The helpers read the same ledger as the refund guard, so a refund of
-`refundableAmount()` is always accepted and anything above it is refused.
-Refunds recorded by 2.1 in the payload are counted too.
+The helpers read the same ledger as the refund guard: on a `completed`
+transaction a refund of up to `refundableAmount()` is accepted and anything
+above it is refused. Refunds recorded by 2.1 in the payload are counted too.
+Each helper runs one query; load the relation first
+(`Transaction::with('refunds')`) to compute them in memory over a list.
 
 `TransactionRefunded` carries the recorded `Refund` and the balance left after
 it in `$event->refund` and `$event->remainingAmount`.

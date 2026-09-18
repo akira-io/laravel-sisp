@@ -7,7 +7,9 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 
 function refundableHistoryTransaction(): Transaction
 {
@@ -103,7 +105,8 @@ it('reports the remaining balance without a refund record when the refunds table
     resolve(RefundTransactionAction::class)->handle($transaction, 30.0);
 
     expect($transaction->refundedAmount())->toBe(30.0)
-        ->and($transaction->isPartiallyRefunded())->toBeTrue();
+        ->and($transaction->isPartiallyRefunded())->toBeTrue()
+        ->and(Schema::hasTable('sisp_refunds'))->toBeFalse();
 
     Event::assertDispatched(
         TransactionRefunded::class,
@@ -117,4 +120,53 @@ it('still builds the event with the 2.1 arguments', function (): void {
     expect($event->reason)->toBe('user_refund')
         ->and($event->refund)->toBeNull()
         ->and($event->remainingAmount)->toBeNull();
+});
+
+it('offers no refundable balance on a transaction the guard would refuse', function (string $status): void {
+    $transaction = Transaction::factory()->create(['status' => $status, 'amount' => 100.0]);
+
+    expect($transaction->refundableAmount())->toBe(0.0)
+        ->and(resolve(RefundTransactionAction::class)->refundableAmount($transaction))->toBe(0.0);
+})->with(['pending', 'failed', 'cancelled', 'refunded']);
+
+it('counts table rows the payload no longer lists', function (): void {
+    $transaction = refundableHistoryTransaction();
+    resolve(RefundTransactionAction::class)->handle($transaction, 30.0);
+    $transaction->update(['payload' => []]);
+
+    expect($transaction->refresh()->refundedAmount())->toBe(30.0)
+        ->and($transaction->refundableAmount())->toBe(70.0);
+});
+
+it('backfills 2.1 payload refunds into the table and reports them', function (): void {
+    Event::fake([TransactionRefunded::class]);
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+        'payload' => ['refunds' => [['amount' => 20.0, 'reason' => 'legacy', 'request' => []]]],
+    ]);
+
+    resolve(RefundTransactionAction::class)->handle($transaction, 30.0, 'new');
+
+    expect($transaction->refunds()->pluck('reason')->all())->toBe(['legacy', 'new'])
+        ->and($transaction->refundedAmount())->toBe(50.0);
+
+    Event::assertDispatched(
+        TransactionRefunded::class,
+        fn (TransactionRefunded $event): bool => $event->refund?->reason === 'new' && $event->remainingAmount === 50.0,
+    );
+});
+
+it('computes the helpers from eager-loaded refunds without querying', function (): void {
+    $transaction = refundableHistoryTransaction();
+    resolve(RefundTransactionAction::class)->handle($transaction, 30.0);
+    $loaded = Transaction::query()->with('refunds')->where('id', $transaction->id)->sole();
+    DB::enableQueryLog();
+
+    $amounts = [$loaded->refundedAmount(), $loaded->refundableAmount(), $loaded->isPartiallyRefunded()];
+
+    expect($amounts)->toBe([30.0, 70.0, true])
+        ->and(collect(DB::getQueryLog())->pluck('query')->filter(fn (string $query): bool => str_contains($query, 'sisp_refunds'))->all())->toBe([]);
 });

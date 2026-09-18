@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Support;
 
+use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 
 final readonly class RefundLedger
@@ -19,11 +20,15 @@ final readonly class RefundLedger
             return $fromPayload;
         }
 
-        return max($fromPayload, (int) $transaction->refunds()->sum('amount_thousandths'));
+        return max($fromPayload, $this->recordedThousandths($transaction));
     }
 
     public function refundableThousandths(Transaction $transaction): int
     {
+        if ($transaction->status !== TransactionStatus::completed) {
+            return 0;
+        }
+
         return max(0, SispAmount::toThousandths($transaction->amount) - $this->refundedThousandths($transaction));
     }
 
@@ -56,5 +61,14 @@ final readonly class RefundLedger
     public function recordsRefunds(): bool
     {
         return resolve(SispSchema::class)->hasRefundsTable();
+    }
+
+    private function recordedThousandths(Transaction $transaction): int
+    {
+        if ($transaction->relationLoaded('refunds')) {
+            return (int) $transaction->refunds->sum('amount_thousandths');
+        }
+
+        return (int) $transaction->refunds()->sum('amount_thousandths');
     }
 }
