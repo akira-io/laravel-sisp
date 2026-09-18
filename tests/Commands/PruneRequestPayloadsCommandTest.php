@@ -269,3 +269,94 @@ it('retries a transaction whose payload could not be decrypted on the next run',
     expect($transaction->refresh()->payload)->not->toHaveKey('purchaseRequest')
         ->and($transaction->request_payload_pruned_at)->not->toBeNull();
 });
+
+it('keeps pruning when more undecryptable rows than the limit sit in front of the queue', function (): void {
+    $undecryptable = Transaction::factory()->count(3)->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(92),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    DB::table(config('sisp.tables.transactions'))
+        ->whereIn('id', $undecryptable->pluck('id'))
+        ->update(['payload' => 'not-a-valid-ciphertext']);
+
+    $healthy = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+        'payload' => ['posID' => '90', 'purchaseRequest' => 'base64-blob'],
+    ]);
+
+    $this->artisan('sisp:prune-request-payloads', ['--limit' => 2])
+        ->expectsOutput('Pruned the purchase request payload from 1 SISP transactions.')
+        ->assertSuccessful();
+
+    expect($healthy->refresh()->payload)->not->toHaveKey('purchaseRequest')
+        ->and(Transaction::query()->whereIn('id', $undecryptable->pluck('id'))->whereNotNull('request_payload_pruned_at')->count())->toBe(0);
+});
+
+it('marks a transaction with no payload as pruned so it stops being selected', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+    ]);
+
+    DB::table(config('sisp.tables.transactions'))
+        ->where('id', $transaction->id)
+        ->update(['payload' => null]);
+
+    $this->artisan('sisp:prune-request-payloads')->assertSuccessful();
+
+    expect($transaction->refresh()->request_payload_pruned_at)->not->toBeNull();
+});
+
+it('prunes the payload read under the row lock, keeping a refund written after the batch was loaded', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    Transaction::retrieved(function (Transaction $retrieved) use ($transaction): void {
+        static $written = false;
+
+        if ($written || $retrieved->id !== $transaction->id) {
+            return;
+        }
+
+        $written = true;
+        $fresh = Transaction::query()->find($transaction->id);
+        $fresh->update(['payload' => [...$fresh->payload, 'refunds' => [['reason' => 'late']]]]);
+    });
+
+    $this->artisan('sisp:prune-request-payloads')->assertSuccessful();
+
+    expect($transaction->refresh()->payload)->toBe(['refunds' => [['reason' => 'late']]]);
+});
+
+it('leaves a transaction another run pruned after this batch was loaded', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+        'payload' => ['purchaseRequest' => 'base64-blob'],
+    ]);
+
+    Transaction::retrieved(function (Transaction $retrieved) use ($transaction): void {
+        static $pruned = false;
+
+        if ($pruned || $retrieved->id !== $transaction->id) {
+            return;
+        }
+
+        $pruned = true;
+        DB::table(config('sisp.tables.transactions'))
+            ->where('id', $transaction->id)
+            ->update(['request_payload_pruned_at' => now()]);
+    });
+
+    $this->artisan('sisp:prune-request-payloads')
+        ->expectsOutput('No SISP request payloads needed pruning.')
+        ->assertSuccessful();
+
+    expect($transaction->refresh()->payload)->toHaveKey('purchaseRequest');
+});

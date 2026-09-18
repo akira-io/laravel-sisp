@@ -12,6 +12,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 #[Signature('sisp:prune-request-payloads
@@ -46,19 +47,31 @@ final class PruneRequestPayloadsCommand extends Command
 
         $limit = (int) ($this->option('limit') ?: 100);
         $pruned = 0;
+        $processed = 0;
 
-        Transaction::query()
+        $candidates = Transaction::query()
             ->whereIn('status', self::TERMINAL_STATUSES)
             ->where('created_at', '<=', now()->subDays($days))
             ->whereNull('request_payload_pruned_at')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get()
-            ->each(function (Transaction $transaction) use (&$pruned): void {
-                if ($this->prune($transaction) === true) {
-                    $pruned++;
-                }
-            });
+            ->lazyById();
+
+        foreach ($candidates as $transaction) {
+            $outcome = $this->prune($transaction);
+
+            if ($outcome === null) {
+                continue;
+            }
+
+            if ($outcome) {
+                $pruned++;
+            }
+
+            $processed++;
+
+            if ($processed >= $limit) {
+                break;
+            }
+        }
 
         if ($pruned === 0) {
             $this->info('No SISP request payloads needed pruning.');
@@ -73,36 +86,48 @@ final class PruneRequestPayloadsCommand extends Command
 
     private function prune(Transaction $transaction): ?bool
     {
-        /** @var array<string, mixed>|string $payload */
-        $payload = $transaction->payload;
+        return DB::transaction(function () use ($transaction): ?bool {
+            $locked = $transaction->newQuery()
+                ->whereKey($transaction->getKey())
+                ->whereNull('request_payload_pruned_at')
+                ->lockForUpdate()
+                ->first();
 
-        if (! is_array($payload)) {
-            Log::warning('Skipped pruning an undecryptable SISP transaction payload.', [
-                'transaction_id' => $transaction->id,
-            ]);
+            if (! $locked instanceof Transaction) {
+                return false;
+            }
 
-            return null;
-        }
+            /** @var array<string, mixed>|string|null $payload */
+            $payload = $locked->payload;
 
-        if (! array_key_exists('purchaseRequest', $payload)) {
+            if (is_string($payload)) {
+                Log::warning('Skipped pruning an undecryptable SISP transaction payload.', [
+                    'transaction_id' => $locked->id,
+                ]);
+
+                return null;
+            }
+
+            if ($payload === null || ! array_key_exists('purchaseRequest', $payload)) {
+                TransactionLogContext::run(
+                    'prune',
+                    fn (): bool => $locked->update(['request_payload_pruned_at' => now()])
+                );
+
+                return false;
+            }
+
+            unset($payload['purchaseRequest']);
+
             TransactionLogContext::run(
                 'prune',
-                fn (): bool => $transaction->update(['request_payload_pruned_at' => now()])
+                fn (): bool => $locked->update([
+                    'payload' => $payload,
+                    'request_payload_pruned_at' => now(),
+                ])
             );
 
-            return false;
-        }
-
-        unset($payload['purchaseRequest']);
-
-        TransactionLogContext::run(
-            'prune',
-            fn (): bool => $transaction->update([
-                'payload' => $payload,
-                'request_payload_pruned_at' => now(),
-            ])
-        );
-
-        return true;
+            return true;
+        });
     }
 }
