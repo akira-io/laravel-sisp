@@ -7,6 +7,7 @@ namespace Akira\Sisp\Models;
 use Akira\Sisp\Actions\LogTransactionChangesAction;
 use Akira\Sisp\Database\Factories\TransactionFactory;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Support\RefundLedger;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Traits\EncryptsAttributes;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -136,6 +137,22 @@ final class Transaction extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class, 'transaction_id');
+    }
+
+    public function refundedAmount(): float
+    {
+        return SispAmount::fromThousandths(resolve(RefundLedger::class)->refundedThousandths($this));
+    }
+
+    public function refundableAmount(): float
+    {
+        return SispAmount::fromThousandths(resolve(RefundLedger::class)->refundableThousandths($this));
+    }
+
+    public function isPartiallyRefunded(): bool
+    {
+        return $this->status !== TransactionStatus::refunded
+            && resolve(RefundLedger::class)->refundedThousandths($this) > 0;
     }
 
     protected static function booted(): void

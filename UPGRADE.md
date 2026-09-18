@@ -244,7 +244,15 @@ redirected; it does not change the transaction, cancel the invoice or dispatch
 The cancellation branch of the callback route is rate limited per merchant
 reference through the `sisp-callback` limiter.
 
-### 4. Other behaviour changes
+### 4. Refund history on the model
+
+`Transaction` gains `refundedAmount()`, `refundableAmount()` and
+`isPartiallyRefunded()`, next to the `refunds()` relation. They read the same
+ledger as `RefundTransactionAction`. `TransactionRefunded` gains two optional
+properties, `$refund` and `$remainingAmount`; building the event with the 2.1
+arguments still works.
+
+### 5. Other behaviour changes
 
 - A callback whose fingerprint does not match is logged and redirected to
   `sisp.redirect_url` without touching the transaction. In 2.1 it moved the
@@ -274,7 +282,7 @@ reference through the `sisp-callback` limiter.
 - Refused callbacks are validated with the SISP error fingerprint formula, and
   sandbox error payloads are signed with it.
 
-### 5. Unpredictable merchant references (3.0, available now)
+### 6. Unpredictable merchant references (3.0, available now)
 
 In 2.x the default merchant reference and session are `R`/`S` followed by a
 timestamp, which can be guessed. 3.0 appends ten random characters. You can

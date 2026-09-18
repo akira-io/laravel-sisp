@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Events;
 
+use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 
@@ -15,5 +16,7 @@ final class TransactionRefunded
         public Transaction $transaction,
         public float $refundAmount,
         public string $reason = 'user_refund',
+        public ?Refund $refund = null,
+        public ?float $remainingAmount = null,
     ) {}
 }
