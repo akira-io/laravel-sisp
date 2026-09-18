@@ -21,13 +21,13 @@ final class IntegrateSispPrompt extends Prompt
             Integrate the akira/laravel-sisp payment gateway into this Laravel application for a {$stack} frontend. Work through these steps and use the sisp-dev tools/resources to ground every detail:
 
             1. Install: `composer require akira/laravel-sisp`, then run `php artisan sisp:install` to publish config, migrations, and the {$stack} components. Run the migrations.
-            2. Configure: call the `config_reference` tool to review every sisp config key. Then call the `env_scaffold` tool for the target environment and add the variables to .env.
+            2. Configure: call the `config-reference-tool` to review every sisp config key. Then call the `env-scaffold-tool` for the target environment and add the variables to .env.
             3. Callback route: ensure SISP_URL_MERCHANT_RESPONSE points at the package /sisp/callback route and is publicly reachable over HTTPS.
-            4. Build a payment: use the sisp-ops `build_payment_request` tool to produce the form payload, and render it for the customer.
-            5. Test without live credentials: enable sandbox mode, then use the dev `simulate_sandbox_callback` tool to generate a callback payload and POST it to /sisp/callback.
-            6. Handle results: read docs 04-payment-flow and 05-transaction-management (via `get_doc`) to wire the PaymentCompleted/PaymentFailed events.
+            4. Start payments: post the checkout to the package `sisp.payment` route, which records the transaction and renders the signed form. Use the sisp-ops `build-payment-request-tool` only to preview the fields; its output has no fingerprint and cannot be posted.
+            5. Test without live credentials: enable sandbox mode, start a payment, then call the dev `simulate-sandbox-callback-tool` with that transaction and POST the result to /sisp/callback.
+            6. Handle results: read docs 04-payment-flow and 05-transaction-management (via `get-doc-tool`) to wire the PaymentCompleted/PaymentFailed events.
 
-            For any SISP error code you encounter, use the `error_code_lookup` tool to get the recommended action. Confirm the final wiring against the docs index resource (sisp://docs).
+            When a payment is refused, read the transaction's `error_message`: it is the refusal reason SISP sends for the customer. Confirm the final wiring against the docs index resource (sisp://docs).
             MARKDOWN;
 
         return Response::text($message);
