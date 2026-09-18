@@ -14,6 +14,8 @@ final class RefundBuilder
 
     private string $reason = 'user_refund';
 
+    private ?string $idempotencyKey = null;
+
     public function __construct(
         private readonly RefundTransactionAction $refundTransaction,
         private readonly Transaction $transaction,
@@ -40,10 +42,17 @@ final class RefundBuilder
         return $this;
     }
 
+    public function idempotencyKey(string $key): self
+    {
+        $this->idempotencyKey = $key;
+
+        return $this;
+    }
+
     public function process(): Transaction
     {
         throw_if($this->amount === null, LogicException::class, 'A refund amount is required. Call amount() or full() first.');
 
-        return $this->refundTransaction->handle($this->transaction, $this->amount, $this->reason);
+        return $this->refundTransaction->handle($this->transaction, $this->amount, $this->reason, $this->idempotencyKey);
     }
 }

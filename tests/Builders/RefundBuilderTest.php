@@ -52,3 +52,21 @@ it('requires an amount before processing', function (): void {
 
     Sisp::refund($transaction)->process();
 })->throws(LogicException::class, 'A refund amount is required. Call amount() or full() first.');
+
+it('forwards the idempotency key through the builder', function (): void {
+    Event::fake();
+
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'amount' => 90.0,
+        'transaction_id' => 'TX-BUILDER-KEY',
+        'response_code' => '001',
+    ]);
+
+    Sisp::refund($transaction)->amount(30.0)->idempotencyKey('builder-key')->process();
+    Sisp::refund($transaction)->amount(30.0)->idempotencyKey('builder-key')->process();
+
+    expect($transaction->refunds()->sole()->idempotency_key)->toBe('builder-key');
+
+    Event::assertDispatchedTimes(TransactionRefunded::class, 1);
+});

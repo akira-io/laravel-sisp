@@ -24,11 +24,16 @@ final readonly class RefundTransactionAction
         Transaction $transaction,
         float $refundAmount,
         string $reason = 'user_refund',
+        ?string $idempotencyKey = null,
     ): Transaction {
         throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
-        $refunded = DB::transaction(function () use ($transaction, $refundAmount, $reason): Transaction {
+        [$refunded, $replayed] = DB::transaction(function () use ($transaction, $refundAmount, $reason, $idempotencyKey): array {
             $locked = $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
+
+            if ($locked instanceof Transaction && $this->isReplay($locked, $refundAmount, $idempotencyKey)) {
+                return [$locked, true];
+            }
 
             if (! $locked instanceof Transaction || ! $this->canBeRefunded($locked)) {
                 $status = $locked instanceof Transaction ? $locked->status->value : $transaction->status->value;
@@ -48,7 +53,7 @@ final readonly class RefundTransactionAction
             );
 
             $request = $this->buildRefundRequest($locked, $refundAmount);
-            $payload = $this->appendRefundPayload($locked, $request->toArray(), $reason);
+            $payload = $this->appendRefundPayload($locked, $request->toArray(), $reason, $idempotencyKey);
             $status = $refundableThousandths === $refundThousandths
                 ? TransactionStatus::refunded
                 : TransactionStatus::completed;
@@ -67,10 +72,12 @@ final readonly class RefundTransactionAction
                 $this->updateInvoiceStatus->handle($locked, $status);
             }
 
-            return $locked;
+            return [$locked, false];
         });
 
-        event(new TransactionRefunded($refunded, $refundAmount, $reason));
+        if (! $replayed) {
+            event(new TransactionRefunded($refunded, $refundAmount, $reason));
+        }
 
         return $refunded;
     }
@@ -78,6 +85,27 @@ final readonly class RefundTransactionAction
     public function refundableAmount(Transaction $transaction): float
     {
         return SispAmount::fromThousandths($this->refundableThousandths($transaction));
+    }
+
+    private function isReplay(Transaction $transaction, float $refundAmount, ?string $idempotencyKey): bool
+    {
+        if ($idempotencyKey === null) {
+            return false;
+        }
+
+        $previous = $transaction->refunds()->where('idempotency_key', $idempotencyKey)->first();
+
+        if ($previous === null) {
+            return false;
+        }
+
+        throw_if(
+            $previous->amount_thousandths !== SispAmount::toThousandths($refundAmount),
+            LogicException::class,
+            'Idempotency key was already used for a refund of a different amount.'
+        );
+
+        return true;
     }
 
     private function canBeRefunded(Transaction $transaction): bool
@@ -167,7 +195,7 @@ final readonly class RefundTransactionAction
      * @param  array<string, float|string>  $request
      * @return array<string, mixed>
      */
-    private function appendRefundPayload(Transaction $transaction, array $request, string $reason): array
+    private function appendRefundPayload(Transaction $transaction, array $request, string $reason, ?string $idempotencyKey): array
     {
         $this->backfillLegacyRefunds($transaction);
 
@@ -185,6 +213,7 @@ final readonly class RefundTransactionAction
         $transaction->refunds()->create([
             'amount' => (float) $request['amount'],
             'reason' => $reason,
+            'idempotency_key' => $idempotencyKey,
             'request' => $request,
         ]);
 
