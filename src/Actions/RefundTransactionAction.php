@@ -214,11 +214,12 @@ final readonly class RefundTransactionAction
         $payload = is_array($payload) ? $payload : [];
         $refunds = $payload['refunds'] ?? [];
         $refunds = is_array($refunds) ? $refunds : [];
-        $refunds[] = [
+        $refunds[] = array_filter([
             'amount' => $request['amount'],
             'reason' => $reason,
+            'idempotency_key' => $idempotencyKey,
             'request' => $request,
-        ];
+        ], fn (mixed $value): bool => $value !== null);
         $payload['refunds'] = $refunds;
 
         $transaction->refunds()->create([

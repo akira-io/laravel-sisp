@@ -111,6 +111,17 @@ it('rejects a second refund row with the same idempotency key at the database', 
         ->and($transaction->refunds()->count())->toBe(1);
 });
 
+it('mirrors the idempotency key into the payload refund history', function (): void {
+    $transaction = idempotentRefundTransaction();
+    $action = resolve(RefundTransactionAction::class);
+
+    $action->handle($transaction, 40.0, 'keyed', 'refund-key-payload');
+    $refunded = $action->handle($transaction, 10.0, 'unkeyed');
+
+    expect($refunded->payload['refunds'][0]['idempotency_key'])->toBe('refund-key-payload')
+        ->and($refunded->payload['refunds'][1])->not->toHaveKey('idempotency_key');
+});
+
 it('refuses a blank or oversized idempotency key before refunding', function (string $key): void {
     Event::fake([TransactionRefunded::class]);
     $transaction = idempotentRefundTransaction();
