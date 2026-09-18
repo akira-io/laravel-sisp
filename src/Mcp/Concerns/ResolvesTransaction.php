@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Mcp\Concerns;
 
+use Akira\Sisp\Mcp\Support\GatewayText;
 use Akira\Sisp\Models\Transaction;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,7 +59,7 @@ trait ResolvesTransaction
             'message_type' => $transaction->message_type,
             'response_code' => $transaction->response_code,
             'error_code' => $transaction->error_code,
-            'error_message' => $transaction->error_message === null ? null : mb_substr($transaction->error_message, 0, 255),
+            'gateway_error' => $transaction->error_message === null ? null : GatewayText::wrap(['message' => $transaction->error_message]),
             'customer_email' => $this->maskEmail($transaction->customer_email),
             'locale' => $transaction->locale,
             'created_at' => $createdAt instanceof CarbonInterface ? $createdAt->toIso8601String() : null,
