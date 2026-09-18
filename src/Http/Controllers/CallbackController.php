@@ -13,6 +13,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
+use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
@@ -115,7 +116,7 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
-        if (! $this->validateFingerprint->handle($payload)) {
+        if ($this->rejectsFingerprint($payload)) {
             Log::warning('SISP callback rejected: the fingerprint does not match.', [
                 'merchant_ref' => $payload->merchantRef,
             ]);
@@ -140,6 +141,15 @@ final readonly class CallbackController
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
         return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+    }
+
+    private function rejectsFingerprint(CallbackPayload $payload): bool
+    {
+        if (! in_array(ValidateFingerprint::class, $this->config->getCallbackPipes(), true)) {
+            return false;
+        }
+
+        return ! $this->validateFingerprint->handle($payload);
     }
 
     private function isAlreadyProcessed(CallbackPayload $payload): bool

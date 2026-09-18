@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\CancelTransactionAction;
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\Event;
 
@@ -102,4 +103,20 @@ it('logs the old values of the locked row, not of a stale instance', function ()
 
     expect($log->old_values)->toMatchArray(['merchant_response' => 'from the database'])
         ->and($log->new_values)->toMatchArray(['merchant_response' => 'admin', 'status' => 'cancelled']);
+});
+
+it('cancels an invoice created after the caller loaded the relation', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $transaction->load('invoice');
+
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $transaction->id,
+        'invoice_number' => 'INV-LATE-1',
+        'invoice_date' => now(),
+        'status' => 'pending',
+    ]);
+
+    resolve(CancelTransactionAction::class)->handle($transaction);
+
+    expect($invoice->refresh()->status->value)->toBe('cancelled');
 });

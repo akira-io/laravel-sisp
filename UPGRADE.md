@@ -250,6 +250,8 @@ reference through the `sisp-callback` limiter.
   `sisp.redirect_url` without touching the transaction. In 2.1 it moved the
   transaction to `failed`, cancelled its invoice and dispatched
   `PaymentFailed`; anyone who guessed a merchant reference could do that.
+  The controller runs this check only while `ValidateFingerprint` is in
+  `sisp.pipelines.callback`; if you replaced it, your pipes decide.
 - Callback status follows the SISP `messageType` table. Only `6` means
   `failed`; the other `ErrorMessageType` codes leave the transaction
   `pending`. A success type means `completed` only when `merchantResp` is the

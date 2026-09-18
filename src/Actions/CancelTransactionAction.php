@@ -44,7 +44,7 @@ final readonly class CancelTransactionAction
                 ])
             );
 
-            $this->updateInvoiceStatus->handle($transaction, TransactionStatus::cancelled);
+            $this->updateInvoiceStatus->handle($locked, TransactionStatus::cancelled);
         });
 
         event(new TransactionCancelled($transaction, $reason));

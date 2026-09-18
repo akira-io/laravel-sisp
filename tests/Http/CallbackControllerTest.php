@@ -6,6 +6,8 @@ use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
+use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
@@ -323,6 +325,28 @@ it('reconciles zero transaction codes without falling back to config default', f
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction))
         ->assertRedirect(route('sisp.callback', ['ref' => 'MR-ZERO-CODE']));
+
+    expect($transaction->refresh()->status->value)->toBe('completed');
+});
+
+it('leaves the fingerprint to the configured pipes when ValidateFingerprint is not among them', function (): void {
+    config()->set('sisp.pipelines.callback', array_values(array_diff(
+        HandleCallbackPipeline::DEFAULT_PIPES,
+        [ValidateFingerprint::class],
+    )));
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-CUSTOM-PIPES',
+        'merchant_session' => 'MS-CUSTOM-PIPES',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+    $payload['resultFingerPrint'] = 'checked-elsewhere';
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-CUSTOM-PIPES']));
 
     expect($transaction->refresh()->status->value)->toBe('completed');
 });

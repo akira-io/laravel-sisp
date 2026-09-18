@@ -321,7 +321,7 @@ Use this to add CSRF, authentication, tenancy, or custom authorization checks to
 
 The callback route never receives the browser `web` group, because SISP must be able to post callbacks without CSRF middleware.
 
-It does carry the `sisp-callback` limiter, registered by the package. That limiter applies only to requests carrying `UserCancelled` (or `userCancelled`) and allows ten a minute per client address: SISP sends no fingerprint on the cancellation callback, so the limit bounds how fast one client can try references. The cancellation callback only logs on 2.x. Successful callbacks are exempt, because they carry a fingerprint and because throttling them would drop a payment the gateway has already taken.
+It does carry the `sisp-callback` limiter, registered by the package. That limiter applies only to requests carrying `UserCancelled` (or `userCancelled`) and allows ten a minute per client address: SISP sends no fingerprint on the cancellation callback, so the limit bounds how fast one client can try references. The cancellation callback only logs on 2.x. Behind a load balancer, trust the proxy (`TrustProxies`) so the client address is the customer's and not the balancer's; otherwise every customer shares one bucket. Successful callbacks are exempt, because they carry a fingerprint and because throttling them would drop a payment the gateway has already taken.
 
 This is deliberately separate from `sisp.rate_limiting`, which is a per-IP application-level control with its own table and blacklist (see [Security](07-security.md)). Replace the middleware if you would rather use one mechanism for both.
 
