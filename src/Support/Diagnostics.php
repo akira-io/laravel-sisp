@@ -28,23 +28,14 @@ final class Diagnostics
     }
 
     /**
-     * @return array{accessible: bool, directory_writable: bool, error: ?string}
+     * @return array{accessible: bool, error: ?string}
      */
     public function storage(): array
     {
-        $disk = (string) config('sisp.invoice.disk', 'public');
-        $path = $this->invoiceStoragePath();
-
         try {
-            $accessible = Storage::disk($disk)->exists('');
-            Storage::disk($disk)->makeDirectory($path);
-            $testFile = $path.'/sisp-doctor-test.txt';
-            Storage::disk($disk)->put($testFile, 'test');
-            Storage::disk($disk)->delete($testFile);
-
-            return ['accessible' => $accessible, 'directory_writable' => true, 'error' => null];
+            return ['accessible' => Storage::disk((string) config('sisp.invoice.disk', 'public'))->exists(''), 'error' => null];
         } catch (Throwable $e) {
-            return ['accessible' => false, 'directory_writable' => false, 'error' => $e->getMessage()];
+            return ['accessible' => false, 'error' => $e::class];
         }
     }
 
