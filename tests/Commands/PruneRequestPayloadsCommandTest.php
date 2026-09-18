@@ -127,7 +127,7 @@ it('rejects a negative window instead of deleting personal data outside the rete
     ]);
 
     $this->artisan('sisp:prune-request-payloads', ['--older-than' => -5])
-        ->expectsOutput('The --older-than option cannot be negative.')
+        ->expectsOutput('The --older-than option must be a whole number of days, zero or more.')
         ->assertFailed();
 
     expect($transaction->refresh()->payload)->toHaveKey('purchaseRequest');

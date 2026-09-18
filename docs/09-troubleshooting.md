@@ -514,7 +514,7 @@ php artisan sisp:expire-pending --older-than=14
 php artisan sisp:expire-pending --limit=200
 ```
 
-`--older-than` rejects any value below `1`: real timing against production SISP shows the gateway closes its own payment screens at 2m12s and 3m00s, so a transaction younger than a day can still legitimately resolve, and a window of `0` would cancel every uncallbacked pending transaction regardless of age.
+`--older-than` and `--limit` must be whole numbers; anything else fails the command. `--older-than` rejects any value below `1`: real timing against production SISP shows the gateway closes its own payment screens at 2m12s and 3m00s, so a transaction younger than a day can still legitimately resolve, and a window of `0` would cancel every uncallbacked pending transaction regardless of age.
 
 Register it, for example weekly:
 

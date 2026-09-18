@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Actions\CancelTransactionAction;
+use Akira\Sisp\Commands\Concerns\ValidatesIntegerOptions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Console\Attributes\Description;
@@ -21,13 +22,23 @@ use LogicException;
 #[Description('Cancel pending SISP transactions that never received a callback')]
 final class ExpirePendingTransactionsCommand extends Command
 {
+    use ValidatesIntegerOptions;
+
     public function handle(Repository $config, CancelTransactionAction $cancel): int
     {
+        if ($this->rejectsIntegerOption('older-than', 1, 'The --older-than option must be a whole number of days, at least 1.')) {
+            return self::FAILURE;
+        }
+
+        if ($this->rejectsIntegerOption('limit', 1, 'The --limit option must be a whole number of at least 1.')) {
+            return self::FAILURE;
+        }
+
         $olderThan = $this->option('older-than');
         $days = $olderThan !== null ? (int) $olderThan : (int) $config->get('sisp.expire_pending_after_days', 30);
 
         if ($days < 1) {
-            $this->error('The --older-than option must be at least 1 day.');
+            $this->error('The sisp.expire_pending_after_days setting must be at least 1 day.');
 
             return self::FAILURE;
         }

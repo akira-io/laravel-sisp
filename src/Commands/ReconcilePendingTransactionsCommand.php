@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
+use Akira\Sisp\Commands\Concerns\ValidatesIntegerOptions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Console\Attributes\Description;
@@ -19,12 +20,22 @@ use Illuminate\Contracts\Config\Repository;
 #[Description('Reconcile old pending SISP transactions using the POS transaction-status API')]
 final class ReconcilePendingTransactionsCommand extends Command
 {
+    use ValidatesIntegerOptions;
+
     public function handle(Repository $config, ReconcileTransactionStatusAction $reconcile): int
     {
         if (! (bool) $config->get('sisp.transaction_status.reconciliation_enabled', false) && ! $this->option('force')) {
             $this->warn('SISP transaction reconciliation is disabled.');
 
             return self::SUCCESS;
+        }
+
+        if ($this->rejectsIntegerOption('older-than', 1, 'The --older-than option must be a whole number of minutes, at least 1.')) {
+            return self::FAILURE;
+        }
+
+        if ($this->rejectsIntegerOption('limit', 1, 'The --limit option must be a whole number of at least 1.')) {
+            return self::FAILURE;
         }
 
         $olderThan = (int) ($this->option('older-than') ?: $config->get('sisp.transaction_status.reconcile_after_minutes', 5));

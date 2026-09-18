@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Commands;
 
+use Akira\Sisp\Commands\Concerns\ValidatesIntegerOptions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\TransactionLogContext;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Log;
 #[Description('Remove the 3-D Secure purchase request blob from old terminal SISP transactions')]
 final class PruneRequestPayloadsCommand extends Command
 {
+    use ValidatesIntegerOptions;
+
     private const array TERMINAL_STATUSES = [
         TransactionStatus::completed->value,
         TransactionStatus::failed->value,
@@ -28,16 +31,18 @@ final class PruneRequestPayloadsCommand extends Command
 
     public function handle(Repository $config): int
     {
+        if ($this->rejectsIntegerOption('older-than', 0, 'The --older-than option must be a whole number of days, zero or more.')) {
+            return self::FAILURE;
+        }
+
+        if ($this->rejectsIntegerOption('limit', 1, 'The --limit option must be a whole number of at least 1.')) {
+            return self::FAILURE;
+        }
+
         $olderThan = $this->option('older-than');
         $days = $olderThan !== null
             ? (int) $olderThan
             : (int) $config->get('sisp.prune_request_payloads_after_days', 90);
-
-        if ($days < 0) {
-            $this->error('The --older-than option cannot be negative.');
-
-            return self::FAILURE;
-        }
 
         $limit = (int) ($this->option('limit') ?: 100);
         $pruned = 0;
