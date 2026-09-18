@@ -72,6 +72,13 @@ $countries = Sisp::countries();
 - PHP 8.5+
 - Laravel 13+
 
+## Supported Versions
+
+Two major versions are supported at a time: the current one and the one
+before it. 3.x is current and 2.x receives bug and security fixes; 1.x
+reached end of life when 3.0.0 was released. See
+[SECURITY.md](SECURITY.md#supported-versions) for the policy and the table.
+
 ## Architecture (v2)
 
 Version 2 is built on four explicit patterns. Each one is an extension point.

@@ -2,11 +2,20 @@
 
 ## Supported Versions
 
-We release patches for security vulnerabilities for the following versions:
+Laravel SISP supports two major versions at a time: the current one and the
+one before it. The current version receives features, bug fixes and security
+fixes. The previous version receives bug fixes and security fixes. When a new
+major version is released, the oldest supported line reaches end of life on
+that day and receives no further releases.
 
-| Version | Supported          |
-|---------|--------------------|
-| 1.x     | :white_check_mark: |
+| Version | PHP | Laravel | Status | End of life |
+|---------|-----|---------|--------|-------------|
+| 3.x | 8.5 | 13 | Current: features, bug and security fixes | When 5.0.0 is released |
+| 2.x | 8.5 | 13 | Previous: bug and security fixes | When 4.0.0 is released |
+| 1.x | 8.4, 8.5 | 12, 13 | End of life | When 3.0.0 was released |
+
+Versions before 1.0 are not supported. To move off an end-of-life line, follow
+the [upgrade guide](UPGRADE.md).
 
 ## Reporting a Vulnerability
 
@@ -315,4 +324,4 @@ For security concerns, contact:
 
 ---
 
-**Last Updated**: December 2025
+**Last Updated**: September 2026
