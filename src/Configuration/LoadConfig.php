@@ -160,6 +160,11 @@ final readonly class LoadConfig
         ));
     }
 
+    public function getIdempotencyProcessingTimeoutSeconds(): int
+    {
+        return max(0, (int) $this->config->get('sisp.idempotency.processing_timeout_seconds', 600));
+    }
+
     public function isMetadataCollectionEnabled(): bool
     {
         return $this->boolean('sisp.security.collect_metadata', true);

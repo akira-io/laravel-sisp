@@ -13,6 +13,7 @@ use Akira\Sisp\Models\PaymentIntent;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Pipelines\Payment\PaymentContext;
 use Closure;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -39,7 +40,7 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
         try {
             $context = $next($context);
         } catch (Throwable $throwable) {
-            $this->fail($paymentIntentKey, $throwable);
+            $this->fail($paymentIntentKey, $throwable, $context->transaction);
 
             throw $throwable;
         }
@@ -73,8 +74,8 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
         $reclaimed = DB::table($table)
             ->where('idempotency_key', $paymentIntentKey)
-            ->where('status', 'failed')
             ->whereNull('transaction_id')
+            ->where(fn (Builder $query): Builder => $this->reclaimable($query))
             ->update([
                 'status' => 'processing',
                 'failure_reason' => null,
@@ -91,6 +92,21 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ]) === 1;
+    }
+
+    private function reclaimable(Builder $query): Builder
+    {
+        $query->where('status', 'failed');
+
+        $timeout = $this->config->getIdempotencyProcessingTimeoutSeconds();
+
+        if ($timeout === 0) {
+            return $query;
+        }
+
+        return $query->orWhere(fn (Builder $stale): Builder => $stale
+            ->where('status', 'processing')
+            ->where('updated_at', '<=', now()->subSeconds($timeout)));
     }
 
     private function existingPayment(PaymentContext $context, string $paymentIntentKey): PaymentContext
@@ -115,21 +131,27 @@ final readonly class ApplyPaymentIntent implements PaymentPipe
 
     private function submit(string $paymentIntentKey, Transaction $transaction): void
     {
-        PaymentIntent::query()
-            ->where('idempotency_key', $paymentIntentKey)
-            ->update([
+        $timestamp = now();
+
+        DB::table((new PaymentIntent)->getTable())->updateOrInsert(
+            ['idempotency_key' => $paymentIntentKey],
+            [
                 'transaction_id' => $transaction->id,
                 'status' => 'submitted',
-                'updated_at' => now(),
-            ]);
+                'failure_reason' => null,
+                'updated_at' => $timestamp,
+                'created_at' => $timestamp,
+            ],
+        );
     }
 
-    private function fail(string $paymentIntentKey, Throwable $throwable): void
+    private function fail(string $paymentIntentKey, Throwable $throwable, ?Transaction $transaction): void
     {
         PaymentIntent::query()
             ->where('idempotency_key', $paymentIntentKey)
             ->update([
                 'status' => 'failed',
+                'transaction_id' => $transaction?->id,
                 'failure_reason' => mb_substr($throwable->getMessage(), 0, 65535),
                 'updated_at' => now(),
             ]);
