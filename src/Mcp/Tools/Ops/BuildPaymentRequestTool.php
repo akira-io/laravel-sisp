@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Builders\PaymentBuilder;
+use Akira\Sisp\Exceptions\MissingThreeDSecureDataException;
+use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
-use Throwable;
+use LogicException;
 
 #[IsReadOnly]
 #[Description('Build a signed SISP payment request payload from the given inputs. Returns the form fields to post to the gateway; it does not persist a transaction or charge anything.')]
 final class BuildPaymentRequestTool extends Tool
 {
+    use AuthorizesTransactionOps;
+
     private const array STRING_FIELDS = [
         'currency', 'transactionCode', 'token', 'entityCode', 'referenceNumber',
         'locale', 'customerEmail', 'customerCountry', 'customerCity',
@@ -30,6 +34,12 @@ final class BuildPaymentRequestTool extends Tool
             'amount' => ['required', 'numeric', 'gt:0'],
         ]);
 
+        $denied = $this->denyUnlessAuthorized($request, 'build');
+
+        if ($denied instanceof Response) {
+            return $denied;
+        }
+
         $builder = resolve(PaymentBuilder::class)->amount((float) $request->get('amount'));
 
         foreach (self::STRING_FIELDS as $field) {
@@ -42,7 +52,7 @@ final class BuildPaymentRequestTool extends Tool
 
         try {
             $payload = $builder->build();
-        } catch (Throwable $e) {
+        } catch (LogicException|MissingThreeDSecureDataException $e) {
             return Response::error('Could not build payment request: '.$e->getMessage());
         }
 

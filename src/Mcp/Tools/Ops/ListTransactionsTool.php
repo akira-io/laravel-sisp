@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Mcp\Concerns\ResolvesTransaction;
+use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,7 +19,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[Description('List stored SISP transactions with optional status and date filters.')]
 final class ListTransactionsTool extends Tool
 {
-    use ResolvesTransaction;
+    use AuthorizesTransactionOps;
 
     public function handle(Request $request): Response
     {
@@ -29,6 +29,12 @@ final class ListTransactionsTool extends Tool
             'to' => ['nullable', 'date'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+
+        $denied = $this->denyUnlessAuthorized($request, 'list');
+
+        if ($denied instanceof Response) {
+            return $denied;
+        }
 
         $status = $request->get('status');
 

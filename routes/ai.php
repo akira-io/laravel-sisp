@@ -14,5 +14,5 @@ if (config('sisp.mcp.local', true)) {
 
 if (config('sisp.mcp.web.enabled', false)) {
     Mcp::web(config('sisp.mcp.web.path', '/sisp/mcp'), SispWebOpsServer::class)
-        ->middleware(config('sisp.mcp.web.middleware', ['auth:sanctum']));
+        ->middleware(config('sisp.mcp.web.middleware', ['auth:sanctum', 'throttle:60,1']));
 }

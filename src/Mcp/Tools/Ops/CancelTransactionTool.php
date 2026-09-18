@@ -6,21 +6,19 @@ namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
-use Akira\Sisp\Mcp\Concerns\ResolvesTransaction;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
-use Throwable;
+use LogicException;
 
 #[IsDestructive]
-#[Description('Cancel a pending SISP transaction. Completed or already-cancelled transactions cannot be cancelled.')]
+#[Description('Cancel a pending SISP transaction. Completed, failed, refunded, or already-cancelled transactions cannot be cancelled.')]
 final class CancelTransactionTool extends Tool
 {
     use AuthorizesTransactionOps;
-    use ResolvesTransaction;
 
     public function handle(Request $request, CancelTransactionAction $cancel): Response
     {
@@ -29,19 +27,15 @@ final class CancelTransactionTool extends Tool
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $transaction = $this->resolveTransaction((string) $request->get('transaction'));
+        $transaction = $this->authorizedTransaction($request, 'cancel');
 
-        if (! $transaction instanceof \Akira\Sisp\Models\Transaction) {
-            return Response::error('No transaction found for "'.$request->get('transaction').'".');
-        }
-
-        if (! $this->isAuthorized($request, $transaction)) {
-            return Response::error('Not authorized to cancel this transaction.');
+        if ($transaction instanceof Response) {
+            return $transaction;
         }
 
         try {
             $transaction = $cancel->handle($transaction, (string) ($request->get('reason') ?? 'user_cancelled'));
-        } catch (Throwable $e) {
+        } catch (LogicException $e) {
             return Response::error('Cancel failed: '.$e->getMessage());
         }
 
