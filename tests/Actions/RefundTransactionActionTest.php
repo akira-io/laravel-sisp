@@ -120,3 +120,47 @@ it('does not allow refunds above the remaining local balance', function (): void
     expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 50.0))
         ->toThrow(LogicException::class, 'Refund amount (50) exceeds refundable balance.');
 });
+
+it('rereads the refunded balance so a stale instance cannot refund twice', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    $stale = Transaction::query()->where('id', $t->id)->sole();
+
+    resolve(RefundTransactionAction::class)->handle($t, 60.0, 'partial_request');
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($stale, 60.0, 'partial_request'))
+        ->toThrow(LogicException::class, 'Refund amount (60) exceeds refundable balance.');
+});
+
+it('refuses a refund once the locked row is no longer completed', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    Transaction::query()->where('id', $t->id)->update(['status' => TransactionStatus::refunded->value]);
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 10.0))
+        ->toThrow(LogicException::class, "Transaction with status 'refunded' cannot be refunded.");
+});
+
+it('updates and returns the instance the caller passed in', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    $refunded = resolve(RefundTransactionAction::class)->handle($t, 100.0, 'customer_request');
+
+    expect($refunded)->toBe($t)
+        ->and($t->status)->toBe(TransactionStatus::refunded)
+        ->and($t->merchant_response)->toBe('customer_request::100')
+        ->and($t->isDirty())->toBeFalse();
+});
