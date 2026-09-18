@@ -69,10 +69,10 @@ final readonly class CallbackController
 
     private function resolveCancelledTransaction(Request $request): ?Transaction
     {
-        $merchantRef = $request->string('merchantRef')->toString();
-        $merchantSession = $request->string('merchantSession')->toString();
+        $merchantRef = $request->input('merchantRef');
+        $merchantSession = $request->input('merchantSession');
 
-        if ($merchantRef === '' || $merchantSession === '') {
+        if (! is_string($merchantRef) || ! is_string($merchantSession) || $merchantRef === '' || $merchantSession === '') {
             return null;
         }
 

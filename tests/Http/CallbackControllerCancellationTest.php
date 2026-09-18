@@ -298,3 +298,19 @@ it('does not rate limit callbacks that are not cancellations', function (): void
         $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false))->assertOk();
     }
 });
+
+it('ignores a cancellation whose reference or session is not a string', function (array $keys): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-ARRAY',
+        'merchant_session' => 'MS-ARRAY',
+        'status' => 'pending',
+    ]);
+
+    $this->post(route('sisp.callback'), [...$keys, 'UserCancelled' => 'true'])
+        ->assertRedirect('/home');
+
+    expect($transaction->refresh()->status->value)->toBe('pending');
+})->with([
+    'reference' => [['merchantRef' => ['MR-ARRAY'], 'merchantSession' => 'MS-ARRAY']],
+    'session' => [['merchantRef' => 'MR-ARRAY', 'merchantSession' => ['MS-ARRAY']]],
+]);

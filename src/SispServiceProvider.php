@@ -82,9 +82,9 @@ final class SispServiceProvider extends PackageServiceProvider
             }
 
             $perAddress = Limit::perMinute(30)->by('ip:'.$request->ip());
-            $merchantRef = $request->string('merchantRef')->toString();
+            $merchantRef = $request->input('merchantRef');
 
-            if ($merchantRef === '') {
+            if (! is_string($merchantRef) || $merchantRef === '') {
                 return $perAddress;
             }
 
