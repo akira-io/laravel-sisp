@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\SispServiceProvider;
 use Laravel\Mcp\Facades\Mcp;
 
 function loadAiRoutes(): void
@@ -36,4 +37,20 @@ it('registers the web server when the web transport is enabled', function (): vo
     loadAiRoutes();
 
     expect(Mcp::getWebServer('sisp/mcp'))->not->toBeNull();
+});
+
+it('never loads the mcp routes while the package flag is off', function (): void {
+    expect(config('sisp.mcp.enabled'))->toBeFalse()
+        ->and(Mcp::getLocalServer('sisp-dev'))->toBeNull()
+        ->and(Mcp::getLocalServer('sisp-ops'))->toBeNull()
+        ->and(Mcp::getWebServer('sisp/mcp'))->toBeNull();
+});
+
+it('loads the mcp routes when the package flag is on', function (): void {
+    config()->set('sisp.mcp.enabled', true);
+
+    app()->register(SispServiceProvider::class, force: true);
+
+    expect(Mcp::getLocalServer('sisp-dev'))->not->toBeNull()
+        ->and(Mcp::getLocalServer('sisp-ops'))->not->toBeNull();
 });
