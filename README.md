@@ -8,6 +8,14 @@
 <img src="https://img.shields.io/packagist/php-v/akira/laravel-sisp" alt="php">
 </p>
 
+> [!WARNING]
+> **1.x reached end of life when 3.0.0 was released.** It receives no further
+> releases, including security fixes. Laravel SISP supports the current major
+> version and the one before it; see the
+> [supported versions](https://github.com/akira-io/laravel-sisp/blob/main/SECURITY.md#supported-versions).
+> Upgrade to 2.x with the
+> [upgrade guide](https://github.com/akira-io/laravel-sisp/blob/2.x/UPGRADE.md).
+
 Laravel SISP is a Laravel package for SISP Cabo Verde payment flows, with transaction management, invoice generation, callback validation, sandbox tooling, and multi-merchant credential support.
 
 ## Install
