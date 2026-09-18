@@ -52,10 +52,10 @@ final readonly class LegacyMerchantReferenceGenerator implements Generator
 ],
 ```
 
-Only do this if something outside the package requires it. With the 2.x shape both values are the second the payment started, and the session is the reference with `S` in place of `R`, so anyone can enumerate them. That matters in two places:
+Only do this if something outside the package requires it. With the 2.x shape both values are the second the payment started, and the session is the reference with `S` in place of `R`, so anyone can enumerate them. That matters for the cancellation callback, and less than it did for the result page:
 
 - The customer cancellation callback carries no fingerprint. The reference and session are the only things identifying the transaction it cancels, so guessable values let a third party cancel pending payments.
-- The POST callback's own redirect to the result page is signed in 3.0 (see [Payment result page links are signed](#payment-result-page-links-are-signed-action-required-if-you-link-to-it)), so the reference alone no longer opens it; the signed link still carries the reference in plain text.
+- The POST callback's own redirect to the result page is signed in 3.0 (see [Payment result page links are signed](#payment-result-page-links-are-signed-action-required-if-you-link-to-it)), so the reference alone no longer opens it. The signed link still carries the reference in plain text, and anyone holding the link can open the page until it expires.
 
 ### Cancellation refuses failed and refunded transactions (action required if you cancel them)
 

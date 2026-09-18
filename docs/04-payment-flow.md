@@ -207,7 +207,7 @@ After payment, SISP POSTs to `/sisp/callback` with:
 Invalid POST callbacks are redirected to `config('sisp.redirect_url', '/')` before any transaction lookup.
 
 ### 9.2 Required Callback Keys
-After the fingerprint passes, the callback must include:
+Before the fingerprint is checked, the callback must include:
 
 - `merchantRespMerchantRef`
 - `merchantRespMerchantSession`

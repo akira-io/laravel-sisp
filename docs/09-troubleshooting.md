@@ -298,7 +298,7 @@ SISP_MERCHANT_ID=correct_id
 Check logs for exact error:
 
 ```bash
-tail -f storage/logs/laravel.log | grep -i signature
+tail -f storage/logs/laravel.log | grep -i 'fingerprint does not match'
 ```
 
 ### Callback redirects before processing
@@ -311,9 +311,9 @@ transaction is already in a terminal status.
 
 The controller redirects without processing when:
 
-1. The request is a GET without a valid `ref` query parameter
-2. The POST fingerprint is invalid
-3. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
+1. The request is a GET without a `ref` query parameter or without a valid, unexpired signature
+2. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
+3. The POST fingerprint is invalid (checked while `ValidateFingerprint` is in `sisp.pipelines.callback`)
 4. The callback was already processed and the transaction already has a SISP transaction ID
 
 Duplicate callbacks redirect with an `info` flash message: `This payment has already been processed.`

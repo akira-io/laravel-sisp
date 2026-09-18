@@ -806,10 +806,10 @@ Handles the SISP callback route.
 // POST /sisp/callback
 // 1. Cancels the transaction and its invoice on a user cancellation,
 //    which SISP posts as { merchantRef, merchantSession, UserCancelled }.
-// 2. Validates the callback fingerprint before transaction lookup, while
+// 2. Requires merchant reference and merchant session.
+// 3. Validates the callback fingerprint before transaction lookup, while
 //    ValidateFingerprint is configured; a mismatch redirects to
 //    sisp.redirect_url without writing anything.
-// 3. Requires merchant reference and merchant session.
 // 4. Redirects duplicate callbacks when transaction_id is already set.
 // 5. Handles the callback, stores metadata, updates invoice status,
 //    then redirects to the signed GET /sisp/callback?ref=<merchant_ref>.
