@@ -537,7 +537,7 @@ php artisan sisp:prune-request-payloads --older-than=30
 php artisan sisp:prune-request-payloads --limit=200
 ```
 
-Each transaction is pruned under a row lock, so a refund recorded while the command runs is kept. A payload that cannot be decrypted, for example after an `APP_KEY` rotation, is logged and skipped without counting towards `--limit`, and retried on the next run.
+Each transaction is pruned under a row lock, so a refund recorded while the command runs is kept. A payload that cannot be decrypted, for example after an `APP_KEY` rotation, is logged and marked pruned without being changed, so it no longer holds back the rows behind it. Restore the old key in `APP_PREVIOUS_KEYS` before running the command if those payloads must be pruned too.
 
 Unlike `sisp:expire-pending`, `--older-than=0` is accepted: the purchase request blob is personal 3-D Secure data whose customer-facing fields already live in dedicated `customer_*` columns, so purging it immediately on terminal transactions is a defensible "clear it all now" rather than a risk to a live transaction.
 
