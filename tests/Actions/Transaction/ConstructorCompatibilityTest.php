@@ -15,10 +15,13 @@ use Akira\Sisp\Actions\Transaction\UpdateTransactionAction;
 use Akira\Sisp\Actions\Transaction\UpdateTransactionAttemptAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Http\Controllers\CallbackController;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Support\InertiaAvailability;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Http\Request;
 
 it('fails a transaction built with the 2.1 constructor arguments', function (): void {
@@ -40,14 +43,26 @@ it('fails a transaction built with the 2.1 constructor arguments', function (): 
         ->and($transaction->error_message)->toBe('Saldo do cartao insuficiente');
 });
 
-it('builds the update action with the 2.1 constructor arguments', function (): void {
+it('completes a transaction through an update action built with the 2.1 constructor arguments', function (): void {
+    config()->set('sisp.sandbox', true);
+    $transaction = Transaction::factory()->create(['status' => 'pending', 'amount' => 20, 'currency' => '132']);
+    $attempt = TransactionAttempt::factory()->forTransaction($transaction)->create(['attempt_number' => 1]);
     $action = new UpdateTransactionAction(
         resolve(MapTransactionStatusAction::class),
         new UpdateTransactionAttemptAction,
         resolve(ShouldPropagateAttemptCallbackAction::class),
     );
 
-    expect($action)->toBeInstanceOf(UpdateTransactionAction::class);
+    $action->handle($transaction, Sisp::generateSandboxPayload(PaymentRequestData::from([
+        'amount' => 20,
+        'merchantRef' => $transaction->merchant_ref,
+        'merchantSession' => $transaction->merchant_session,
+        'currency' => '132',
+        'transactionCode' => '1',
+    ])), $attempt);
+
+    expect($transaction->refresh()->status->value)->toBe('completed')
+        ->and($attempt->refresh()->callback_payload)->not->toBeNull();
 });
 
 it('builds the response renderer with the 2.1 constructor arguments', function (): void {

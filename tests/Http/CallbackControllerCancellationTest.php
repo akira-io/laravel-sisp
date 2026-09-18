@@ -78,23 +78,25 @@ it('logs the customer cancellation against the pending transaction', function ()
         ]);
 });
 
-it('logs nothing when the cancelled callback does not name a pending transaction', function (array $payload): void {
+it('logs nothing when the cancelled callback does not name a pending transaction', function (array $stored, array $payload): void {
     $messages = recordCancellationLogs();
 
     Transaction::factory()->create([
         'merchant_ref' => 'MR-NOT-LOGGED',
         'merchant_session' => 'MS-NOT-LOGGED',
-        'status' => 'completed',
+        'status' => 'pending',
+        ...$stored,
     ]);
 
     $this->post(route('sisp.callback'), [...$payload, 'UserCancelled' => 'true'])->assertRedirect('/home');
 
     expect($messages)->toHaveCount(0);
 })->with([
-    'unknown reference' => [['merchantRef' => 'MR-UNKNOWN', 'merchantSession' => 'MS-UNKNOWN']],
-    'terminal transaction' => [['merchantRef' => 'MR-NOT-LOGGED', 'merchantSession' => 'MS-NOT-LOGGED']],
-    'empty reference' => [['merchantRef' => '', 'merchantSession' => 'MS-NOT-LOGGED']],
-    'no session' => [['merchantRef' => 'MR-NOT-LOGGED']],
+    'unknown reference' => [[], ['merchantRef' => 'MR-UNKNOWN', 'merchantSession' => 'MS-NOT-LOGGED']],
+    'terminal transaction' => [['status' => 'completed'], ['merchantRef' => 'MR-NOT-LOGGED', 'merchantSession' => 'MS-NOT-LOGGED']],
+    'session mismatch' => [[], ['merchantRef' => 'MR-NOT-LOGGED', 'merchantSession' => 'MS-SOMETHING-ELSE']],
+    'empty reference' => [['merchant_ref' => ''], ['merchantRef' => '', 'merchantSession' => 'MS-NOT-LOGGED']],
+    'no session against an empty stored session' => [['merchant_session' => ''], ['merchantRef' => 'MR-NOT-LOGGED']],
 ]);
 
 it('leaves a transaction in any status untouched', function (string $status): void {
