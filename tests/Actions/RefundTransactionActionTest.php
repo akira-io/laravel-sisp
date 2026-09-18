@@ -204,3 +204,44 @@ it('counts a refund that reached the payload but not the refunds table', functio
         ->toThrow(LogicException::class, 'Refund amount (30) exceeds refundable balance.')
         ->and(resolve(RefundTransactionAction::class)->refundableAmount($t->refresh()))->toBe(20.0);
 });
+
+it('fully refunds a transaction whose parts leave less than a centavo', function (): void {
+    Event::fake([TransactionRefunded::class]);
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    $action = resolve(RefundTransactionAction::class);
+
+    $action->handle($t, 33.333333);
+    $action->handle($t, 33.333333);
+
+    expect($t->status)->toBe(TransactionStatus::completed);
+
+    $action->handle($t, 33.333333);
+
+    expect($t->status)->toBe(TransactionStatus::refunded)
+        ->and($t->refundableAmount())->toBe(0.0)
+        ->and($t->isPartiallyRefunded())->toBeFalse();
+
+    Event::assertDispatched(
+        TransactionRefunded::class,
+        fn (TransactionRefunded $event): bool => $event->remainingAmount === 0.0 && $event->transaction->status === TransactionStatus::refunded,
+    );
+});
+
+it('keeps a transaction completed while a centavo or more is left to refund', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    resolve(RefundTransactionAction::class)->handle($t, 99.99);
+
+    expect($t->status)->toBe(TransactionStatus::completed)
+        ->and($t->refundableAmount())->toBe(0.01);
+});
