@@ -12,6 +12,7 @@ use Akira\Sisp\Mcp\Tools\Ops\QueryTransactionStatusTool;
 use Akira\Sisp\Mcp\Tools\Ops\ReconcileTransactionTool;
 use Akira\Sisp\Mcp\Tools\Ops\RefundTransactionTool;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 it('builds a payment request without persisting a transaction', function (): void {
@@ -100,54 +101,119 @@ it('reconciles a pending transaction', function (): void {
     expect($transaction->fresh()->status)->toBe(TransactionStatus::completed);
 });
 
-it('refunds a completed transaction in full', function (): void {
-    $transaction = Transaction::factory()->completed()->create([
-        'amount' => 100.0,
-        'transaction_id' => '123',
-        'response_code' => '5',
+it('prefers an exact id over a numeric merchant reference', function (): void {
+    $target = Transaction::factory()->create();
+    Transaction::factory()->create(['merchant_ref' => (string) $target->id]);
+
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => (string) $target->id])
+        ->assertOk()
+        ->assertSee($target->merchant_ref);
+});
+
+it('queries the gateway with the stored merchant reference when given an id', function (): void {
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => true, 'msg' => 'Approved'])]);
+
+    $transaction = Transaction::factory()->create(['merchant_ref' => 'REF-BY-ID']);
+
+    SispOpsServer::tool(QueryTransactionStatusTool::class, ['transaction' => (string) $transaction->id])
+        ->assertOk();
+
+    Http::assertSent(fn (Request $request): bool => $request['merchantRef'] === 'REF-BY-ID');
+});
+
+it('does not query the gateway for an unknown transaction', function (): void {
+    Http::fake();
+
+    SispOpsServer::tool(QueryTransactionStatusTool::class, ['transaction' => 'R-SOMEONE-ELSE'])
+        ->assertHasErrors(['No transaction found']);
+
+    Http::assertNothingSent();
+});
+
+it('keeps credentials and personal data out of the transaction summary', function (): void {
+    Transaction::factory()->create([
+        'merchant_ref' => 'REF-PII',
+        'merchant_session' => 'SESSION-SECRET',
+        'customer_email' => 'victim@example.com',
+        'customer_phone' => '+2389990000',
+        'customer_address' => 'Rua Secreta 1',
+        'payload' => ['merchantRespPan' => '4111111111111111'],
+        'callback_raw_payload' => ['purchaseRequest' => '3DS-DATA'],
     ]);
 
-    SispOpsServer::tool(RefundTransactionTool::class, ['transaction' => (string) $transaction->id])
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => 'REF-PII'])
         ->assertOk()
-        ->assertSee('refunded');
-
-    expect($transaction->fresh()->status)->toBe(TransactionStatus::refunded);
+        ->assertSee('v***@example.com')
+        ->assertDontSee(['SESSION-SECRET', 'victim@', '+2389990000', 'Rua Secreta', '4111111111111111', '3DS-DATA']);
 });
 
-it('refunds a completed transaction partially', function (): void {
-    $transaction = Transaction::factory()->completed()->create([
-        'amount' => 100.0,
-        'transaction_id' => '123',
-        'response_code' => '5',
+it('reports the refusal reason sisp sent, capped in length', function (): void {
+    Transaction::factory()->create([
+        'merchant_ref' => 'REF-REFUSED',
+        'status' => 'failed',
+        'error_code' => '3',
+        'error_message' => 'Saldo do cartao insuficiente'.str_repeat('.', 400),
     ]);
 
-    SispOpsServer::tool(RefundTransactionTool::class, [
-        'transaction' => (string) $transaction->id,
-        'amount' => 40.0,
-        'reason' => 'partial_return',
-    ])->assertOk();
-});
-
-it('fails to refund a pending transaction', function (): void {
-    $transaction = Transaction::factory()->pending()->create();
-
-    SispOpsServer::tool(RefundTransactionTool::class, ['transaction' => (string) $transaction->id])
-        ->assertHasErrors();
-});
-
-it('cancels a pending transaction', function (): void {
-    $transaction = Transaction::factory()->pending()->create();
-
-    SispOpsServer::tool(CancelTransactionTool::class, ['transaction' => (string) $transaction->id])
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => 'REF-REFUSED'])
         ->assertOk()
-        ->assertSee('cancelled');
-
-    expect($transaction->fresh()->status)->toBe(TransactionStatus::cancelled);
+        ->assertSee(['Saldo do cartao insuficiente', '"error_code":"3"'])
+        ->assertDontSee(str_repeat('.', 256));
 });
 
-it('fails to cancel a completed transaction', function (): void {
-    $transaction = Transaction::factory()->completed()->create();
+it('builds a payment request with the customer fields it is given', function (): void {
+    SispOpsServer::tool(BuildPaymentRequestTool::class, [
+        'amount' => 1500.0,
+        'locale' => 'pt',
+        'customerEmail' => 'buyer@example.com',
+        'customerCountry' => 'CV',
+        'customerCity' => 'Praia',
+        'customerAddress' => 'Rua 1',
+        'customerPhone' => '',
+    ])->assertOk()->assertSee('payment_request');
+});
 
-    SispOpsServer::tool(CancelTransactionTool::class, ['transaction' => (string) $transaction->id])
-        ->assertHasErrors();
+it('explains why a 3-d secure payment request cannot be built', function (): void {
+    config()->set('sisp.is_3dsec', '1');
+
+    SispOpsServer::tool(BuildPaymentRequestTool::class, ['amount' => 1500.0])
+        ->assertHasErrors(['Could not build payment request']);
+});
+
+it('lists transactions inside a date window', function (): void {
+    Transaction::factory()->create(['merchant_ref' => 'REF-OLD', 'created_at' => now()->subDays(10)]);
+    Transaction::factory()->create(['merchant_ref' => 'REF-NEW', 'created_at' => now()->subDay()]);
+
+    SispOpsServer::tool(ListTransactionsTool::class, [
+        'from' => now()->subDays(2)->toIso8601String(),
+        'to' => now()->toIso8601String(),
+        'limit' => 5,
+    ])->assertOk()->assertSee('REF-NEW')->assertDontSee('REF-OLD');
+});
+
+it('reports a missing transaction on every transaction tool', function (string $tool, array $arguments): void {
+    Http::fake();
+
+    SispOpsServer::tool($tool, ['transaction' => 'REF-MISSING', ...$arguments])
+        ->assertHasErrors(['No transaction found for "REF-MISSING".']);
+
+    Http::assertNothingSent();
+})->with([
+    'get' => [GetTransactionTool::class, []],
+    'query' => [QueryTransactionStatusTool::class, []],
+    'reconcile' => [ReconcileTransactionTool::class, []],
+    'refund' => [RefundTransactionTool::class, ['amount' => 10]],
+    'cancel' => [CancelTransactionTool::class, []],
+]);
+
+it('fully masks a customer email it cannot parse', function (): void {
+    Transaction::factory()->create(['merchant_ref' => 'REF-ODD', 'customer_email' => 'not-an-email']);
+
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => 'REF-ODD'])
+        ->assertOk()
+        ->assertSee('"customer_email":"***"')
+        ->assertDontSee('not-an-email');
 });

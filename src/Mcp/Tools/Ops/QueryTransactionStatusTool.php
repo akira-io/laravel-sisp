@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -12,22 +13,25 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
-use Throwable;
 
 #[IsReadOnly]
 #[IsIdempotent]
-#[Description('Query the live status of a transaction at the SISP gateway by transaction id or merchant reference.')]
+#[Description('Query the live status of a stored transaction at the SISP gateway by transaction id or merchant reference.')]
 final class QueryTransactionStatusTool extends Tool
 {
+    use AuthorizesTransactionOps;
+
     public function handle(Request $request): Response
     {
         $request->validate(['transaction' => ['required', 'string']]);
 
-        try {
-            $status = Sisp::queryTransactionStatus((string) $request->get('transaction'));
-        } catch (Throwable $e) {
-            return Response::error('Could not query transaction status: '.$e->getMessage());
+        $transaction = $this->authorizedTransaction($request, 'query');
+
+        if ($transaction instanceof Response) {
+            return $transaction;
         }
+
+        $status = Sisp::queryTransactionStatus($transaction);
 
         return Response::json([
             'result' => $status->result,
