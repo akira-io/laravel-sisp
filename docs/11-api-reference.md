@@ -802,8 +802,9 @@ Handles the SISP callback route.
 // Renders the payment response for a known merchant reference.
 
 // POST /sisp/callback
-// 1. Cancels the transaction and its invoice on a user cancellation,
-//    which SISP posts as { merchantRef, merchantSession, UserCancelled }.
+// 1. Logs a user cancellation, which SISP posts as
+//    { merchantRef, merchantSession, UserCancelled }, and redirects.
+//    The transaction stays pending until sisp:expire-pending cancels it.
 // 2. Validates the callback fingerprint before transaction lookup.
 // 3. Requires merchant reference and merchant session.
 // 4. Redirects duplicate callbacks when transaction_id is already set.

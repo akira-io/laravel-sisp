@@ -142,17 +142,24 @@ try {
 
 Can be cancelled:
 - `pending` - Awaiting SISP response
+- `failed` - Overwrites the gateway response and removes the retry
+- `refunded` - Overwrites the refunded status
 
 Cannot be cancelled:
 - `completed` - Payment successful
 - `cancelled` - Already cancelled
-- `failed` - The gateway already gave a verdict, and cancelling would overwrite it and take the retry away
-- `refunded` - The refund is the final state
+
+The 3.x line also refuses `failed` and `refunded`. Check the status yourself
+before cancelling if you want that behaviour on 2.x.
 
 The transaction row is locked for the duration, so a cancellation racing the
 success callback cannot write over a payment that has just completed. Cancelling
 also cancels the invoice attached to the transaction, in the same database
-transaction.
+transaction. The model you pass in is updated and returned, as in 2.1.
+
+The SISP callback that reports a customer cancellation (`UserCancelled`) does
+not cancel anything on 2.x: it carries no fingerprint, so the package only logs
+it and leaves the transaction `pending` until `sisp:expire-pending` cancels it.
 
 ### Cancel via Route
 
@@ -335,9 +342,22 @@ POST to `/sisp/refund/{transaction}`:
 ```php
 POST /sisp/refund/{transaction}
 {
-    "amount": 500.00
+    "amount": 500.00,
+    "reason": "customer_request"
 }
 ```
+
+`amount` is required, numeric and must be greater than zero. `reason` is optional, a string of at most 255 characters, and defaults to `user_refund`.
+
+Responses:
+
+- `200` the refund succeeded, with the updated transaction in the body
+- `400` the payload failed validation (messages under `errors`), the transaction cannot be refunded, or the amount exceeds the refundable balance
+- `403` the authenticated user is not allowed to refund this transaction, checked before the payload is validated
+
+The transaction row is locked while the refund is recorded, so two concurrent
+refunds cannot both pass the balance check. A refund leaves the invoice status
+unchanged on 2.x.
 
 Dispatches `TransactionRefunded` event.
 

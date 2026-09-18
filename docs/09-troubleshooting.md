@@ -303,11 +303,12 @@ tail -f storage/logs/laravel.log | grep -i signature
 
 ### Callback redirects before processing
 
-A truthy `UserCancelled` no longer redirects without processing. The controller
-resolves the transaction from `merchantRef` and `merchantSession`, cancels it
-and its invoice, dispatches `TransactionCancelled`, and only then redirects.
-Nothing happens if either key is missing, if no transaction matches, or if the
-transaction is already in a terminal status.
+A truthy `UserCancelled` redirects without changing the transaction. SISP sends
+no fingerprint with it, so the controller only resolves the pending transaction
+from `merchantRef` and `merchantSession`, logs that the customer cancelled, and
+redirects. The transaction stays `pending`; `sisp:expire-pending` cancels it
+once it is older than `sisp.expire_pending_after_days`. Nothing is logged if
+either key is missing or no pending transaction matches.
 
 The controller redirects without processing when:
 
