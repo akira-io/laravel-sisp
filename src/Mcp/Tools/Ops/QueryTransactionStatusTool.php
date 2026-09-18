@@ -6,6 +6,7 @@ namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
+use Akira\Sisp\Mcp\Concerns\ThrottlesGatewayCalls;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -20,6 +21,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 final class QueryTransactionStatusTool extends Tool
 {
     use AuthorizesTransactionOps;
+    use ThrottlesGatewayCalls;
 
     public function handle(Request $request): Response
     {
@@ -29,6 +31,12 @@ final class QueryTransactionStatusTool extends Tool
 
         if ($transaction instanceof Response) {
             return $transaction;
+        }
+
+        $throttled = $this->throttleGatewayCall($request);
+
+        if ($throttled instanceof Response) {
+            return $throttled;
         }
 
         $status = Sisp::queryTransactionStatus($transaction);
