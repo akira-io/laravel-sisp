@@ -360,7 +360,7 @@ it in `$event->refund` and `$event->remainingAmount`.
 - Refund and history requests use `reversal = R`
 - Refund operations use the dedicated refund FingerPrint with version `2`
 - Successful full refunds preserve the original transaction amount and change status to `refunded`
-- Successful partial refunds preserve the transaction as `completed` until the known refunded balance reaches the original amount
+- Successful partial refunds preserve the transaction as `completed` until the known refunded balance reaches the original amount, or leaves less than one centavo (0.01) of it: amounts are kept in thousandths, so parts that do not divide evenly can leave a residue nothing can refund
 - A full refund moves the associated invoice to `refunded` in the same database transaction; partial refunds leave the invoice on `paid`
 - For refunds on a different day, SISP may require enough daily purchase liquidity to cover the refunded amount
 - For DCC transactions, refund in the original transaction currency

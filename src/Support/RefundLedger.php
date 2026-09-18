@@ -9,6 +9,8 @@ use Akira\Sisp\Models\Transaction;
 
 final readonly class RefundLedger
 {
+    public const int SMALLEST_REFUNDABLE_THOUSANDTHS = 10;
+
     public function refundedThousandths(Transaction $transaction): int
     {
         $fromPayload = array_sum(array_map(
@@ -25,7 +27,14 @@ final readonly class RefundLedger
             return 0;
         }
 
-        return max(0, SispAmount::toThousandths($transaction->amount) - $this->refundedThousandths($transaction));
+        $remaining = SispAmount::toThousandths($transaction->amount) - $this->refundedThousandths($transaction);
+
+        return $this->isSettled($remaining) ? 0 : $remaining;
+    }
+
+    public function isSettled(int $remainingThousandths): bool
+    {
+        return $remainingThousandths < self::SMALLEST_REFUNDABLE_THOUSANDTHS;
     }
 
     /**

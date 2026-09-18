@@ -65,7 +65,7 @@ final readonly class RefundTransactionAction
             $payload = $this->appendRefundPayload($locked, $request->toArray(), $reason, $idempotencyKey);
             $refund = $this->recordRefund($locked, $request->toArray(), $reason, $idempotencyKey);
             $remainingThousandths = $refundableThousandths - $refundThousandths;
-            $status = $remainingThousandths === 0
+            $status = $this->ledger->isSettled($remainingThousandths)
                 ? TransactionStatus::refunded
                 : TransactionStatus::completed;
 
@@ -92,7 +92,7 @@ final readonly class RefundTransactionAction
                 $refundAmount,
                 $reason,
                 $refund,
-                SispAmount::fromThousandths($remainingThousandths),
+                SispAmount::fromThousandths($this->ledger->isSettled($remainingThousandths) ? 0 : $remainingThousandths),
             ));
         }
 
