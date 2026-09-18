@@ -186,3 +186,21 @@ it('reports the change and hands the caller\'s instance to the event', function 
         fn (TransactionRefunded $event): bool => $event->transaction === $t,
     );
 });
+
+it('counts a refund that reached the payload but not the refunds table', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+        'payload' => ['refunds' => [
+            ['amount' => 30.0, 'reason' => 'before_migration', 'request' => []],
+            ['amount' => 50.0, 'reason' => 'during_migration', 'request' => []],
+        ]],
+    ]);
+    $t->refunds()->create(['amount' => 30.0, 'reason' => 'before_migration', 'request' => []]);
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 30.0))
+        ->toThrow(LogicException::class, 'Refund amount (30) exceeds refundable balance.')
+        ->and(resolve(RefundTransactionAction::class)->refundableAmount($t->refresh()))->toBe(20.0);
+});
