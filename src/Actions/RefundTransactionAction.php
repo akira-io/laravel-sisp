@@ -8,6 +8,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\SispAmount;
+use Akira\Sisp\Support\SispSchema;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\RefundRequest;
 use Illuminate\Support\Facades\DB;
@@ -98,7 +99,7 @@ final readonly class RefundTransactionAction
 
     private function refundedThousandths(Transaction $transaction): int
     {
-        if ($transaction->refunds()->exists()) {
+        if ($this->recordsRefunds() && $transaction->refunds()->exists()) {
             return (int) $transaction->refunds()->sum('amount_thousandths');
         }
 
@@ -163,7 +164,9 @@ final readonly class RefundTransactionAction
      */
     private function appendRefundPayload(Transaction $transaction, array $request, string $reason): array
     {
-        $this->backfillLegacyRefunds($transaction);
+        if ($this->recordsRefunds()) {
+            $this->backfillLegacyRefunds($transaction);
+        }
 
         $payload = $transaction->getAttribute('payload');
         $payload = is_array($payload) ? $payload : [];
@@ -176,6 +179,10 @@ final readonly class RefundTransactionAction
         ];
         $payload['refunds'] = $refunds;
 
+        if (! $this->recordsRefunds()) {
+            return $payload;
+        }
+
         $transaction->refunds()->create([
             'amount' => (float) $request['amount'],
             'reason' => $reason,
@@ -183,5 +190,10 @@ final readonly class RefundTransactionAction
         ]);
 
         return $payload;
+    }
+
+    private function recordsRefunds(): bool
+    {
+        return resolve(SispSchema::class)->hasRefundsTable();
     }
 }

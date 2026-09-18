@@ -6,6 +6,7 @@ namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\SispSchema;
 use Akira\Sisp\Support\TransactionLogContext;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -26,7 +27,7 @@ final class PruneRequestPayloadsCommand extends Command
         TransactionStatus::refunded->value,
     ];
 
-    public function handle(Repository $config): int
+    public function handle(Repository $config, SispSchema $schema): int
     {
         $olderThan = $this->option('older-than');
         $days = $olderThan !== null
@@ -35,6 +36,12 @@ final class PruneRequestPayloadsCommand extends Command
 
         if ($days < 0) {
             $this->error('The --older-than option cannot be negative.');
+
+            return self::FAILURE;
+        }
+
+        if (! $schema->transactionsHaveColumn('request_payload_pruned_at')) {
+            $this->error('The request_payload_pruned_at column is missing. Publish and run the laravel-sisp migrations first.');
 
             return self::FAILURE;
         }

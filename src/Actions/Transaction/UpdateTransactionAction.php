@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions\Transaction;
 
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
+use Akira\Sisp\Support\SispSchema;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ final readonly class UpdateTransactionAction
 
             return TransactionLogContext::run(
                 'callback',
-                fn (): bool => $transaction->update([
+                fn (): bool => $transaction->update(resolve(SispSchema::class)->withoutMissingTransactionColumns([
                     'merchant_ref' => $merchantRef,
                     'merchant_session' => $merchantSession,
                     'transaction_id' => $payload->transactionID,
@@ -58,7 +59,7 @@ final readonly class UpdateTransactionAction
                     'error_code' => $payload->isError() && $payload->errorCode !== '' ? $payload->errorCode : null,
                     'error_message' => $payload->isError() ? $this->resolveCustomerErrorMessage->handle($payload) : null,
                     'callback_raw_payload' => $this->maskCallbackRawPayload->handle($payload->raw),
-                ])
+                ]))
             );
         });
     }

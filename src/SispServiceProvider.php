@@ -13,6 +13,7 @@ use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
 use Akira\Sisp\Commands\TransactionStatusCommand;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Drivers\SispManager;
+use Akira\Sisp\Support\SispSchema;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -62,6 +63,8 @@ final class SispServiceProvider extends PackageServiceProvider
         $this->app->resolveEnvironmentUsing(fn (array $environments): bool => (bool) $this->app->environment($environments));
 
         $this->app->bind(SispDriver::class, fn (Application $app): SispDriver => $app->make(SispManager::class)->driver());
+
+        $this->app->scoped(SispSchema::class);
     }
 
     public function boot(): self
