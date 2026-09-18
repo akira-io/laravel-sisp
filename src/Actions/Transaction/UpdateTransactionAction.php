@@ -12,19 +12,28 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class UpdateTransactionAction
 {
+    private LockCallbackRowsAction $lockCallbackRows;
+
     public function __construct(
         private MapTransactionStatusAction $mapStatus,
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
         private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage,
         private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
-    ) {}
+        ?LockCallbackRowsAction $lockCallbackRows = null,
+    ) {
+        $this->lockCallbackRows = $lockCallbackRows ?? resolve(LockCallbackRowsAction::class);
+    }
 
     public function handle(Transaction $transaction, CallbackPayload $payload, ?TransactionAttempt $attempt = null): bool
     {
         $status = $this->mapStatus->handle($payload->messageType, $payload->merchantResponse);
 
         return DB::transaction(function () use ($attempt, $payload, $status, $transaction): bool {
+            if (! $this->lockCallbackRows->handle($transaction, $attempt, $payload)) {
+                return false;
+            }
+
             if ($attempt instanceof TransactionAttempt) {
                 $this->updateAttempt->handle($attempt, $payload, $status);
 

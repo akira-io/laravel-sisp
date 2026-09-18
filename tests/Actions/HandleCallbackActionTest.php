@@ -66,7 +66,7 @@ it('leaves the transaction untouched and dispatches nothing when the fingerprint
     Event::assertNotDispatched(PaymentFailed::class);
 });
 
-it('dispatches events for completed, failed, and pending statuses', function (): void {
+it('dispatches the event matching each callback status', function (string $messageType, string $event): void {
     app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
     {
         public function handle(CallbackPayload $payload): bool
@@ -84,14 +84,86 @@ it('dispatches events for completed, failed, and pending statuses', function ():
     ]);
 
     Event::fake();
+    resolve(HandleCallbackAction::class)->handle(cb_payload($messageType));
+    Event::assertDispatched($event);
+})->with([
+    'completed' => [SuccessMessageType::purchase->value, PaymentCompleted::class],
+    'failed' => ['6', PaymentFailed::class],
+    'pending' => ['X', PaymentPending::class],
+]);
+
+it('dispatches PaymentCompleted once when the same success callback arrives twice', function (): void {
+    app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
+    {
+        public function handle(CallbackPayload $payload): bool
+        {
+            return true;
+        }
+    });
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'mref',
+        'merchant_session' => 'msess',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '8',
+    ]);
+
+    Event::fake();
     resolve(HandleCallbackAction::class)->handle(cb_payload(SuccessMessageType::purchase->value));
-    Event::assertDispatched(PaymentCompleted::class);
+    resolve(HandleCallbackAction::class)->handle(cb_payload(SuccessMessageType::purchase->value));
+
+    Event::assertDispatchedTimes(PaymentCompleted::class, 1);
+
+    expect($transaction->refresh()->status->value)->toBe('completed');
+});
+
+it('keeps a completed transaction completed when a refusal arrives afterwards', function (): void {
+    app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
+    {
+        public function handle(CallbackPayload $payload): bool
+        {
+            return true;
+        }
+    });
+
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'mref',
+        'merchant_session' => 'msess',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '8',
+    ]);
+
+    resolve(HandleCallbackAction::class)->handle(cb_payload(SuccessMessageType::purchase->value));
 
     Event::fake();
-    resolve(HandleCallbackAction::class)->handle(cb_payload('6')); // issuer/system error -> failed
-    Event::assertDispatched(PaymentFailed::class);
+    resolve(HandleCallbackAction::class)->handle(cb_payload('6'));
+
+    Event::assertNotDispatched(PaymentFailed::class);
+    expect($transaction->refresh()->status->value)->toBe('completed');
+});
+
+it('dispatches PaymentFailed once when the same refusal arrives twice', function (): void {
+    app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
+    {
+        public function handle(CallbackPayload $payload): bool
+        {
+            return true;
+        }
+    });
+
+    Transaction::factory()->create([
+        'merchant_ref' => 'mref',
+        'merchant_session' => 'msess',
+        'amount' => 10,
+        'currency' => '132',
+        'transaction_code' => '8',
+    ]);
 
     Event::fake();
-    resolve(HandleCallbackAction::class)->handle(cb_payload('X')); // unknown -> pending
-    Event::assertDispatched(PaymentPending::class);
+    resolve(HandleCallbackAction::class)->handle(cb_payload('6'));
+    resolve(HandleCallbackAction::class)->handle(cb_payload('6'));
+
+    Event::assertDispatchedTimes(PaymentFailed::class, 1);
 });

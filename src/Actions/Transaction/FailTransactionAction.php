@@ -13,12 +13,17 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class FailTransactionAction
 {
+    private LockCallbackRowsAction $lockCallbackRows;
+
     public function __construct(
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
         private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage,
         private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
-    ) {}
+        ?LockCallbackRowsAction $lockCallbackRows = null,
+    ) {
+        $this->lockCallbackRows = $lockCallbackRows ?? resolve(LockCallbackRowsAction::class);
+    }
 
     public function handle(
         Transaction $transaction,
@@ -28,6 +33,10 @@ final readonly class FailTransactionAction
         bool $trustPayload = true,
     ): bool {
         return DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction, $trustPayload): bool {
+            if (! $this->lockCallbackRows->handle($transaction, $attempt, $payload)) {
+                return false;
+            }
+
             if ($attempt instanceof TransactionAttempt) {
                 $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse, $trustPayload);
 
