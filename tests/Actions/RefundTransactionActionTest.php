@@ -221,3 +221,19 @@ it('counts a refund that reached the payload but not the refunds table', functio
         ->toThrow(LogicException::class, 'Refund amount (30) exceeds refundable balance.')
         ->and(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))->toBe(20.0);
 });
+
+it('counts refunds recorded in the refunds table but missing from the payload', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+        'payload' => ['refunds' => [
+            ['amount' => 30.0, 'reason' => 'first', 'request' => []],
+        ]],
+    ]);
+    $transaction->refunds()->create(['amount' => 30.0, 'reason' => 'first', 'request' => []]);
+    $transaction->refunds()->create(['amount' => 50.0, 'reason' => 'payload_overwritten', 'request' => []]);
+
+    expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))->toBe(20.0);
+});

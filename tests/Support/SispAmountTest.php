@@ -30,7 +30,10 @@ it('refuses amounts that do not fit in integer thousandths', function (float|str
     expect(fn (): int => SispAmount::toThousandths($amount))
         ->toThrow(InvalidArgumentException::class, 'The amount is too large to express in SISP thousandths.');
 })->with([
+    'just above the bound' => '9000000000000001',
+    'overflowing float' => 1e16,
     'huge float' => 1e20,
+    'huge negative float' => -1e20,
     'huge decimal string' => '100000000000000000000',
     'exponent string' => '1e400',
     'infinity' => INF,

@@ -30,13 +30,13 @@ it('rejects a window that is not a whole number', function (string $command, str
     ['sisp:reconcile-pending', 'The --older-than option must be a whole number of minutes, at least 1.'],
 ]);
 
-it('rejects a negative reconciliation window instead of selecting transactions still at the gateway', function (): void {
+it('rejects a reconciliation window below one minute', function (string $window): void {
     config()->set('sisp.transaction_status.reconciliation_enabled', true);
 
-    $this->artisan('sisp:reconcile-pending', ['--older-than' => '-10'])
+    $this->artisan('sisp:reconcile-pending', ['--older-than' => $window])
         ->expectsOutput('The --older-than option must be a whole number of minutes, at least 1.')
         ->assertFailed();
-});
+})->with(['-10', '0']);
 
 it('does not expire anything when the configured window is below one day', function (): void {
     config()->set('sisp.expire_pending_after_days', 0);
