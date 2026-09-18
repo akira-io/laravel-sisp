@@ -53,3 +53,30 @@ it('still cancels failed and refunded transactions', function (string $status): 
 
     Event::assertDispatched(Akira\Sisp\Events\TransactionCancelled::class);
 })->with(['failed', 'refunded']);
+
+it('builds without arguments as in 2.1', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    $cancelled = (new CancelTransactionAction)->handle($transaction);
+
+    expect($cancelled->status->value)->toBe('cancelled');
+});
+
+it('updates and returns the instance the caller passed in', function (): void {
+    Event::fake();
+
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    $cancelled = resolve(CancelTransactionAction::class)->handle($transaction, 'admin');
+
+    expect($cancelled)->toBe($transaction)
+        ->and($transaction->status->value)->toBe('cancelled')
+        ->and($transaction->merchant_response)->toBe('admin')
+        ->and($transaction->cancelled_at)->not->toBeNull()
+        ->and($transaction->isDirty())->toBeFalse();
+
+    Event::assertDispatched(
+        Akira\Sisp\Events\TransactionCancelled::class,
+        fn (Akira\Sisp\Events\TransactionCancelled $event): bool => $event->transaction === $transaction,
+    );
+});

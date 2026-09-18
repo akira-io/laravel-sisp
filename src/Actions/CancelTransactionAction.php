@@ -13,9 +13,12 @@ use LogicException;
 
 final readonly class CancelTransactionAction
 {
-    public function __construct(
-        private UpdateInvoiceStatusAction $updateInvoiceStatus,
-    ) {}
+    private UpdateInvoiceStatusAction $updateInvoiceStatus;
+
+    public function __construct(?UpdateInvoiceStatusAction $updateInvoiceStatus = null)
+    {
+        $this->updateInvoiceStatus = $updateInvoiceStatus ?? resolve(UpdateInvoiceStatusAction::class);
+    }
 
     public function handle(Transaction $transaction, string $reason = 'user_cancelled'): Transaction
     {
@@ -43,9 +46,11 @@ final readonly class CancelTransactionAction
             return $locked;
         });
 
-        event(new TransactionCancelled($cancelled, $reason));
+        $transaction->setRawAttributes($cancelled->getAttributes(), true);
 
-        return $cancelled;
+        event(new TransactionCancelled($transaction, $reason));
+
+        return $transaction;
     }
 
     private function cannotBeCancelled(Transaction $transaction): bool

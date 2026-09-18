@@ -114,22 +114,18 @@ it('cancels the invoice when cancelling from the signed route', function (): voi
         ->and($invoice->refresh()->status->value)->toBe('cancelled');
 });
 
-it('refuses to cancel a failed transaction from the signed route', function (): void {
-    $transaction = Transaction::factory()->create([
+it('cancels a failed transaction from the signed route as in 2.1', function (): void {
+    Transaction::factory()->create([
         'status' => 'failed',
         'merchant_ref' => 'MR-SIGNED-FAILED',
         'merchant_session' => 'MS-SIGNED-FAILED',
         'merchant_response' => 'Insufficient funds',
     ]);
 
-    $this->from('/checkout')
-        ->get(URL::signedRoute('sisp.cancel', ['merchantRef' => 'MR-SIGNED-FAILED']))
-        ->assertRedirect('/checkout')
-        ->assertSessionHas('error');
+    $this->get(URL::signedRoute('sisp.cancel', ['merchantRef' => 'MR-SIGNED-FAILED']))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-SIGNED-FAILED']));
 
-    $transaction->refresh();
-
-    expect($transaction->status->value)->toBe('failed')
-        ->and($transaction->merchant_response)->toBe('Insufficient funds')
-        ->and($transaction->cancelled_at)->toBeNull();
+    expect(Transaction::query()->where('merchant_ref', 'MR-SIGNED-FAILED')->sole())
+        ->status->value->toBe('cancelled')
+        ->cancelled_at->not->toBeNull();
 });
