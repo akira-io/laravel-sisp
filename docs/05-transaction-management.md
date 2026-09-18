@@ -314,6 +314,7 @@ $transaction = app(RefundTransactionAction::class)->handle(
 
 - The key is scoped to the transaction: the same key on another transaction is a new refund.
 - Reusing a key with a different amount throws `LogicException`.
+- A blank key, or one longer than 255 characters, throws `LogicException` before anything is refunded.
 - The key is stored in the `idempotency_key` column of the refunds table, with a unique index on `transaction_id` and `idempotency_key`.
 - Without a key every call is a new refund, as before. Generate one key per intended refund, not per attempt.
 
@@ -369,7 +370,7 @@ POST /sisp/refund/{transaction}
 }
 ```
 
-`amount` is required, numeric and must be greater than zero. `reason` is optional, a string of at most 255 characters, and defaults to `user_refund`. `idempotency_key` is optional, a string of at most 255 characters; a retry with the same key and amount answers `200` without refunding again (see [Idempotent Refunds](#idempotent-refunds)).
+`amount` is required, numeric and must be greater than zero. `reason` is optional, a string of at most 255 characters, and defaults to `user_refund`. `idempotency_key` is optional, a string of at most 255 characters, and `null` or an empty string count as no key; a retry with the same key and amount answers `200` without refunding again (see [Idempotent Refunds](#idempotent-refunds)).
 
 Responses:
 
