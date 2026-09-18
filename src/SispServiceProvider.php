@@ -79,11 +79,11 @@ final class SispServiceProvider extends PackageServiceProvider
     private function registerCallbackRateLimiter(): void
     {
         RateLimiter::for('sisp-callback', function (Request $request): Limit {
-            if (! $request->boolean('UserCancelled')) {
+            if (! $request->boolean('UserCancelled') && ! $request->boolean('userCancelled')) {
                 return Limit::none();
             }
 
-            return Limit::perMinute(10)->by((string) $request->input('merchantRef', $request->ip()));
+            return Limit::perMinute(10)->by((string) $request->ip());
         });
     }
 

@@ -198,3 +198,47 @@ it('does not rate limit callbacks that are not cancellations', function (): void
         $this->get(route('sisp.callback', ['ref' => $transaction->merchant_ref]))->assertOk();
     }
 });
+
+it('rate limits the lowercase cancellation spelling too', function (): void {
+    foreach (range(1, 10) as $attempt) {
+        $this->post(route('sisp.callback'), [
+            'merchantRef' => "MR-LOWER-{$attempt}",
+            'merchantSession' => "MS-LOWER-{$attempt}",
+            'userCancelled' => 'true',
+        ])->assertRedirect('/home');
+    }
+
+    $this->post(route('sisp.callback'), [
+        'merchantRef' => 'MR-LOWER-11',
+        'merchantSession' => 'MS-LOWER-11',
+        'userCancelled' => 'true',
+    ])->assertTooManyRequests();
+});
+
+it('keeps limiting when the reference changes on every attempt', function (): void {
+    foreach (range(1, 10) as $attempt) {
+        $this->post(route('sisp.callback'), [
+            'merchantRef' => "MR-ROTATE-{$attempt}",
+            'merchantSession' => "MS-ROTATE-{$attempt}",
+            'UserCancelled' => 'true',
+        ])->assertRedirect('/home');
+    }
+
+    $this->post(route('sisp.callback'), [
+        'merchantRef' => ['MR-ROTATE-ARRAY'],
+        'merchantSession' => 'MS-ROTATE-ARRAY',
+        'UserCancelled' => 'true',
+    ])->assertTooManyRequests();
+});
+
+it('limits each client address separately', function (): void {
+    foreach (range(1, 10) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.1'])
+            ->post(route('sisp.callback'), ['merchantRef' => "MR-A-{$attempt}", 'merchantSession' => 'MS', 'UserCancelled' => 'true'])
+            ->assertRedirect('/home');
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2'])
+        ->post(route('sisp.callback'), ['merchantRef' => 'MR-B', 'merchantSession' => 'MS', 'UserCancelled' => 'true'])
+        ->assertRedirect('/home');
+});
