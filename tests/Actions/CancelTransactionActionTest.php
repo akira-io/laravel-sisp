@@ -31,3 +31,25 @@ it('cannot cancel completed or already cancelled transactions', function (): voi
     expect(fn () => resolve(CancelTransactionAction::class)->handle($cancelled))
         ->toThrow(LogicException::class);
 });
+
+it('decides on the locked row rather than the instance the caller holds', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    Transaction::query()->where('id', $transaction->id)->update(['status' => 'completed']);
+
+    expect(fn () => resolve(CancelTransactionAction::class)->handle($transaction))
+        ->toThrow(LogicException::class, "Transaction with status 'completed' cannot be cancelled.")
+        ->and($transaction->refresh()->status->value)->toBe('completed');
+});
+
+it('still cancels failed and refunded transactions', function (string $status): void {
+    Event::fake();
+
+    $transaction = Transaction::factory()->create(['status' => $status]);
+
+    $cancelled = resolve(CancelTransactionAction::class)->handle($transaction);
+
+    expect($cancelled->status->value)->toBe('cancelled')
+        ->and($transaction->refresh()->status->value)->toBe('cancelled');
+
+    Event::assertDispatched(Akira\Sisp\Events\TransactionCancelled::class);
+})->with(['failed', 'refunded']);
