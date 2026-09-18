@@ -1,5 +1,7 @@
 # Upgrading to v2
 
+Upgrading from 2.x to 3.0 is covered in [UPGRADE.md](../UPGRADE.md#upgrading-from-2x-to-30).
+
 The full, detailed upgrade guide — including every breaking change, the step-by-step procedure, testing notes, and a final checklist — lives at the repository root:
 
 **→ [UPGRADE.md](../UPGRADE.md)**
