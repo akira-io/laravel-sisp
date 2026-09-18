@@ -18,14 +18,18 @@ final readonly class FailTransactionAction
 
     private MaskCallbackRawPayloadAction $maskCallbackRawPayload;
 
+    private LockCallbackRowsAction $lockCallbackRows;
+
     public function __construct(
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
         ?ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage = null,
         ?MaskCallbackRawPayloadAction $maskCallbackRawPayload = null,
+        ?LockCallbackRowsAction $lockCallbackRows = null,
     ) {
         $this->resolveCustomerErrorMessage = $resolveCustomerErrorMessage ?? resolve(ResolveCustomerErrorMessageAction::class);
         $this->maskCallbackRawPayload = $maskCallbackRawPayload ?? resolve(MaskCallbackRawPayloadAction::class);
+        $this->lockCallbackRows = $lockCallbackRows ?? resolve(LockCallbackRowsAction::class);
     }
 
     public function handle(
@@ -36,6 +40,10 @@ final readonly class FailTransactionAction
         bool $trustPayload = true,
     ): bool {
         return DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction, $trustPayload): bool {
+            if (! $this->lockCallbackRows->handle($transaction, $attempt, $payload)) {
+                return false;
+            }
+
             if ($attempt instanceof TransactionAttempt) {
                 $this->updateAttempt->handle($attempt, $payload, TransactionStatus::failed, $merchantResponse, $trustPayload);
 

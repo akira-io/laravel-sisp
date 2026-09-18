@@ -17,15 +17,19 @@ final readonly class UpdateTransactionAction
 
     private MaskCallbackRawPayloadAction $maskCallbackRawPayload;
 
+    private LockCallbackRowsAction $lockCallbackRows;
+
     public function __construct(
         private MapTransactionStatusAction $mapStatus,
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
         ?ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage = null,
         ?MaskCallbackRawPayloadAction $maskCallbackRawPayload = null,
+        ?LockCallbackRowsAction $lockCallbackRows = null,
     ) {
         $this->resolveCustomerErrorMessage = $resolveCustomerErrorMessage ?? resolve(ResolveCustomerErrorMessageAction::class);
         $this->maskCallbackRawPayload = $maskCallbackRawPayload ?? resolve(MaskCallbackRawPayloadAction::class);
+        $this->lockCallbackRows = $lockCallbackRows ?? resolve(LockCallbackRowsAction::class);
     }
 
     public function handle(Transaction $transaction, CallbackPayload $payload, ?TransactionAttempt $attempt = null): bool
@@ -33,6 +37,10 @@ final readonly class UpdateTransactionAction
         $status = $this->mapStatus->handle($payload->messageType, $payload->merchantResponse);
 
         return DB::transaction(function () use ($attempt, $payload, $status, $transaction): bool {
+            if (! $this->lockCallbackRows->handle($transaction, $attempt, $payload)) {
+                return false;
+            }
+
             if ($attempt instanceof TransactionAttempt) {
                 $this->updateAttempt->handle($attempt, $payload, $status);
 
