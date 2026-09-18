@@ -8,6 +8,7 @@ use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
@@ -20,12 +21,17 @@ use Illuminate\Support\Facades\Log;
 
 final readonly class CallbackController
 {
+    private CallbackFingerprintValidator $validateFingerprint;
+
     public function __construct(
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private LoadConfig $config,
-    ) {}
+        ?CallbackFingerprintValidator $validateFingerprint = null,
+    ) {
+        $this->validateFingerprint = $validateFingerprint ?? resolve(CallbackFingerprintValidator::class);
+    }
 
     public function __invoke(Request $request): mixed
     {
@@ -106,6 +112,14 @@ final readonly class CallbackController
         $payload = CallbackPayload::from($request->all());
 
         if ($payload->merchantRef === '' || $payload->merchantSession === '') {
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
+        if (! $this->validateFingerprint->handle($payload)) {
+            Log::warning('SISP callback rejected: the fingerprint does not match.', [
+                'merchant_ref' => $payload->merchantRef,
+            ]);
+
             return redirect(config('sisp.redirect_url', '/'));
         }
 

@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
@@ -146,14 +149,25 @@ it('rejects callbacks when optional unsigned response fields are present but emp
         ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
 });
 
-it('records callbacks with invalid fingerprints as failed and redirects to response page', function (): void {
+it('rejects callbacks with invalid fingerprints without touching the transaction', function (string $status): void {
     $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-G3',
         'merchant_session' => 'MS-G3',
         'amount' => 20,
         'currency' => '132',
+        'status' => $status,
+        'merchant_response' => 'gateway said so',
+        'error_code' => '3',
+        'error_message' => 'Saldo insuficiente',
+    ]);
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $transaction->id,
+        'invoice_number' => "INV-G3-{$status}",
+        'invoice_date' => now(),
         'status' => 'pending',
     ]);
+
+    Event::fake([PaymentFailed::class]);
 
     $payload = Sisp::generateSandboxPayload(PaymentRequestData::from([
         'amount' => 20,
@@ -165,15 +179,22 @@ it('records callbacks with invalid fingerprints as failed and redirects to respo
     ]))->toArray();
     $payload['resultFingerPrint'] = 'invalid-fingerprint';
 
+    config()->set('sisp.redirect_url', '/home');
+
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G3']));
+        ->assertRedirect('/home');
 
     $transaction->refresh();
 
-    expect($transaction->status->value)->toBe('failed')
-        ->and($transaction->merchant_response)->toBe('invalid_callback_fingerprint')
-        ->and($transaction->fingerprint)->toBe('invalid-fingerprint');
-});
+    expect($transaction->status->value)->toBe($status)
+        ->and($transaction->merchant_response)->toBe('gateway said so')
+        ->and($transaction->error_code)->toBe('3')
+        ->and($transaction->error_message)->toBe('Saldo insuficiente')
+        ->and($transaction->fingerprint)->not->toBe('invalid-fingerprint')
+        ->and($invoice->refresh()->status->value)->toBe('pending');
+
+    Event::assertNotDispatched(PaymentFailed::class);
+})->with(['pending', 'failed', 'refunded', 'cancelled']);
 
 it('redirects invalid callbacks with unknown transaction keys', function (): void {
     config()->set('sisp.redirect_url', '/home');
