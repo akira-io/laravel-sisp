@@ -22,14 +22,22 @@ return new class extends Migration
             });
         }
 
-        if ($this->hasIndex($refundsTable)) {
+        if ($this->indexNamed($refundsTable, ['transaction_id']) === null) {
+            $transactionIndex = $this->indexName($refundsTable, 'transaction_id_index');
+
+            Schema::table($refundsTable, function (Blueprint $table) use ($transactionIndex): void {
+                $table->index(['transaction_id'], $transactionIndex);
+            });
+        }
+
+        if ($this->uniqueKeyIndex($refundsTable) !== null) {
             return;
         }
 
-        $indexName = $this->indexName($refundsTable);
+        $uniqueIndex = $this->indexName($refundsTable, 'transaction_id_idempotency_key_unique');
 
-        Schema::table($refundsTable, function (Blueprint $table) use ($indexName): void {
-            $table->unique(['transaction_id', 'idempotency_key'], $indexName);
+        Schema::table($refundsTable, function (Blueprint $table) use ($uniqueIndex): void {
+            $table->unique(['transaction_id', 'idempotency_key'], $uniqueIndex);
         });
     }
 
@@ -41,11 +49,11 @@ return new class extends Migration
             return;
         }
 
-        $indexName = $this->indexName($refundsTable);
+        $uniqueIndex = $this->uniqueKeyIndex($refundsTable);
 
-        if ($this->hasIndex($refundsTable, $indexName)) {
-            Schema::table($refundsTable, function (Blueprint $table) use ($indexName): void {
-                $table->dropUnique($indexName);
+        if ($uniqueIndex !== null) {
+            Schema::table($refundsTable, function (Blueprint $table) use ($uniqueIndex): void {
+                $table->dropUnique($uniqueIndex);
             });
         }
 
@@ -58,23 +66,27 @@ return new class extends Migration
         });
     }
 
-    private function indexName(string $table): string
+    private function indexName(string $table, string $suffix): string
     {
-        return str_replace(['-', '.'], '_', mb_strtolower($table.'_transaction_id_idempotency_key_unique'));
+        return str_replace(['-', '.'], '_', mb_strtolower($table.'_'.$suffix));
     }
 
-    private function hasIndex(string $table, ?string $name = null): bool
+    private function uniqueKeyIndex(string $table): ?string
+    {
+        return $this->indexNamed($table, ['transaction_id', 'idempotency_key'], unique: true);
+    }
+
+    /**
+     * @param  array<int, string>  $columns
+     */
+    private function indexNamed(string $table, array $columns, bool $unique = false): ?string
     {
         foreach (Schema::getIndexes($table) as $index) {
-            if ($index['columns'] !== ['transaction_id', 'idempotency_key'] || ! $index['unique']) {
-                continue;
-            }
-
-            if ($name === null || mb_strtolower((string) $index['name']) === $name) {
-                return true;
+            if ($index['columns'] === $columns && (! $unique || $index['unique'])) {
+                return (string) $index['name'];
             }
         }
 
-        return false;
+        return null;
     }
 };
