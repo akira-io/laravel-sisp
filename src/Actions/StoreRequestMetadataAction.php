@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Actions\Transaction\MaskCallbackRawPayloadAction;
 use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Models\Transaction;
 use Exception;
@@ -13,6 +14,13 @@ use Throwable;
 
 final readonly class StoreRequestMetadataAction
 {
+    private MaskCallbackRawPayloadAction $maskCallbackRawPayload;
+
+    public function __construct(?MaskCallbackRawPayloadAction $maskCallbackRawPayload = null)
+    {
+        $this->maskCallbackRawPayload = $maskCallbackRawPayload ?? resolve(MaskCallbackRawPayloadAction::class);
+    }
+
     public function handle(Request $request, ?Transaction $transaction = null): RequestMetadata
     {
         $fingerprint = $this->generateDeviceFingerprint($request);
@@ -44,22 +52,14 @@ final readonly class StoreRequestMetadataAction
             ]);
     }
 
-    /**
-     * @return array{
-     *     method: string,
-     *     path: string,
-     *     query: array<string, mixed>,
-     *     payload: array<string, mixed>,
-     *     headers: array<string, mixed>
-     * }
-     */
+    /** @return array{method: string, path: string, query: array<string, mixed>, payload: array<string, mixed>, headers: array<string, mixed>} */
     private function customMetadata(Request $request): array
     {
         return [
             'method' => $request->method(),
             'path' => $request->path(),
             'query' => $this->redactSensitiveData($request->query()),
-            'payload' => $this->redactSensitiveData($request->request->all()),
+            'payload' => $this->redactSensitiveData($this->maskCallbackRawPayload->handle($request->request->all())),
             'headers' => $this->redactSensitiveData($request->headers->all()),
         ];
     }
