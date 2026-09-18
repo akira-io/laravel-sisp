@@ -3,7 +3,6 @@
 <p align="center">
 <a href="https://packagist.org/packages/akira/laravel-sisp"><img src="https://img.shields.io/packagist/v/akira/laravel-sisp.svg" alt="Packagist Version"></a>
 <a href="https://packagist.org/packages/akira/laravel-sisp"><img src="https://img.shields.io/packagist/dt/akira/laravel-sisp.svg" alt="downloads"></a>
-<a href="https://github.com/akira-io/laravel-sisp/actions/workflows/run-tests.yml"><img src="https://github.com/akira-io/laravel-sisp/actions/workflows/run-tests.yml/badge.svg" alt="tests"></a>
 <img src="https://img.shields.io/packagist/l/akira/laravel-sisp.svg" alt="license">
 <img src="https://img.shields.io/packagist/php-v/akira/laravel-sisp" alt="php">
 </p>
