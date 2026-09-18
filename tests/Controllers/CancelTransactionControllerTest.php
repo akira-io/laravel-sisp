@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\URL;
 
@@ -90,4 +91,41 @@ it('rejects unsigned transaction id cancellation attempts', function (): void {
     ]))->assertForbidden();
 
     expect($t->refresh()->status->value)->toBe('pending');
+});
+
+it('cancels the invoice when cancelling from the signed route', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'pending',
+        'merchant_ref' => 'MR-SIGNED-INV',
+        'merchant_session' => 'MS-SIGNED-INV',
+    ]);
+
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $transaction->id,
+        'invoice_number' => 'INV-SIGNED-1',
+        'invoice_date' => now(),
+        'status' => 'pending',
+    ]);
+
+    $this->get(URL::signedRoute('sisp.cancel', ['merchantRef' => 'MR-SIGNED-INV']))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-SIGNED-INV']));
+
+    expect($transaction->refresh()->status->value)->toBe('cancelled')
+        ->and($invoice->refresh()->status->value)->toBe('cancelled');
+});
+
+it('cancels a failed transaction from the signed route as in 2.1', function (): void {
+    Transaction::factory()->create([
+        'status' => 'failed',
+        'merchant_ref' => 'MR-SIGNED-FAILED',
+        'merchant_session' => 'MS-SIGNED-FAILED',
+        'merchant_response' => 'Insufficient funds',
+    ]);
+
+    $this->get(URL::signedRoute('sisp.cancel', ['merchantRef' => 'MR-SIGNED-FAILED']))
+        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-SIGNED-FAILED']));
+
+    expect(Transaction::query()->where('merchant_ref', 'MR-SIGNED-FAILED')->sole())
+        ->status->value->toBe('cancelled')
+        ->cancelled_at->not->toBeNull();
 });

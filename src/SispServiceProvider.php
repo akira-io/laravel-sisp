@@ -5,14 +5,20 @@ declare(strict_types=1);
 namespace Akira\Sisp;
 
 use Akira\Sisp\Commands\DoctorCommand;
+use Akira\Sisp\Commands\ExpirePendingTransactionsCommand;
 use Akira\Sisp\Commands\LaravelSispInstallCommand;
+use Akira\Sisp\Commands\PruneRequestPayloadsCommand;
 use Akira\Sisp\Commands\ReconcilePendingTransactionsCommand;
 use Akira\Sisp\Commands\RegenerateMissingInvoicePdfsCommand;
 use Akira\Sisp\Commands\TransactionStatusCommand;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Drivers\SispManager;
+use Akira\Sisp\Support\SispSchema;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\Compilers\BladeCompiler;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -32,6 +38,10 @@ final class SispServiceProvider extends PackageServiceProvider
                 'create_sisp_transaction_attempts_table',
                 'create_sisp_payment_intents_table',
                 'add_fiscal_fields_to_sisp_tables',
+                'update_laravel_sisp_transactions_add_callback_error_fields',
+                'create_sisp_refunds_table',
+                'update_laravel_sisp_transactions_add_status_created_at_index',
+                'update_laravel_sisp_transactions_add_request_payload_pruned_at',
             ])
             ->hasTranslations()
             ->hasRoutes('web')
@@ -39,6 +49,8 @@ final class SispServiceProvider extends PackageServiceProvider
                 LaravelSispInstallCommand::class,
                 RegenerateMissingInvoicePdfsCommand::class,
                 ReconcilePendingTransactionsCommand::class,
+                ExpirePendingTransactionsCommand::class,
+                PruneRequestPayloadsCommand::class,
                 TransactionStatusCommand::class,
                 DoctorCommand::class,
             ]);
@@ -51,14 +63,28 @@ final class SispServiceProvider extends PackageServiceProvider
         $this->app->resolveEnvironmentUsing(fn (array $environments): bool => (bool) $this->app->environment($environments));
 
         $this->app->bind(SispDriver::class, fn (Application $app): SispDriver => $app->make(SispManager::class)->driver());
+
+        $this->app->scoped(SispSchema::class);
     }
 
     public function boot(): self
     {
         $this->registerComponents();
         $this->registerFactories();
+        $this->registerCallbackRateLimiter();
 
         return parent::boot();
+    }
+
+    private function registerCallbackRateLimiter(): void
+    {
+        RateLimiter::for('sisp-callback', function (Request $request): Limit {
+            if (! $request->boolean('UserCancelled') && ! $request->boolean('userCancelled')) {
+                return Limit::none();
+            }
+
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
     }
 
     private function registerFactories(): void

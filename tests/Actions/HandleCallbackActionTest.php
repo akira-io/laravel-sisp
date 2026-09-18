@@ -14,7 +14,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Facade;
 
-function cb_payload(string $msgType): CallbackPayload
+function cb_payload(string $msgType, string $merchantResponse = 'C'): CallbackPayload
 {
     return new CallbackPayload(
         merchantRef: 'mref',
@@ -25,7 +25,7 @@ function cb_payload(string $msgType): CallbackPayload
         transactionCode: '8',
         transactionID: 'TID123',
         messageType: $msgType,
-        merchantResponse: 'ok',
+        merchantResponse: $merchantResponse,
         responseCode: '00',
         fingerprint: 'fp',
         posID: 'POS1',
@@ -38,7 +38,7 @@ beforeEach(function (): void {
     Facade::clearResolvedInstances();
 });
 
-it('dispatches PaymentFailed and marks the transaction failed when fingerprint is invalid', function (): void {
+it('leaves the transaction untouched and dispatches nothing when the fingerprint is invalid', function (): void {
     app()->instance(CallbackFingerprintValidator::class, new class implements CallbackFingerprintValidator
     {
         public function handle(CallbackPayload $payload): bool
@@ -60,10 +60,10 @@ it('dispatches PaymentFailed and marks the transaction failed when fingerprint i
     resolve(HandleCallbackAction::class)->handle(cb_payload(SuccessMessageType::purchase->value));
 
     $transaction->refresh();
-    expect($transaction->status->value)->toBe('failed')
-        ->and($transaction->merchant_response)->toBe('invalid_callback_fingerprint');
+    expect($transaction->status->value)->toBe('pending')
+        ->and($transaction->merchant_response)->not->toBe('invalid_callback_fingerprint');
 
-    Event::assertDispatched(PaymentFailed::class);
+    Event::assertNotDispatched(PaymentFailed::class);
 });
 
 it('dispatches events for completed, failed, and pending statuses', function (): void {
@@ -88,7 +88,7 @@ it('dispatches events for completed, failed, and pending statuses', function ():
     Event::assertDispatched(PaymentCompleted::class);
 
     Event::fake();
-    resolve(HandleCallbackAction::class)->handle(cb_payload('13')); // invalidAmount -> failed
+    resolve(HandleCallbackAction::class)->handle(cb_payload('6')); // issuer/system error -> failed
     Event::assertDispatched(PaymentFailed::class);
 
     Event::fake();

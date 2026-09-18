@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
@@ -139,7 +140,9 @@ function late_callback_payload(
     $payloadData = $payload->toArray();
     $payloadData['merchantRespTid'] = $gatewayTransactionId;
     $payload = CallbackPayload::from($payloadData);
-    $payloadData['resultFingerPrint'] = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $payloadData['resultFingerPrint'] = $payload->isError()
+        ? resolve(PaymentErrorResponseFingerPrintAction::class)->handle($payload)
+        : resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
 
     return CallbackPayload::from($payloadData);
 }

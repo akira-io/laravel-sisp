@@ -8,28 +8,36 @@ use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
+use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 final readonly class CallbackController
 {
+    private CallbackFingerprintValidator $validateFingerprint;
+
     public function __construct(
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private LoadConfig $config,
-    ) {}
+        ?CallbackFingerprintValidator $validateFingerprint = null,
+    ) {
+        $this->validateFingerprint = $validateFingerprint ?? resolve(CallbackFingerprintValidator::class);
+    }
 
     public function __invoke(Request $request): mixed
     {
-        if ($request->boolean('UserCancelled')) {
-            return redirect(config('sisp.redirect_url', '/'));
+        if ($this->isCancellation($request)) {
+            return $this->handleUserCancellation($request);
         }
 
         if ($request->isMethod('get')) {
@@ -37,6 +45,45 @@ final readonly class CallbackController
         }
 
         return $this->handlePostRequest($request);
+    }
+
+    private function isCancellation(Request $request): bool
+    {
+        if ($request->boolean('UserCancelled')) {
+            return true;
+        }
+
+        return $request->boolean('userCancelled');
+    }
+
+    private function handleUserCancellation(Request $request): RedirectResponse
+    {
+        $transaction = $this->resolveCancelledTransaction($request);
+
+        if ($transaction instanceof Transaction) {
+            Log::info('SISP callback reported that the customer cancelled the payment.', [
+                'transaction_id' => $transaction->getKey(),
+                'merchant_ref' => $transaction->merchant_ref,
+            ]);
+        }
+
+        return redirect(config('sisp.redirect_url', '/'));
+    }
+
+    private function resolveCancelledTransaction(Request $request): ?Transaction
+    {
+        $merchantRef = $request->string('merchantRef')->toString();
+        $merchantSession = $request->string('merchantSession')->toString();
+
+        if ($merchantRef === '' || $merchantSession === '') {
+            return null;
+        }
+
+        return Transaction::query()
+            ->where('merchant_ref', $merchantRef)
+            ->where('merchant_session', $merchantSession)
+            ->where('status', TransactionStatus::pending->value)
+            ->first();
     }
 
     private function handleGetRequest(): mixed
@@ -69,6 +116,14 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
+        if ($this->rejectsFingerprint($payload)) {
+            Log::warning('SISP callback rejected: the fingerprint does not match.', [
+                'merchant_ref' => $payload->merchantRef,
+            ]);
+
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
         if ($this->isAlreadyProcessed($payload)) {
             return redirect(config('sisp.redirect_url', '/'))->with('info', 'This payment has already been processed.');
         }
@@ -86,6 +141,15 @@ final readonly class CallbackController
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
         return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+    }
+
+    private function rejectsFingerprint(CallbackPayload $payload): bool
+    {
+        if (! in_array(ValidateFingerprint::class, $this->config->getCallbackPipes(), true)) {
+            return false;
+        }
+
+        return ! $this->validateFingerprint->handle($payload);
     }
 
     private function isAlreadyProcessed(CallbackPayload $payload): bool

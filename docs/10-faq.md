@@ -132,7 +132,7 @@ Yes. Refund completed transactions with the fluent builder — `Sisp::refund($tr
 
 ### Can I cancel a pending payment?
 
-Yes, cancel using `CancelTransactionAction`. Works for `pending` or `failed` transactions.
+Yes, cancel using `CancelTransactionAction`. `completed` and `cancelled` transactions raise `LogicException`; on 2.x `failed` and `refunded` can still be cancelled.
 
 ### Can I modify a transaction?
 

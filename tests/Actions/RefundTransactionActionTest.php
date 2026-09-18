@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\RefundTransactionAction;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\Event;
 
 it('refunds a completed transaction for the full original amount', function (): void {
     $t = Transaction::factory()->create([
@@ -65,7 +67,7 @@ it('records refund updates with the refund log source', function (): void {
 
     expect($log->source)->toBe('refund')
         ->and($log->changed_attributes)->toContain('payload')
-        ->and($log->new_values['payload']['refunds'][0]['reason'])->toBe('partial_request');
+        ->and($log->new_values['payload'])->toBe('[redacted]');
 });
 
 it('does not allow refund amounts above the transaction amount', function (): void {
@@ -119,4 +121,86 @@ it('does not allow refunds above the remaining local balance', function (): void
 
     expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 50.0))
         ->toThrow(LogicException::class, 'Refund amount (50) exceeds refundable balance.');
+});
+
+it('rereads the refunded balance so a stale instance cannot refund twice', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    $stale = Transaction::query()->where('id', $t->id)->sole();
+
+    resolve(RefundTransactionAction::class)->handle($t, 60.0, 'partial_request');
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($stale, 60.0, 'partial_request'))
+        ->toThrow(LogicException::class, 'Refund amount (60) exceeds refundable balance.');
+});
+
+it('refuses a refund once the locked row is no longer completed', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    Transaction::query()->where('id', $t->id)->update(['status' => TransactionStatus::refunded->value]);
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 10.0))
+        ->toThrow(LogicException::class, "Transaction with status 'refunded' cannot be refunded.");
+});
+
+it('updates and returns the instance the caller passed in', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    $refunded = resolve(RefundTransactionAction::class)->handle($t, 100.0, 'customer_request');
+
+    expect($refunded)->toBe($t)
+        ->and($t->status)->toBe(TransactionStatus::refunded)
+        ->and($t->merchant_response)->toBe('customer_request::100')
+        ->and($t->isDirty())->toBeFalse();
+});
+
+it('reports the change and hands the caller\'s instance to the event', function (): void {
+    Event::fake([TransactionRefunded::class]);
+
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    resolve(RefundTransactionAction::class)->handle($t, 100.0, 'customer_request');
+
+    expect($t->wasChanged('status'))->toBeTrue();
+
+    Event::assertDispatched(
+        TransactionRefunded::class,
+        fn (TransactionRefunded $event): bool => $event->transaction === $t,
+    );
+});
+
+it('counts a refund that reached the payload but not the refunds table', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+        'payload' => ['refunds' => [
+            ['amount' => 30.0, 'reason' => 'before_migration', 'request' => []],
+            ['amount' => 50.0, 'reason' => 'during_migration', 'request' => []],
+        ]],
+    ]);
+    $t->refunds()->create(['amount' => 30.0, 'reason' => 'before_migration', 'request' => []]);
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($t, 30.0))
+        ->toThrow(LogicException::class, 'Refund amount (30) exceeds refundable balance.')
+        ->and(resolve(RefundTransactionAction::class)->refundableAmount($t->refresh()))->toBe(20.0);
 });

@@ -41,6 +41,7 @@ return [
             'communicationTimeout' => 'Tempo limite de comunicação excedido',
             'invalidFingerprint' => 'Impressão digital inválida',
             'genericError' => 'Erro genérico',
+            'unknown' => 'O pagamento não foi concluído',
         ],
         'categories' => [
             'card' => 'Problema no Cartão',
@@ -70,6 +71,8 @@ return [
             'enrollmentRequest' => 'Pedido de Inscrição',
             'tokenPayment' => 'Pagamento com Token',
             'tokenCancel' => 'Cancelamento de Token',
+            'refund' => 'Estorno processado',
+            'partialRefund' => 'Devolução parcial processada',
         ],
     ],
     'payment' => [

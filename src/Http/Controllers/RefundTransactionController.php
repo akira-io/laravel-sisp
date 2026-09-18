@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Http\Controllers;
 
 use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Http\Requests\RefundTransactionRequest;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,11 +26,15 @@ final readonly class RefundTransactionController
             ], 403);
         }
 
-        $refundAmount = (float) $request->input('amount');
-        $reason = $request->input('reason', 'user_refund');
+        $refundRequest = RefundTransactionRequest::createFrom($request)->setContainer(app());
+        $refundRequest->validateResolved();
 
         try {
-            $transaction = $this->refundTransaction->handle($transaction, $refundAmount, $reason);
+            $transaction = $this->refundTransaction->handle(
+                $transaction,
+                $refundRequest->refundAmount(),
+                $refundRequest->refundReason(),
+            );
 
             return response()->json([
                 'success' => true,

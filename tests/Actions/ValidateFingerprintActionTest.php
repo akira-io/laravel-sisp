@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\ValueObjects\CallbackPayload;
@@ -144,4 +145,41 @@ it('reload code is part of fingerprint', function (): void {
     $alteredPayload = CallbackPayload::from($payloadData);
 
     expect($this->action->handle($alteredPayload))->toBeFalse();
+});
+
+it('validates a refused callback with the error formula', function (): void {
+    $payload = sispErrorPayload();
+    $expected = resolve(PaymentErrorResponseFingerPrintAction::class)->handle($payload);
+
+    $signed = CallbackPayload::from(array_merge($payload->raw, [
+        'resultFingerPrint' => $expected,
+    ]));
+
+    expect(resolve(ValidatePaymentResponseFingerprintAction::class)->handle($signed))
+        ->toBeTrue();
+});
+
+it('rejects a refused callback signed with the success formula', function (): void {
+    $payload = sispErrorPayload();
+    $wrong = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
+
+    $signed = CallbackPayload::from(array_merge($payload->raw, [
+        'resultFingerPrint' => $wrong,
+    ]));
+
+    expect(resolve(ValidatePaymentResponseFingerprintAction::class)->handle($signed))
+        ->toBeFalse();
+});
+
+it('rejects a tampered refused callback', function (): void {
+    $payload = sispErrorPayload();
+    $expected = resolve(PaymentErrorResponseFingerPrintAction::class)->handle($payload);
+
+    $tampered = CallbackPayload::from(array_merge($payload->raw, [
+        'resultFingerPrint' => $expected,
+        'merchantRespAdditionalErrorMessage' => 'Pagamento aceite',
+    ]));
+
+    expect(resolve(ValidatePaymentResponseFingerprintAction::class)->handle($tampered))
+        ->toBeFalse();
 });

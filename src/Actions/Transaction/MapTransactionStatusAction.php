@@ -4,34 +4,41 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions\Transaction;
 
-use Akira\Sisp\Enums\ErrorMessageType;
 use Akira\Sisp\Enums\SuccessMessageType;
 use Akira\Sisp\Enums\TransactionStatus;
-use Illuminate\Support\Collection;
+use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Support\Facades\Log;
 
-final class MapTransactionStatusAction
+final readonly class MapTransactionStatusAction
 {
-    public function handle(?string $messageType): TransactionStatus
+    public function handle(?string $messageType, ?string $merchantResponse = null): TransactionStatus
     {
-        return match (true) {
-            $this->getTransactionSuccessValues()->contains($messageType) => TransactionStatus::completed,
-            $this->getTransactionErrorValues()->contains($messageType) => TransactionStatus::failed,
-            default => TransactionStatus::pending,
-        };
-    }
+        if ($messageType === CallbackPayload::ERROR_MESSAGE_TYPE) {
+            return TransactionStatus::failed;
+        }
 
-    private function getTransactionErrorValues(): Collection
-    {
+        $successType = $messageType === null
+            ? null
+            : SuccessMessageType::tryFrom($messageType);
 
-        return collect(ErrorMessageType::cases())
-            ->map(fn (ErrorMessageType $case) => $case->value);
-    }
+        if (! $successType instanceof SuccessMessageType) {
+            return TransactionStatus::pending;
+        }
 
-    private function getTransactionSuccessValues(): Collection
-    {
+        if (! in_array((string) $merchantResponse, $successType->expectedMerchantResponses(), true)) {
+            $expected = implode(', ', $successType->expectedMerchantResponses());
+            Log::warning(
+                'SISP callback received known success message type with unexpected merchant response.',
+                [
+                    'messageType' => $messageType,
+                    'merchantResponse' => $merchantResponse,
+                    'expectedResponses' => $expected,
+                ]
+            );
 
-        return collect(SuccessMessageType::cases())
-            ->map(fn (SuccessMessageType $case) => $case->value)
-            ->push('10');
+            return TransactionStatus::pending;
+        }
+
+        return TransactionStatus::completed;
     }
 }

@@ -48,7 +48,7 @@ final readonly class EnsureCallbackMatchesTransaction implements CallbackPipe
     {
         return $attempt->merchant_ref === $payload->merchantRef
             && $attempt->merchant_session === $payload->merchantSession
-            && $this->amountMatches($this->transactionAmount($transaction), $payload->amount)
+            && (! $payload->amountProvided || $this->amountMatches($this->transactionAmount($transaction), $payload->amount))
             && (! $payload->currencyProvided || $this->transactionString($transaction, 'currency') === $payload->currency)
             && (! $payload->transactionCodeProvided || $this->transactionCode($transaction) === $payload->transactionCode)
             && (! $payload->posIDProvided || $this->credentialsResolver->resolve()->posId === $payload->posID);
