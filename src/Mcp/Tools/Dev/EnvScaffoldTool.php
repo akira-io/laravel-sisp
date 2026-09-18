@@ -29,8 +29,10 @@ final class EnvScaffoldTool extends Tool
             'SISP_MERCHANT_ID=your-merchant-id',
             'SISP_CURRENCY=132',
             'SISP_LANGUAGE_MESSAGES=PT',
-            'SISP_IS_3DSEC='.($mode === 'production' ? '1' : '0'),
+            'SISP_IS_3D_SEC='.($mode === 'production' ? '1' : '0'),
             'SISP_URL_MERCHANT_RESPONSE=https://your-app.test/sisp/callback',
+            'SISP_PORTAL_ID=your-portal-id',
+            'SISP_PORTAL_PASSWORD=your-portal-password',
         ];
 
         if ($mode === 'sandbox') {
@@ -39,10 +41,11 @@ final class EnvScaffoldTool extends Tool
 
         $guidance = [
             'POS credentials (SISP_POS_ID, SISP_POS_AUT_CODE, SISP_MERCHANT_ID) are issued by SISP.',
+            'Portal credentials (SISP_PORTAL_ID, SISP_PORTAL_PASSWORD) enable transaction status queries and reconciliation.',
             'SISP_URL_MERCHANT_RESPONSE must be a publicly reachable HTTPS URL hitting the /sisp/callback route.',
             $mode === 'production'
                 ? '3D Secure is enabled: collect customer email, country, city, address, and phone.'
-                : 'Use the sisp-ops "build_payment_request" and the dev "simulate_sandbox_callback" tools to test without live credentials.',
+                : 'Start a payment through the sisp.payment route, then answer it with the sisp-dev "simulate-sandbox-callback-tool" to test without live credentials.',
         ];
 
         return Response::json([

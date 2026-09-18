@@ -9,13 +9,11 @@ use Akira\Sisp\Mcp\Prompts\IntegrateSispPrompt;
 use Akira\Sisp\Mcp\Resources\CountryCatalogResource;
 use Akira\Sisp\Mcp\Resources\DocsIndexResource;
 use Akira\Sisp\Mcp\Resources\EnumCatalogResource;
-use Akira\Sisp\Mcp\Resources\ErrorCodeCatalogResource;
 use Akira\Sisp\Mcp\Tools\Dev\ConfigReferenceTool;
 use Akira\Sisp\Mcp\Tools\Dev\CountryReferenceTool;
 use Akira\Sisp\Mcp\Tools\Dev\DoctorTool;
 use Akira\Sisp\Mcp\Tools\Dev\EnumReferenceTool;
 use Akira\Sisp\Mcp\Tools\Dev\EnvScaffoldTool;
-use Akira\Sisp\Mcp\Tools\Dev\ErrorCodeLookupTool;
 use Akira\Sisp\Mcp\Tools\Dev\GetDocTool;
 use Akira\Sisp\Mcp\Tools\Dev\SearchDocsTool;
 use Akira\Sisp\Mcp\Tools\Dev\SimulateSandboxCallbackTool;
@@ -32,8 +30,8 @@ use Override;
 
     Use this server to integrate laravel-sisp into a Laravel application: search
     the package documentation, look up configuration keys and required .env
-    variables, resolve SISP error codes to recommended actions, inspect enums and
-    supported countries, and simulate sandbox callback payloads for local testing.
+    variables, inspect enums and supported countries, and simulate sandbox
+    callback payloads for local testing.
 
     Every tool here is read-only. It never touches a live gateway, never writes to
     the database, and never moves money. For runtime payment operations use the
@@ -48,7 +46,6 @@ final class SispDevServer extends Server
         ConfigReferenceTool::class,
         EnvScaffoldTool::class,
         EnumReferenceTool::class,
-        ErrorCodeLookupTool::class,
         CountryReferenceTool::class,
         SimulateSandboxCallbackTool::class,
         DoctorTool::class,
@@ -59,7 +56,6 @@ final class SispDevServer extends Server
         DocsIndexResource::class,
         EnumCatalogResource::class,
         CountryCatalogResource::class,
-        ErrorCodeCatalogResource::class,
     ];
 
     #[Override]

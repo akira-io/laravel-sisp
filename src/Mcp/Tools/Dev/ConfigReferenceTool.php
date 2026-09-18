@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Mcp\Tools\Dev;
 
+use Akira\Sisp\Support\SensitiveData;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -35,6 +36,8 @@ final class ConfigReferenceTool extends Tool
         'redirect_url' => 'Where to send the customer after the payment result is rendered.',
         'sandbox' => 'Force sandbox mode regardless of driver.',
         'transaction_status' => 'POS status API URL, credentials, and reconciliation thresholds.',
+        'expire_pending_after_days' => 'Days after which sisp:expire-pending cancels a pending transaction that never received a callback.',
+        'prune_request_payloads_after_days' => 'Days after which sisp:prune-request-payloads removes the 3-D Secure purchaseRequest from terminal transactions.',
         'use_blade' => 'Render the payment form and result with Blade views.',
         'use_inertia' => 'Render the payment form and result with Inertia components.',
         'invoice' => 'Invoice numbering, storage disk/path, template, and company details.',
@@ -45,8 +48,6 @@ final class ConfigReferenceTool extends Tool
         'middleware' => 'Route middleware for the payment, retry, and refund endpoints.',
         'mcp' => 'MCP server toggles for the local and web transports.',
     ];
-
-    private const array SECRET_KEYS = ['posAutCode', 'transaction_status'];
 
     public function handle(Request $request): Response
     {
@@ -93,10 +94,6 @@ final class ConfigReferenceTool extends Tool
 
     private function valueFor(string $key): mixed
     {
-        if (in_array($key, self::SECRET_KEYS, true)) {
-            return '[redacted]';
-        }
-
-        return config("sisp.{$key}");
+        return SensitiveData::redactValue($key, config("sisp.{$key}"));
     }
 }
