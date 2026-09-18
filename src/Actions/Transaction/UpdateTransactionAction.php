@@ -56,7 +56,7 @@ final readonly class UpdateTransactionAction
                     'fingerprint' => $payload->fingerprint,
                     'payload' => $transaction->payload,
                     'status' => $status,
-                    'error_code' => $payload->isError() && $payload->errorCode !== '' ? $payload->errorCode : null,
+                    'error_code' => $payload->isError() && $payload->errorCode !== '' ? mb_substr($payload->errorCode, 0, 4) : null,
                     'error_message' => $payload->isError() ? $this->resolveCustomerErrorMessage->handle($payload) : null,
                     'callback_raw_payload' => $this->maskCallbackRawPayload->handle($payload->raw),
                 ]))

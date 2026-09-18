@@ -298,3 +298,23 @@ it('still persists the message and raw payload for a legitimately signed refusal
         ->and($transaction->error_message)->toBe('Saldo do cartao insuficiente')
         ->and($transaction->callback_raw_payload)->not->toBeNull();
 });
+
+it('fits long SISP error fields into their columns', function (string $action): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $payload = CallbackPayload::from([
+        'messageType' => '6',
+        'merchantRespMerchantRef' => $transaction->merchant_ref,
+        'merchantRespMerchantSession' => $transaction->merchant_session,
+        'merchantRespErrorCode' => 'ABCDEFG',
+        'merchantRespAdditionalErrorMessage' => str_repeat('é', 300),
+    ]);
+
+    $action === 'fail'
+        ? resolve(FailTransactionAction::class)->handle($transaction, $payload, 'refused')
+        : resolve(UpdateTransactionAction::class)->handle($transaction, $payload);
+
+    $transaction->refresh();
+
+    expect($transaction->error_code)->toBe('ABCD')
+        ->and($transaction->error_message)->toBe(str_repeat('é', 255));
+})->with(['fail', 'update']);
