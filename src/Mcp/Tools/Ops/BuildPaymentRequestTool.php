@@ -8,6 +8,7 @@ use Akira\Sisp\Builders\PaymentBuilder;
 use Akira\Sisp\Exceptions\MissingThreeDSecureDataException;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Arr;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -16,7 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use LogicException;
 
 #[IsReadOnly]
-#[Description('Build a signed SISP payment request payload from the given inputs. Returns the form fields to post to the gateway; it does not persist a transaction or charge anything.')]
+#[Description('Preview the SISP payment request fields for the given inputs. The fingerprint is left out, so the preview cannot be posted to the gateway; payments start through the sisp.payment route, which records the transaction.')]
 final class BuildPaymentRequestTool extends Tool
 {
     use AuthorizesTransactionOps;
@@ -25,7 +26,6 @@ final class BuildPaymentRequestTool extends Tool
         'currency', 'transactionCode', 'token', 'entityCode', 'referenceNumber',
         'locale', 'customerEmail', 'customerCountry', 'customerCity',
         'customerAddress', 'customerPostalCode', 'customerPhone',
-        'merchantRef', 'merchantSession',
     ];
 
     public function handle(Request $request): Response
@@ -57,8 +57,8 @@ final class BuildPaymentRequestTool extends Tool
         }
 
         return Response::json([
-            'payment_request' => $payload->toArray(),
-            'note' => 'Post these fields as a form to the SISP gateway URL to start the hosted payment.',
+            'payment_request' => Arr::except($payload->toArray(), ['fingerprint']),
+            'note' => 'Preview only: the fingerprint is omitted and no transaction is recorded. Start real payments through the sisp.payment route.',
         ]);
     }
 
@@ -83,8 +83,6 @@ final class BuildPaymentRequestTool extends Tool
             'token' => $schema->string()->description('Stored card token for token payments.'),
             'entityCode' => $schema->string()->description('Entity code for service payments.'),
             'referenceNumber' => $schema->string()->description('Reference number for service payments.'),
-            'merchantRef' => $schema->string()->description('Override the generated merchant reference.'),
-            'merchantSession' => $schema->string()->description('Override the generated merchant session.'),
         ];
     }
 }
