@@ -8,59 +8,131 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Install git-cliff
-        uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375
+        uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375 # v2.87.12
         with:
           tool: git-cliff
 
+      - name: Verify tag matches the version computed from commits
+        if: ${{ !contains(github.ref_name, '-') }}
+        env:
+          TAG: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git tag -d "${TAG}" >/dev/null
+          trap 'git tag "${TAG}" "${GITHUB_SHA}"' EXIT
+
+          if [ -z "$(git tag -l)" ]; then
+            echo "No prior tags found; skipping the bump check for this repository's first release."
+            exit 0
+          fi
+
+          BUMPED_VERSION="$(git-cliff --config cliff.toml --bumped-version)"
+          if [ "${BUMPED_VERSION}" != "${TAG}" ]; then
+            echo "::error::Tag ${TAG} does not match the version git-cliff computes from the commits since the last release (${BUMPED_VERSION}). Delete the tag, re-tag as ${BUMPED_VERSION}, and push again: git tag -d ${TAG} && git push origin :refs/tags/${TAG} && git tag ${BUMPED_VERSION} && git push --follow-tags"
+            exit 1
+          fi
+
       - name: Generate CHANGELOG
         env:
+          TAG: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: git-cliff --config cliff.toml --tag "${{ github.ref_name }}" --output CHANGELOG.md
-
-      - name: Commit CHANGELOG
-        run: |
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          BRANCH="$(git branch -r --contains "${{ github.ref_name }}" --format='%(refname:short)' | grep -E '^origin/[0-9]+\.x$' | head -n1 | sed 's|^origin/||')"
-          BRANCH="${BRANCH:-1.x}"
-          git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "chore(changelog): ${{ github.ref_name }}"
-          git push origin "HEAD:${BRANCH}" || true
+        run: git-cliff --config cliff.toml --tag "${TAG}" --output CHANGELOG.md
 
       - name: Extract release notes
         id: notes
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          git-cliff --config cliff.toml --latest --strip all > /tmp/release-notes.md
+          set -euo pipefail
+          git-cliff --config cliff.toml --current --strip all > "${RUNNER_TEMP}/release-notes.md"
           {
             echo 'body<<RELEASE_NOTES_EOF'
-            cat /tmp/release-notes.md
+            cat "${RUNNER_TEMP}/release-notes.md"
             echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release branch
+        id: branch
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          DEFAULT_BRANCH="$(git remote show origin | sed -n 's/.*HEAD branch: //p')"
+          MAJOR="${TAG#v}"
+          MAJOR="${MAJOR%%.*}"
+
+          BRANCH=""
+          for CANDIDATE in "${MAJOR}.x" "${DEFAULT_BRANCH}"; do
+            if git rev-parse --verify --quiet "refs/remotes/origin/${CANDIDATE}" >/dev/null \
+              && git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${CANDIDATE}"; then
+              BRANCH="${CANDIDATE}"
+              break
+            fi
+          done
+
+          if [ -z "${BRANCH}" ]; then
+            echo "::error::${TAG} is not contained in ${MAJOR}.x or ${DEFAULT_BRANCH}; refusing to publish it."
+            exit 1
+          fi
+
+          is_newest_on() {
+            local HIGHEST_TAG
+            HIGHEST_TAG="$( { git tag --merged "origin/$1" --list 'v[0-9]*' | grep -v -- '-' || true; echo "${TAG}"; } | sort -V | tail -n1)"
+            [ "${HIGHEST_TAG}" = "${TAG}" ]
+          }
+
+          NEWEST=false
+          if is_newest_on "${BRANCH}"; then
+            NEWEST=true
+          fi
+
+          PRERELEASE=false
+          LATEST=false
+          case "${TAG}" in
+            *-*) PRERELEASE=true ;;
+            *)
+              if git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${DEFAULT_BRANCH}" && is_newest_on "${DEFAULT_BRANCH}"; then
+                LATEST=true
+              fi
+              ;;
+          esac
+
+          echo "Release branch: ${BRANCH} (default ${DEFAULT_BRANCH}); newest on branch: ${NEWEST}; latest: ${LATEST}; prerelease: ${PRERELEASE}"
+          {
+            echo "name=${BRANCH}"
+            echo "newest=${NEWEST}"
+            echo "latest=${LATEST}"
+            echo "prerelease=${PRERELEASE}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          LATEST: ${{ steps.branch.outputs.latest }}
+          PRERELEASE: ${{ steps.branch.outputs.prerelease }}
         run: |
-          gh release delete "${{ github.ref_name }}" --yes 2>/dev/null || true
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ github.ref_name }}" \
-            --notes "${{ steps.notes.outputs.body }}" \
-            --latest
+          gh release delete "${TAG}" --yes 2>/dev/null || true
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes-file "${RUNNER_TEMP}/release-notes.md" \
+            --latest="${LATEST}" \
+            --prerelease="${PRERELEASE}"
 
       - name: Send GitHub Release to Discord
-        uses: SethCohen/github-releases-to-discord@24d166886aee4646d448c8a389ff9e1ebcab3682
+        uses: SethCohen/github-releases-to-discord@24d166886aee4646d448c8a389ff9e1ebcab3682 # v1.20.0
         with:
           webhook_url: ${{ secrets.DISCORD }}
           release_name: ${{ github.ref_name }}
@@ -73,3 +145,25 @@ jobs:
           footer_title: "Laravel Sisp"
           footer_icon_url: "https://avatars.githubusercontent.com/u/116525492?s=96&v=4"
           footer_timestamp: true
+
+      - name: Commit CHANGELOG
+        env:
+          TAG: ${{ github.ref_name }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+          NEWEST: ${{ steps.branch.outputs.newest }}
+        run: |
+          set -euo pipefail
+          if [ "${NEWEST}" != true ]; then
+            echo "::notice::${BRANCH} already carries a release newer than ${TAG}; CHANGELOG.md on ${BRANCH} is left as is."
+            exit 0
+          fi
+
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          cp CHANGELOG.md "${RUNNER_TEMP}/CHANGELOG.md"
+          git checkout -- CHANGELOG.md
+          git checkout -B "${BRANCH}" "origin/${BRANCH}"
+          cp "${RUNNER_TEMP}/CHANGELOG.md" CHANGELOG.md
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore(changelog): ${TAG}"
+          git push origin "HEAD:refs/heads/${BRANCH}"
