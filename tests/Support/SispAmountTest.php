@@ -25,3 +25,19 @@ it('converts amounts to cents for canonical transaction storage', function (floa
     'rounds half cent up' => ['8.025', 803],
     'keeps below half cent down' => ['8.024', 802],
 ]);
+
+it('refuses amounts that do not fit in integer thousandths', function (float|string $amount): void {
+    expect(fn (): int => SispAmount::toThousandths($amount))
+        ->toThrow(InvalidArgumentException::class, 'The amount is too large to express in SISP thousandths.');
+})->with([
+    'huge float' => 1e20,
+    'huge decimal string' => '100000000000000000000',
+    'exponent string' => '1e400',
+    'infinity' => INF,
+    'negative infinity' => -INF,
+    'not a number' => NAN,
+]);
+
+it('still converts the largest accepted amount', function (): void {
+    expect(SispAmount::toThousandths('9000000000000000'))->toBe(9_000_000_000_000_000_000);
+});

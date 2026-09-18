@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Support;
 
+use InvalidArgumentException;
+
 final readonly class SispAmount
 {
+    private const float MAX_AMOUNT = 9.0e15;
+
     public static function toCents(float|int|string $amount): int
     {
         return (int) round(self::toThousandths($amount) / 10);
@@ -18,6 +22,14 @@ final readonly class SispAmount
 
     public static function toThousandths(float|int|string $amount): int
     {
+        $estimate = (float) $amount;
+
+        throw_if(
+            ! is_finite($estimate) || abs($estimate) > self::MAX_AMOUNT,
+            InvalidArgumentException::class,
+            'The amount is too large to express in SISP thousandths.',
+        );
+
         $decimal = self::decimalString($amount);
 
         if ($decimal === null) {
