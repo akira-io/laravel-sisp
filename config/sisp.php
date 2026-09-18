@@ -534,6 +534,8 @@ return [
     | transport serves coding agents on the developer machine; the web
     | transport serves remote clients behind authentication. Destructive
     | payment tools stay off the web transport unless expose_destructive is on.
+    | Every web tool call must pass the Gate ability, which denies all users
+    | until the host application defines it.
     |
     */
     'mcp' => [
@@ -542,8 +544,8 @@ return [
         'web' => [
             'enabled' => env('SISP_MCP_WEB_ENABLED', false),
             'path' => env('SISP_MCP_WEB_PATH', '/sisp/mcp'),
-            'middleware' => ['auth:sanctum'],
-            'ability' => null,
+            'middleware' => ['auth:sanctum', 'throttle:60,1'],
+            'ability' => env('SISP_MCP_WEB_ABILITY', 'sisp-mcp'),
             'expose_destructive' => env('SISP_MCP_WEB_DESTRUCTIVE', false),
         ],
     ],
