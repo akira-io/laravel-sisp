@@ -7,39 +7,50 @@ use Akira\Sisp\Events\TransactionCancelled;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\Event;
 
-it('cancels a pending transaction in both spellings', function (string $key): void {
+it('leaves a pending transaction pending in both spellings', function (string $key): void {
+    Event::fake([TransactionCancelled::class]);
+
     $transaction = Transaction::factory()->create(['status' => 'pending']);
 
     $this->post(route('sisp.callback'), [
         $key => 'true',
         'merchantRef' => $transaction->merchant_ref,
         'merchantSession' => $transaction->merchant_session,
-    ]);
+    ])->assertRedirect(config('sisp.redirect_url', '/'));
 
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::cancelled)
-        ->and($transaction->cancelled_at)->not->toBeNull();
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending)
+        ->and($transaction->cancelled_at)->toBeNull();
+
+    Event::assertNotDispatched(TransactionCancelled::class);
 })->with(['userCancelled', 'UserCancelled']);
 
-it('does not touch a completed transaction', function (): void {
-    $transaction = Transaction::factory()->create(['status' => 'completed']);
+it('leaves a pending transaction pending when the cancellation arrives as a GET request', function (): void {
+    Event::fake([TransactionCancelled::class]);
 
-    $this->post(route('sisp.callback'), [
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    $this->get(route('sisp.callback', [
         'userCancelled' => 'true',
         'merchantRef' => $transaction->merchant_ref,
         'merchantSession' => $transaction->merchant_session,
-    ]);
+    ]))->assertRedirect(config('sisp.redirect_url', '/'));
 
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending)
+        ->and($transaction->cancelled_at)->toBeNull();
+
+    Event::assertNotDispatched(TransactionCancelled::class);
 });
 
-it('ignores a cancellation whose session does not match', function (): void {
-    $transaction = Transaction::factory()->create(['status' => 'pending']);
+it('leaves a pending transaction with an empty merchant session alone when the session is omitted', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'pending',
+        'merchant_session' => '',
+    ]);
 
     $this->post(route('sisp.callback'), [
         'userCancelled' => 'true',
         'merchantRef' => $transaction->merchant_ref,
-        'merchantSession' => 'not-the-session',
-    ]);
+    ])->assertRedirect(config('sisp.redirect_url', '/'));
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
 });
@@ -50,71 +61,4 @@ it('redirects without a transaction when the reference is unknown', function ():
         'merchantRef' => 'does-not-exist',
         'merchantSession' => 'nor-this',
     ])->assertRedirect(config('sisp.redirect_url', '/'));
-});
-
-it('does not cancel a pending transaction with an empty merchant session when the session is omitted', function (): void {
-    $transaction = Transaction::factory()->create([
-        'status' => 'pending',
-        'merchant_session' => '',
-    ]);
-
-    $this->post(route('sisp.callback'), [
-        'userCancelled' => 'true',
-        'merchantRef' => $transaction->merchant_ref,
-    ]);
-
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
-});
-
-it('does not touch a failed transaction', function (): void {
-    $transaction = Transaction::factory()->create(['status' => 'failed']);
-
-    $this->post(route('sisp.callback'), [
-        'userCancelled' => 'true',
-        'merchantRef' => $transaction->merchant_ref,
-        'merchantSession' => $transaction->merchant_session,
-    ]);
-
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::failed);
-});
-
-it('does not touch a refunded transaction', function (): void {
-    $transaction = Transaction::factory()->create(['status' => 'refunded']);
-
-    $this->post(route('sisp.callback'), [
-        'userCancelled' => 'true',
-        'merchantRef' => $transaction->merchant_ref,
-        'merchantSession' => $transaction->merchant_session,
-    ]);
-
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::refunded);
-});
-
-it('does not dispatch a second cancellation event when replayed against an already-cancelled transaction', function (): void {
-    Event::fake();
-
-    $transaction = Transaction::factory()->create(['status' => 'cancelled']);
-
-    $this->post(route('sisp.callback'), [
-        'userCancelled' => 'true',
-        'merchantRef' => $transaction->merchant_ref,
-        'merchantSession' => $transaction->merchant_session,
-    ]);
-
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::cancelled);
-
-    Event::assertNotDispatched(TransactionCancelled::class);
-});
-
-it('cancels a pending transaction when the cancellation arrives as a GET request', function (): void {
-    $transaction = Transaction::factory()->create(['status' => 'pending']);
-
-    $this->get(route('sisp.callback', [
-        'userCancelled' => 'true',
-        'merchantRef' => $transaction->merchant_ref,
-        'merchantSession' => $transaction->merchant_session,
-    ]));
-
-    expect($transaction->refresh()->status)->toBe(TransactionStatus::cancelled)
-        ->and($transaction->cancelled_at)->not->toBeNull();
 });

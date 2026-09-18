@@ -5,20 +5,35 @@ declare(strict_types=1);
 use Akira\Sisp\Events\TransactionCancelled;
 use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
     config()->set('sisp.redirect_url', '/home');
 });
 
-it('cancels the transaction when the user cancelled callback arrives', function (): void {
+function recordCancellationLogs(): ArrayObject
+{
+    $messages = new ArrayObject;
+
+    Log::listen(function (MessageLogged $event) use ($messages): void {
+        $messages->append($event);
+    });
+
+    return $messages;
+}
+
+it('leaves the transaction pending when the user cancelled callback arrives', function (): void {
     Event::fake([TransactionCancelled::class]);
 
     $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-CANCEL-1',
         'merchant_session' => 'MS-CANCEL-1',
         'status' => 'pending',
+        'merchant_response' => null,
+        'message_type' => null,
     ]);
 
     $this->post(route('sisp.callback'), [
@@ -29,62 +44,60 @@ it('cancels the transaction when the user cancelled callback arrives', function 
 
     $transaction->refresh();
 
-    expect($transaction->status->value)->toBe('cancelled')
-        ->and($transaction->cancelled_at)->not->toBeNull()
-        ->and($transaction->merchant_response)->toBe('user_cancelled');
-
-    Event::assertDispatched(TransactionCancelled::class);
-});
-
-it('redirects without failing when the cancelled callback references an unknown transaction', function (): void {
-    Event::fake([TransactionCancelled::class]);
-
-    $this->post(route('sisp.callback'), [
-        'merchantRef' => 'MR-UNKNOWN',
-        'merchantSession' => 'MS-UNKNOWN',
-        'UserCancelled' => 'true',
-    ])->assertRedirect('/home');
+    expect($transaction->status->value)->toBe('pending')
+        ->and($transaction->cancelled_at)->toBeNull()
+        ->and($transaction->message_type)->toBeNull()
+        ->and($transaction->merchant_response)->toBeNull();
 
     Event::assertNotDispatched(TransactionCancelled::class);
 });
 
-it('keeps the cancelled callback idempotent', function (): void {
+it('logs the customer cancellation against the pending transaction', function (): void {
+    $messages = recordCancellationLogs();
+
     $transaction = Transaction::factory()->create([
-        'merchant_ref' => 'MR-CANCEL-2',
-        'merchant_session' => 'MS-CANCEL-2',
+        'merchant_ref' => 'MR-CANCEL-LOG',
+        'merchant_session' => 'MS-CANCEL-LOG',
         'status' => 'pending',
     ]);
 
-    $payload = [
-        'merchantRef' => 'MR-CANCEL-2',
-        'merchantSession' => 'MS-CANCEL-2',
+    $this->post(route('sisp.callback'), [
+        'merchantRef' => 'MR-CANCEL-LOG',
+        'merchantSession' => 'MS-CANCEL-LOG',
         'UserCancelled' => 'true',
-    ];
+    ])->assertRedirect('/home');
 
-    $this->travelTo('2026-09-12 10:00:00');
+    $logged = collect($messages->getArrayCopy())
+        ->first(fn (MessageLogged $event): bool => $event->message === 'SISP callback reported that the customer cancelled the payment.');
 
-    $this->post(route('sisp.callback'), $payload)->assertRedirect('/home');
-
-    $cancelledAt = $transaction->refresh()->cancelled_at;
-
-    Event::fake([TransactionCancelled::class]);
-
-    $this->travelTo('2026-09-12 10:05:00');
-
-    $this->post(route('sisp.callback'), $payload)->assertRedirect('/home');
-
-    $this->travelBack();
-
-    $transaction->refresh();
-
-    expect($transaction->status->value)->toBe('cancelled')
-        ->and($transaction->cancelled_at->toDateTimeString())->toBe($cancelledAt->toDateTimeString())
-        ->and($transaction->cancelled_at->toDateTimeString())->toBe('2026-09-12 10:00:00');
-
-    Event::assertNotDispatched(TransactionCancelled::class);
+    expect($logged)->toBeInstanceOf(MessageLogged::class)
+        ->and($logged->level)->toBe('info')
+        ->and($logged->context)->toBe([
+            'transaction_id' => $transaction->id,
+            'merchant_ref' => 'MR-CANCEL-LOG',
+        ]);
 });
 
-it('refuses to cancel a transaction already in a terminal status', function (string $status): void {
+it('logs nothing when the cancelled callback does not name a pending transaction', function (array $payload): void {
+    $messages = recordCancellationLogs();
+
+    Transaction::factory()->create([
+        'merchant_ref' => 'MR-NOT-LOGGED',
+        'merchant_session' => 'MS-NOT-LOGGED',
+        'status' => 'completed',
+    ]);
+
+    $this->post(route('sisp.callback'), [...$payload, 'UserCancelled' => 'true'])->assertRedirect('/home');
+
+    expect($messages)->toHaveCount(0);
+})->with([
+    'unknown reference' => [['merchantRef' => 'MR-UNKNOWN', 'merchantSession' => 'MS-UNKNOWN']],
+    'terminal transaction' => [['merchantRef' => 'MR-NOT-LOGGED', 'merchantSession' => 'MS-NOT-LOGGED']],
+    'empty reference' => [['merchantRef' => '', 'merchantSession' => 'MS-NOT-LOGGED']],
+    'no session' => [['merchantRef' => 'MR-NOT-LOGGED']],
+]);
+
+it('leaves a transaction in any status untouched', function (string $status): void {
     Event::fake([TransactionCancelled::class]);
 
     $transaction = Transaction::factory()->create([
@@ -107,54 +120,9 @@ it('refuses to cancel a transaction already in a terminal status', function (str
         ->and($transaction->merchant_response)->toBe('gateway said so');
 
     Event::assertNotDispatched(TransactionCancelled::class);
-})->with(['completed', 'failed', 'refunded', 'cancelled']);
+})->with(['pending', 'completed', 'failed', 'refunded', 'cancelled']);
 
-it('leaves other transactions alone when the cancelled callback names one of them', function (): void {
-    $target = Transaction::factory()->create([
-        'merchant_ref' => 'MR-TARGET',
-        'merchant_session' => 'MS-TARGET',
-        'status' => 'pending',
-    ]);
-
-    $bystander = Transaction::factory()->create([
-        'merchant_ref' => 'MR-BYSTANDER',
-        'merchant_session' => 'MS-BYSTANDER',
-        'status' => 'pending',
-    ]);
-
-    $this->post(route('sisp.callback'), [
-        'merchantRef' => 'MR-TARGET',
-        'merchantSession' => 'MS-TARGET',
-        'UserCancelled' => 'true',
-    ])->assertRedirect('/home');
-
-    expect($target->refresh()->status->value)->toBe('cancelled')
-        ->and($bystander->refresh()->status->value)->toBe('pending')
-        ->and($bystander->cancelled_at)->toBeNull();
-});
-
-it('ignores a cancelled callback whose merchant session does not match', function (): void {
-    Event::fake([TransactionCancelled::class]);
-
-    $transaction = Transaction::factory()->create([
-        'merchant_ref' => 'MR-MISMATCH',
-        'merchant_session' => 'MS-MISMATCH',
-        'status' => 'pending',
-    ]);
-
-    $this->post(route('sisp.callback'), [
-        'merchantRef' => 'MR-MISMATCH',
-        'merchantSession' => 'MS-SOMETHING-ELSE',
-        'UserCancelled' => 'true',
-    ])->assertRedirect('/home');
-
-    expect($transaction->refresh()->status->value)->toBe('pending')
-        ->and($transaction->cancelled_at)->toBeNull();
-
-    Event::assertNotDispatched(TransactionCancelled::class);
-});
-
-it('cancels the invoice alongside the transaction', function (): void {
+it('leaves the invoice pending', function (): void {
     $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-INVOICE',
         'merchant_session' => 'MS-INVOICE',
@@ -174,52 +142,29 @@ it('cancels the invoice alongside the transaction', function (): void {
         'UserCancelled' => 'true',
     ])->assertRedirect('/home');
 
-    expect($transaction->refresh()->status->value)->toBe('cancelled')
-        ->and($invoice->refresh()->status->value)->toBe('cancelled');
-});
-
-it('ignores a cancelled callback that carries no merchant session', function (): void {
-    Event::fake([TransactionCancelled::class]);
-
-    $transaction = Transaction::factory()->create([
-        'merchant_ref' => 'MR-NO-SESSION',
-        'merchant_session' => 'MS-NO-SESSION',
-        'status' => 'pending',
-    ]);
-
-    $this->post(route('sisp.callback'), [
-        'merchantRef' => 'MR-NO-SESSION',
-        'UserCancelled' => 'true',
-    ])->assertRedirect('/home');
-
     expect($transaction->refresh()->status->value)->toBe('pending')
-        ->and($transaction->cancelled_at)->toBeNull();
-
-    Event::assertNotDispatched(TransactionCancelled::class);
+        ->and($invoice->refresh()->status->value)->toBe('pending');
 });
 
-it('leaves the invoice untouched when it refuses to cancel a terminal transaction', function (): void {
+it('keeps the transaction eligible for sisp:expire-pending', function (): void {
     $transaction = Transaction::factory()->create([
-        'merchant_ref' => 'MR-PAID',
-        'merchant_session' => 'MS-PAID',
-        'status' => 'completed',
-    ]);
-
-    $invoice = Invoice::query()->create([
-        'transaction_id' => $transaction->id,
-        'invoice_number' => 'INV-PAID-1',
-        'invoice_date' => now(),
-        'status' => 'paid',
+        'merchant_ref' => 'MR-EXPIRE',
+        'merchant_session' => 'MS-EXPIRE',
+        'status' => 'pending',
+        'message_type' => null,
+        'created_at' => now()->subDays(31),
     ]);
 
     $this->post(route('sisp.callback'), [
-        'merchantRef' => 'MR-PAID',
-        'merchantSession' => 'MS-PAID',
+        'merchantRef' => 'MR-EXPIRE',
+        'merchantSession' => 'MS-EXPIRE',
         'UserCancelled' => 'true',
     ])->assertRedirect('/home');
 
-    expect($transaction->refresh()->status->value)->toBe('completed')
-        ->and($invoice->refresh()->status->value)->toBe('paid');
+    $this->artisan('sisp:expire-pending')->assertSuccessful();
+
+    expect($transaction->refresh()->status->value)->toBe('cancelled')
+        ->and($transaction->merchant_response)->toBe('expired');
 });
 
 it('rate limits repeated cancellation attempts against the same reference', function (): void {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Controllers;
 
-use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
@@ -18,7 +17,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use LogicException;
 
 final readonly class CallbackController
 {
@@ -26,7 +24,6 @@ final readonly class CallbackController
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
-        private CancelTransactionAction $cancelTransaction,
         private LoadConfig $config,
     ) {}
 
@@ -57,14 +54,10 @@ final readonly class CallbackController
         $transaction = $this->resolveCancelledTransaction($request);
 
         if ($transaction instanceof Transaction) {
-            try {
-                $this->cancelTransaction->handle($transaction);
-            } catch (LogicException $exception) {
-                Log::warning('SISP cancellation callback could not cancel the transaction.', [
-                    'transaction_id' => $transaction->getKey(),
-                    'error' => $exception->getMessage(),
-                ]);
-            }
+            Log::info('SISP callback reported that the customer cancelled the payment.', [
+                'transaction_id' => $transaction->getKey(),
+                'merchant_ref' => $transaction->merchant_ref,
+            ]);
         }
 
         return redirect(config('sisp.redirect_url', '/'));
