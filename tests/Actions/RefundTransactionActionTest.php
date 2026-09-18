@@ -203,3 +203,21 @@ it('refunds a transaction that has no invoice', function (): void {
     expect($updated->status)->toBe(TransactionStatus::refunded)
         ->and($updated->invoice)->toBeNull();
 });
+
+it('counts a refund that reached the payload but not the refunds table', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+        'payload' => ['refunds' => [
+            ['amount' => 30.0, 'reason' => 'before_migration', 'request' => []],
+            ['amount' => 50.0, 'reason' => 'during_migration', 'request' => []],
+        ]],
+    ]);
+    $transaction->refunds()->create(['amount' => 30.0, 'reason' => 'before_migration', 'request' => []]);
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($transaction, 30.0))
+        ->toThrow(LogicException::class, 'Refund amount (30) exceeds refundable balance.')
+        ->and(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))->toBe(20.0);
+});
