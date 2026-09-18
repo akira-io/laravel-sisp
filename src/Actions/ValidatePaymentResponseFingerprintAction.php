@@ -11,16 +11,20 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class ValidatePaymentResponseFingerprintAction implements CallbackFingerprintValidator
 {
+    private PaymentErrorResponseFingerPrintAction $errorFingerPrint;
+
     public function __construct(
-        private PaymentResponseFingerPrintAction $successFingerPrint,
-        private PaymentErrorResponseFingerPrintAction $errorFingerPrint,
-    ) {}
+        private PaymentResponseFingerPrintAction $fingerPrint,
+        ?PaymentErrorResponseFingerPrintAction $errorFingerPrint = null,
+    ) {
+        $this->errorFingerPrint = $errorFingerPrint ?? resolve(PaymentErrorResponseFingerPrintAction::class);
+    }
 
     public function handle(CallbackPayload $payload): bool
     {
         $expected = $payload->isError()
             ? $this->errorFingerPrint->handle($payload)
-            : $this->successFingerPrint->handle($payload);
+            : $this->fingerPrint->handle($payload);
 
         return hash_equals($expected, $payload->fingerprint);
     }

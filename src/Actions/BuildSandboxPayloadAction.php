@@ -16,11 +16,15 @@ use LogicException;
 
 final readonly class BuildSandboxPayloadAction
 {
+    private PaymentErrorResponseFingerPrintAction $generateErrorFingerprint;
+
     public function __construct(
         private PaymentResponseFingerPrintAction $generateFingerprint,
-        private PaymentErrorResponseFingerPrintAction $generateErrorFingerprint,
         private SispCredentialsResolver $resolver,
-    ) {}
+        ?PaymentErrorResponseFingerPrintAction $generateErrorFingerprint = null,
+    ) {
+        $this->generateErrorFingerprint = $generateErrorFingerprint ?? resolve(PaymentErrorResponseFingerPrintAction::class);
+    }
 
     public function handle(PaymentRequestData $data, string $status = 'success'): CallbackPayload
     {

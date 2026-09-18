@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\BuildSandboxPayloadAction;
+use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
+use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 
 beforeEach(function (): void {
@@ -75,4 +77,36 @@ it('refuses to generate sandbox payloads when sandbox mode is disabled', functio
 
     expect(fn () => resolve(BuildSandboxPayloadAction::class)->handle($data))
         ->toThrow(LogicException::class, 'Sandbox payloads can only be generated when SISP sandbox mode is enabled.');
+});
+
+it('builds with the 2.1 constructor arguments and signs both formulas', function (string $status): void {
+    $builder = new BuildSandboxPayloadAction(
+        resolve(PaymentResponseFingerPrintAction::class),
+        resolve(SispCredentialsResolver::class),
+    );
+    $validator = new ValidatePaymentResponseFingerprintAction(
+        resolve(PaymentResponseFingerPrintAction::class),
+    );
+
+    $payload = $builder->handle(PaymentRequestData::from([
+        'amount' => 10.0,
+        'merchantRef' => "ref-{$status}",
+        'merchantSession' => "sess-{$status}",
+        'currency' => '132',
+    ]), $status);
+
+    expect($validator->handle($payload))->toBeTrue();
+})->with(['completed', 'failed']);
+
+it('accepts the 2.1 named constructor arguments', function (): void {
+    $validator = new ValidatePaymentResponseFingerprintAction(
+        fingerPrint: resolve(PaymentResponseFingerPrintAction::class),
+    );
+    $builder = new BuildSandboxPayloadAction(
+        generateFingerprint: resolve(PaymentResponseFingerPrintAction::class),
+        resolver: resolve(SispCredentialsResolver::class),
+    );
+
+    expect($validator)->toBeInstanceOf(ValidatePaymentResponseFingerprintAction::class)
+        ->and($builder)->toBeInstanceOf(BuildSandboxPayloadAction::class);
 });
