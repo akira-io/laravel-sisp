@@ -10,9 +10,12 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class UpdateTransactionAttemptAction
 {
-    public function __construct(
-        private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
-    ) {}
+    private MaskCallbackRawPayloadAction $maskCallbackRawPayload;
+
+    public function __construct(?MaskCallbackRawPayloadAction $maskCallbackRawPayload = null)
+    {
+        $this->maskCallbackRawPayload = $maskCallbackRawPayload ?? resolve(MaskCallbackRawPayloadAction::class);
+    }
 
     public function handle(
         TransactionAttempt $attempt,

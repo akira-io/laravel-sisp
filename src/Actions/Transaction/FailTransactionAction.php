@@ -13,12 +13,19 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class FailTransactionAction
 {
+    private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage;
+
+    private MaskCallbackRawPayloadAction $maskCallbackRawPayload;
+
     public function __construct(
         private UpdateTransactionAttemptAction $updateAttempt,
         private ShouldPropagateAttemptCallbackAction $shouldPropagateAttemptCallback,
-        private ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage,
-        private MaskCallbackRawPayloadAction $maskCallbackRawPayload,
-    ) {}
+        ?ResolveCustomerErrorMessageAction $resolveCustomerErrorMessage = null,
+        ?MaskCallbackRawPayloadAction $maskCallbackRawPayload = null,
+    ) {
+        $this->resolveCustomerErrorMessage = $resolveCustomerErrorMessage ?? resolve(ResolveCustomerErrorMessageAction::class);
+        $this->maskCallbackRawPayload = $maskCallbackRawPayload ?? resolve(MaskCallbackRawPayloadAction::class);
+    }
 
     public function handle(
         Transaction $transaction,

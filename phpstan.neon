@@ -5,3 +5,9 @@ parameters:
     level: 5
     paths:
         - src
+    ignoreErrors:
+        -
+            identifiers:
+                - constructor.unusedParameter
+                - parameter.deprecatedClass
+            path: src/Actions/RenderPaymentResponseAction.php

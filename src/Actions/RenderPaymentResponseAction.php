@@ -15,6 +15,7 @@ use Inertia\Inertia;
 final readonly class RenderPaymentResponseAction
 {
     public function __construct(
+        GetPaymentErrorResponseAction $getErrorResponse,
         private GetPaymentResponseTranslationsAction $getTranslations,
         private CanRetryPaymentAction $canRetryPayment,
         private InertiaAvailability $inertiaAvailability,
