@@ -533,7 +533,8 @@ return [
     | Disabled by default so host applications opt in explicitly. The local
     | transport serves coding agents on the developer machine; the web
     | transport serves remote clients behind authentication. Destructive
-    | payment tools stay off the web transport unless expose_destructive is on.
+    | payment tools and reconciliation stay off the web transport unless
+    | expose_destructive is on.
     | Every web tool call must pass the Gate ability, which denies all users
     | until the host application defines it.
     |

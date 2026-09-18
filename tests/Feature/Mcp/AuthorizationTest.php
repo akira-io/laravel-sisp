@@ -209,7 +209,8 @@ it('lists only the transactions the operator may view', function (): void {
 
 it('refuses destructive tools on the web server unless they are exposed', function (string $tool): void {
     config()->set('sisp.mcp.web.expose_destructive', false);
-    allowMcpOperations('refund', 'cancel');
+    allowMcpOperations('reconcile', 'refund', 'cancel');
+    Http::fake();
     $transaction = Transaction::factory()->pending()->create(['merchant_ref' => 'REF-HIDDEN']);
 
     SispWebOpsServer::actingAs(mcpOperator())
@@ -217,7 +218,7 @@ it('refuses destructive tools on the web server unless they are exposed', functi
         ->assertHasErrors();
 
     expect($transaction->fresh()->status)->toBe(TransactionStatus::pending);
-})->with([RefundTransactionTool::class, CancelTransactionTool::class]);
+})->with([ReconcileTransactionTool::class, RefundTransactionTool::class, CancelTransactionTool::class]);
 
 it('protects the web route with authentication and a throttle by default', function (): void {
     config()->set('sisp.mcp.local', false);
