@@ -40,7 +40,7 @@ final readonly class FailTransactionAction
         bool $trustPayload = true,
     ): bool {
         return DB::transaction(function () use ($attempt, $merchantResponse, $payload, $transaction, $trustPayload): bool {
-            if (! $this->lockCallbackRows->handle($transaction, $attempt, $payload)) {
+            if (! $this->lockCallbackRows->handle($transaction, $attempt) || $this->lockCallbackRows->alreadyRecorded($attempt, $payload)) {
                 return false;
             }
 
@@ -50,6 +50,10 @@ final readonly class FailTransactionAction
                 if (! $this->shouldPropagateAttemptCallback->handle($attempt, TransactionStatus::failed)) {
                     return false;
                 }
+            }
+
+            if ($this->lockCallbackRows->isSettled($transaction)) {
+                return false;
             }
 
             $merchantRef = $attempt instanceof TransactionAttempt ? $attempt->merchant_ref : $transaction->merchant_ref;

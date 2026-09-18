@@ -37,7 +37,7 @@ final readonly class UpdateTransactionAction
         $status = $this->mapStatus->handle($payload->messageType, $payload->merchantResponse);
 
         return DB::transaction(function () use ($attempt, $payload, $status, $transaction): bool {
-            if (! $this->lockCallbackRows->handle($transaction, $attempt, $payload)) {
+            if (! $this->lockCallbackRows->handle($transaction, $attempt) || $this->lockCallbackRows->alreadyRecorded($attempt, $payload)) {
                 return false;
             }
 
@@ -47,6 +47,10 @@ final readonly class UpdateTransactionAction
                 if (! $this->shouldPropagateAttemptCallback->handle($attempt, $status)) {
                     return false;
                 }
+            }
+
+            if ($this->lockCallbackRows->isSettled($transaction)) {
+                return false;
             }
 
             $merchantRef = $attempt instanceof TransactionAttempt ? $attempt->merchant_ref : $transaction->merchant_ref;

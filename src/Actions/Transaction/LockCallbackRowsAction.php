@@ -12,7 +12,7 @@ use Akira\Sisp\ValueObjects\CallbackPayload;
 
 final readonly class LockCallbackRowsAction
 {
-    public function handle(Transaction $transaction, ?TransactionAttempt $attempt, CallbackPayload $payload): bool
+    public function handle(Transaction $transaction, ?TransactionAttempt $attempt): bool
     {
         $locked = TransactionRowLock::acquire($transaction);
 
@@ -22,26 +22,29 @@ final readonly class LockCallbackRowsAction
 
         TransactionRowLock::adopt($transaction, $locked);
 
-        if ($attempt instanceof TransactionAttempt) {
-            $lockedAttempt = $attempt->newQuery()->whereKey($attempt->getKey())->lockForUpdate()->first();
-
-            if ($lockedAttempt instanceof TransactionAttempt) {
-                $attempt->setRawAttributes($lockedAttempt->getAttributes(), true);
-            }
+        if (! $attempt instanceof TransactionAttempt) {
+            return true;
         }
 
-        if ($locked->status === TransactionStatus::completed) {
-            return false;
+        $lockedAttempt = $attempt->newQuery()->whereKey($attempt->getKey())->lockForUpdate()->first();
+
+        if ($lockedAttempt instanceof TransactionAttempt) {
+            $attempt->setRawAttributes($lockedAttempt->getAttributes(), true);
         }
 
-        return ! $this->alreadyRecorded($attempt, $payload);
+        return true;
     }
 
-    private function alreadyRecorded(?TransactionAttempt $attempt, CallbackPayload $payload): bool
+    public function alreadyRecorded(?TransactionAttempt $attempt, CallbackPayload $payload): bool
     {
         return $attempt instanceof TransactionAttempt
             && $payload->fingerprint !== ''
             && $attempt->callback_received_at !== null
             && $attempt->fingerprint === $payload->fingerprint;
+    }
+
+    public function isSettled(Transaction $transaction): bool
+    {
+        return in_array($transaction->status, [TransactionStatus::completed, TransactionStatus::refunded], true);
     }
 }
