@@ -8,6 +8,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionCancelled;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\TransactionLogContext;
+use Akira\Sisp\Support\TransactionRowLock;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -22,8 +23,8 @@ final readonly class CancelTransactionAction
 
     public function handle(Transaction $transaction, string $reason = 'user_cancelled'): Transaction
     {
-        $cancelled = DB::transaction(function () use ($transaction, $reason): Transaction {
-            $locked = $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
+        DB::transaction(function () use ($transaction, $reason): void {
+            $locked = TransactionRowLock::acquire($transaction);
 
             if (! $locked instanceof Transaction || $this->cannotBeCancelled($locked)) {
                 $status = $locked instanceof Transaction ? $locked->status->value : $transaction->status->value;
@@ -31,9 +32,11 @@ final readonly class CancelTransactionAction
                 throw new LogicException("Transaction with status '{$status}' cannot be cancelled.");
             }
 
+            TransactionRowLock::adopt($transaction, $locked);
+
             TransactionLogContext::run(
                 'cancel',
-                fn (): bool => $locked->update([
+                fn (): bool => $transaction->update([
                     'status' => TransactionStatus::cancelled->value,
                     'message_type' => 'cancelled',
                     'merchant_response' => $reason,
@@ -41,12 +44,8 @@ final readonly class CancelTransactionAction
                 ])
             );
 
-            $this->updateInvoiceStatus->handle($locked, TransactionStatus::cancelled);
-
-            return $locked;
+            $this->updateInvoiceStatus->handle($transaction, TransactionStatus::cancelled);
         });
-
-        $transaction->setRawAttributes($cancelled->getAttributes(), true);
 
         event(new TransactionCancelled($transaction, $reason));
 

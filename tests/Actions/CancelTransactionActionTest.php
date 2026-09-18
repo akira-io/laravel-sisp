@@ -80,3 +80,26 @@ it('updates and returns the instance the caller passed in', function (): void {
         fn (Akira\Sisp\Events\TransactionCancelled $event): bool => $event->transaction === $transaction,
     );
 });
+
+it('reports the change and saves the caller\'s unsaved attributes as 2.1 did', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending', 'locale' => 'pt']);
+    $transaction->locale = 'en';
+
+    resolve(CancelTransactionAction::class)->handle($transaction);
+
+    expect($transaction->wasChanged('status'))->toBeTrue()
+        ->and($transaction->wasChanged('locale'))->toBeTrue()
+        ->and($transaction->refresh()->locale)->toBe('en');
+});
+
+it('logs the old values of the locked row, not of a stale instance', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending', 'merchant_response' => 'first']);
+    Transaction::query()->where('id', $transaction->id)->update(['merchant_response' => 'from the database']);
+
+    resolve(CancelTransactionAction::class)->handle($transaction, 'admin');
+
+    $log = $transaction->logs()->where('source', 'cancel')->sole();
+
+    expect($log->old_values)->toMatchArray(['merchant_response' => 'from the database'])
+        ->and($log->new_values)->toMatchArray(['merchant_response' => 'admin', 'status' => 'cancelled']);
+});

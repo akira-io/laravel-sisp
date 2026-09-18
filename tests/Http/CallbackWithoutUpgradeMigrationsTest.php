@@ -79,6 +79,22 @@ it('refunds against the payload history when the refunds table is missing', func
         ->and($transaction->payload['refunds'])->toHaveCount(2);
 });
 
+it('rereads the payload history so a stale instance cannot refund twice without the refunds table', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    $stale = Transaction::query()->where('id', $transaction->id)->sole();
+
+    resolve(RefundTransactionAction::class)->handle($transaction, 60.0, 'partial_request');
+
+    expect(fn () => resolve(RefundTransactionAction::class)->handle($stale, 60.0, 'partial_request'))
+        ->toThrow(LogicException::class, 'Refund amount (60) exceeds refundable balance.')
+        ->and($transaction->refresh()->payload['refunds'])->toHaveCount(1);
+});
+
 it('refuses to prune request payloads until the migration has run', function (): void {
     $this->artisan('sisp:prune-request-payloads')
         ->expectsOutputToContain('Publish and run the laravel-sisp migrations first.')

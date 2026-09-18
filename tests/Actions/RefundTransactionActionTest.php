@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\RefundTransactionAction;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\Event;
 
 it('refunds a completed transaction for the full original amount', function (): void {
     $t = Transaction::factory()->create([
@@ -163,4 +165,24 @@ it('updates and returns the instance the caller passed in', function (): void {
         ->and($t->status)->toBe(TransactionStatus::refunded)
         ->and($t->merchant_response)->toBe('customer_request::100')
         ->and($t->isDirty())->toBeFalse();
+});
+
+it('reports the change and hands the caller\'s instance to the event', function (): void {
+    Event::fake([TransactionRefunded::class]);
+
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    resolve(RefundTransactionAction::class)->handle($t, 100.0, 'customer_request');
+
+    expect($t->wasChanged('status'))->toBeTrue();
+
+    Event::assertDispatched(
+        TransactionRefunded::class,
+        fn (TransactionRefunded $event): bool => $event->transaction === $t,
+    );
 });
