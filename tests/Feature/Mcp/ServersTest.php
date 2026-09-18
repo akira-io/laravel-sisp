@@ -39,7 +39,7 @@ it('renders the integration prompt for a stack', function (): void {
 it('renders the failure diagnosis prompt around the stored refusal reason', function (): void {
     SispDevServer::prompt(DiagnosePaymentFailurePrompt::class, ['transaction' => 'R20260918120000ABCDEFGHIJ'])
         ->assertOk()
-        ->assertSee(['R20260918120000ABCDEFGHIJ', 'get-transaction-tool', 'error_message'])
+        ->assertSee(['R20260918120000ABCDEFGHIJ', 'get-transaction-tool', 'gateway_error'])
         ->assertDontSee('insufficient funds');
 });
 
