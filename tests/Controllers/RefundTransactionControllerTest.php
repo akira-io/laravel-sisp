@@ -236,7 +236,9 @@ it('refunds a retried request with the same idempotency key only once', function
     $this->actingAs(new RefundRouteUser())
         ->postJson(route('sisp.refund', $transaction), $payload)
         ->assertOk()
-        ->assertJsonPath('success', true);
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('transaction.status', TransactionStatus::completed->value)
+        ->assertJsonPath('transaction.merchant_response', 'user_refund::40');
 
     expect($transaction->refunds()->count())->toBe(1)
         ->and($transaction->refresh()->payload['refunds'])->toHaveCount(1);
@@ -272,4 +274,18 @@ it('rejects an idempotency key that is not a short string', function (mixed $key
     'too long' => [str_repeat('k', 256)],
     'array' => [['k']],
     'integer' => [123],
+]);
+
+it('treats a null or empty idempotency key as no key', function (mixed $key): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 40.0, 'idempotency_key' => $key])
+        ->assertOk();
+
+    expect($transaction->refunds()->sole()->idempotency_key)->toBeNull();
+})->with([
+    'null' => [null],
+    'empty' => [''],
 ]);

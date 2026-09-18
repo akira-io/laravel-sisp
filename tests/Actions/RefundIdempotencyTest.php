@@ -110,3 +110,27 @@ it('rejects a second refund row with the same idempotency key at the database', 
         ->toThrow(UniqueConstraintViolationException::class)
         ->and($transaction->refunds()->count())->toBe(1);
 });
+
+it('refuses a blank or oversized idempotency key before refunding', function (string $key): void {
+    Event::fake([TransactionRefunded::class]);
+    $transaction = idempotentRefundTransaction();
+
+    expect(fn (): Transaction => resolve(RefundTransactionAction::class)->handle($transaction, 40.0, 'first', $key))
+        ->toThrow(LogicException::class, 'Idempotency key must be a non-blank string of at most 255 characters.')
+        ->and($transaction->refunds()->count())->toBe(0);
+
+    Event::assertNotDispatched(TransactionRefunded::class);
+})->with([
+    'empty' => [''],
+    'whitespace' => ['   '],
+    'too long' => [str_repeat('k', 256)],
+]);
+
+it('accepts an idempotency key of exactly 255 characters', function (): void {
+    $transaction = idempotentRefundTransaction();
+    $key = str_repeat('k', 255);
+
+    resolve(RefundTransactionAction::class)->handle($transaction, 40.0, 'first', $key);
+
+    expect($transaction->refunds()->sole()->idempotency_key)->toBe($key);
+});

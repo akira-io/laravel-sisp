@@ -31,7 +31,7 @@ final class RefundTransactionRequest extends FormRequest
         return [
             'amount' => ['required', 'numeric', 'gt:0'],
             'reason' => ['sometimes', 'string', 'max:255'],
-            'idempotency_key' => ['sometimes', 'string', 'max:255'],
+            'idempotency_key' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 

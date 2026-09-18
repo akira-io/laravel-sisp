@@ -28,6 +28,12 @@ final readonly class RefundTransactionAction
     ): Transaction {
         throw_if($refundAmount <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
+        throw_if(
+            $idempotencyKey !== null && ! $this->isValidIdempotencyKey($idempotencyKey),
+            LogicException::class,
+            'Idempotency key must be a non-blank string of at most 255 characters.'
+        );
+
         [$refunded, $replayed] = DB::transaction(function () use ($transaction, $refundAmount, $reason, $idempotencyKey): array {
             $locked = $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
 
@@ -85,6 +91,11 @@ final readonly class RefundTransactionAction
     public function refundableAmount(Transaction $transaction): float
     {
         return SispAmount::fromThousandths($this->refundableThousandths($transaction));
+    }
+
+    private function isValidIdempotencyKey(string $idempotencyKey): bool
+    {
+        return mb_trim($idempotencyKey) !== '' && mb_strlen($idempotencyKey) <= 255;
     }
 
     private function isReplay(Transaction $transaction, float $refundAmount, ?string $idempotencyKey): bool
