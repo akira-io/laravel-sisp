@@ -17,6 +17,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use LogicException;
+use RuntimeException;
 use Throwable;
 
 #[Signature('sisp:expire-pending
@@ -112,6 +113,10 @@ final class ExpirePendingTransactionsCommand extends Command
     ): bool {
         try {
             $response = $queryTransactionStatus->handle($transaction);
+
+            throw_unless($response->answered, RuntimeException::class, $response->message);
+
+            return $reconcile->applyResponse($transaction, $response)->status === TransactionStatus::pending;
         } catch (Throwable $exception) {
             Log::warning('Skipped expiring a SISP transaction whose status could not be queried.', [
                 'transaction_id' => $transaction->id,
@@ -120,7 +125,5 @@ final class ExpirePendingTransactionsCommand extends Command
 
             return false;
         }
-
-        return $reconcile->applyResponse($transaction, $response)->status === TransactionStatus::pending;
     }
 }

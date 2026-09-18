@@ -47,9 +47,20 @@ final readonly class TransactionStatusClient
                 'transactionSuccess' => false,
                 'transactionStatusDescription' => '',
                 'msg' => "SISP transaction status request failed with HTTP {$response->status()}.",
-            ]);
+            ], answered: false);
         }
 
-        return TransactionStatusResponse::from($response->json() ?? []);
+        $data = $response->json();
+
+        if (! is_array($data)) {
+            return TransactionStatusResponse::from([
+                'result' => false,
+                'transactionSuccess' => false,
+                'transactionStatusDescription' => '',
+                'msg' => 'SISP transaction status response was not a JSON object.',
+            ], answered: false);
+        }
+
+        return TransactionStatusResponse::from($data);
     }
 }

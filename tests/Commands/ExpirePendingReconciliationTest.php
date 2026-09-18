@@ -75,3 +75,23 @@ it('does not ask SISP when reconciliation is disabled', function (): void {
     expect($transaction->refresh()->status)->toBe(TransactionStatus::cancelled);
     Http::assertNothingSent();
 });
+
+it('leaves a transaction pending when SISP answers with an HTTP error', function (int $status): void {
+    Http::fake(['*' => Http::response(['result' => false], $status)]);
+    $transaction = expirable_pending_transaction();
+
+    $this->artisan('sisp:expire-pending')
+        ->expectsOutput('Expired 0 pending SISP transactions older than 30 days.')
+        ->assertSuccessful();
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
+})->with([401, 500, 503]);
+
+it('leaves a transaction pending when SISP answers with something other than JSON', function (): void {
+    Http::fake(['*' => Http::response('<html>maintenance</html>')]);
+    $transaction = expirable_pending_transaction();
+
+    $this->artisan('sisp:expire-pending')->assertSuccessful();
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
+});
