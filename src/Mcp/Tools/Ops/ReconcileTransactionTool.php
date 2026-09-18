@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 
 #[IsIdempotent]
-#[Description('Reconcile a stored transaction against the SISP gateway and persist the resolved status. Safe to call repeatedly.')]
+#[Description('Reconcile a stored transaction against the SISP gateway and write the resolved status to it. Safe to repeat, but it changes stored state.')]
 final class ReconcileTransactionTool extends Tool
 {
     use AuthorizesTransactionOps;

@@ -11,6 +11,7 @@ use Akira\Sisp\Mcp\Servers\SispDevServer;
 use Akira\Sisp\Mcp\Servers\SispOpsServer;
 use Akira\Sisp\Mcp\Servers\SispWebOpsServer;
 use Akira\Sisp\Mcp\Tools\Ops\CancelTransactionTool;
+use Akira\Sisp\Mcp\Tools\Ops\ReconcileTransactionTool;
 use Akira\Sisp\Mcp\Tools\Ops\RefundTransactionTool;
 use Laravel\Mcp\Server\Transport\FakeTransporter;
 
@@ -46,6 +47,7 @@ it('hides destructive tools on the web server by default', function (): void {
     config()->set('sisp.mcp.web.expose_destructive', false);
 
     expect(webOpsTools())
+        ->not->toContain(ReconcileTransactionTool::class)
         ->not->toContain(RefundTransactionTool::class)
         ->not->toContain(CancelTransactionTool::class);
 });
@@ -54,6 +56,7 @@ it('exposes destructive tools on the web server when opted in', function (): voi
     config()->set('sisp.mcp.web.expose_destructive', true);
 
     expect(webOpsTools())
+        ->toContain(ReconcileTransactionTool::class)
         ->toContain(RefundTransactionTool::class)
         ->toContain(CancelTransactionTool::class);
 });
