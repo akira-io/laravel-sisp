@@ -411,11 +411,11 @@ Yes, when you have valid SISP credentials. Always test in sandbox mode first.
 
 ### What Laravel versions are supported?
 
-Laravel 13+ (v2). Use the 1.x release line for Laravel 12.
+Laravel 13+ (v2). The 1.x line supports Laravel 12 until 3.0.0 is released, when it reaches end of life. See [Supported Versions](../SECURITY.md#supported-versions).
 
 ### What PHP versions are supported?
 
-PHP 8.5+ (v2). Use the 1.x release line for PHP 8.4.
+PHP 8.5+ (v2). The 1.x line supports PHP 8.4 until 3.0.0 is released, when it reaches end of life.
 
 ## Still Have Questions?
 
