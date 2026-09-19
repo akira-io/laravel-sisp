@@ -449,6 +449,8 @@ TransactionRefunded::class {
     public Transaction $transaction
     public float $refundAmount
     public string $reason
+    public ?Refund $refund          // the sisp_refunds row recorded for this refund
+    public ?float $remainingAmount  // refundable balance left after this refund
 }
 ```
 

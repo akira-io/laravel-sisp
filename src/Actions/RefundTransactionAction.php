@@ -6,7 +6,9 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\RefundLedger;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\RefundRequest;
@@ -18,6 +20,7 @@ final readonly class RefundTransactionAction
     public function __construct(
         private BuildRefundRequestAction $buildRefundRequest,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
+        private RefundLedger $ledger,
     ) {}
 
     public function handle(
@@ -34,11 +37,11 @@ final readonly class RefundTransactionAction
             'Idempotency key must be a non-blank string of at most 255 characters.'
         );
 
-        [$refunded, $replayed] = DB::transaction(function () use ($transaction, $refundAmount, $reason, $idempotencyKey): array {
+        [$refunded, $refund, $remainingThousandths] = DB::transaction(function () use ($transaction, $refundAmount, $reason, $idempotencyKey): array {
             $locked = $transaction->newQuery()->whereKey($transaction->getKey())->lockForUpdate()->first();
 
             if ($locked instanceof Transaction && $this->isReplay($locked, $refundAmount, $idempotencyKey)) {
-                return [$locked, true];
+                return [$locked, null, null];
             }
 
             if (! $locked instanceof Transaction || ! $this->canBeRefunded($locked)) {
@@ -48,7 +51,7 @@ final readonly class RefundTransactionAction
             }
 
             $refundThousandths = SispAmount::toThousandths($refundAmount);
-            $refundableThousandths = $this->refundableThousandths($locked);
+            $refundableThousandths = $this->ledger->refundableThousandths($locked);
 
             throw_if($refundThousandths <= 0, LogicException::class, 'Refund amount must be greater than 0.');
 
@@ -60,7 +63,9 @@ final readonly class RefundTransactionAction
 
             $request = $this->buildRefundRequest($locked, $refundAmount);
             $payload = $this->appendRefundPayload($locked, $request->toArray(), $reason, $idempotencyKey);
-            $status = $refundableThousandths === $refundThousandths
+            $refund = $this->recordRefund($locked, $request->toArray(), $reason, $idempotencyKey);
+            $remainingThousandths = $refundableThousandths - $refundThousandths;
+            $status = $this->ledger->isSettled($remainingThousandths)
                 ? TransactionStatus::refunded
                 : TransactionStatus::completed;
 
@@ -78,11 +83,17 @@ final readonly class RefundTransactionAction
                 $this->updateInvoiceStatus->handle($locked, $status);
             }
 
-            return [$locked, false];
+            return [$locked, $refund, $remainingThousandths];
         });
 
-        if (! $replayed) {
-            event(new TransactionRefunded($refunded, $refundAmount, $reason));
+        if ($refund instanceof Refund && $remainingThousandths !== null) {
+            event(new TransactionRefunded(
+                $refunded,
+                $refundAmount,
+                $reason,
+                $refund,
+                SispAmount::fromThousandths($this->ledger->isSettled($remainingThousandths) ? 0 : $remainingThousandths),
+            ));
         }
 
         return $refunded;
@@ -90,7 +101,7 @@ final readonly class RefundTransactionAction
 
     public function refundableAmount(Transaction $transaction): float
     {
-        return SispAmount::fromThousandths($this->refundableThousandths($transaction));
+        return SispAmount::fromThousandths($this->ledger->refundableThousandths($transaction));
     }
 
     private function isValidIdempotencyKey(string $idempotencyKey): bool
@@ -127,7 +138,7 @@ final readonly class RefundTransactionAction
     private function buildRefundRequest(Transaction $transaction, float $refundAmount): RefundRequest
     {
         $transactionAmount = SispAmount::toThousandths($transaction->amount);
-        $alreadyRefunded = $this->refundedThousandths($transaction);
+        $alreadyRefunded = $this->ledger->refundedThousandths($transaction);
         $refundAmount = SispAmount::toThousandths($refundAmount);
 
         if ($alreadyRefunded === 0 && $refundAmount === $transactionAmount) {
@@ -137,65 +148,18 @@ final readonly class RefundTransactionAction
         return $this->buildRefundRequest->partial($transaction, SispAmount::fromThousandths($refundAmount));
     }
 
-    private function refundableThousandths(Transaction $transaction): int
-    {
-        return max(0, SispAmount::toThousandths($transaction->amount) - $this->refundedThousandths($transaction));
-    }
-
-    private function refundedThousandths(Transaction $transaction): int
-    {
-        return max(
-            $this->legacyRefundedThousandths($transaction),
-            (int) $transaction->refunds()->sum('amount_thousandths'),
-        );
-    }
-
-    private function legacyRefundedThousandths(Transaction $transaction): int
-    {
-        return array_sum(array_map(
-            fn (array $refund): int => SispAmount::toThousandths($this->entryAmount($refund)),
-            $this->legacyRefunds($transaction),
-        ));
-    }
-
-    /**
-     * @return array<int, array<array-key, mixed>>
-     */
-    private function legacyRefunds(Transaction $transaction): array
-    {
-        $payload = $transaction->getAttribute('payload');
-        $payload = is_array($payload) ? $payload : [];
-        $refunds = $payload['refunds'] ?? [];
-
-        if (! is_array($refunds)) {
-            return [];
-        }
-
-        return array_values(array_filter($refunds, is_array(...)));
-    }
-
-    /**
-     * @param  array<array-key, mixed>  $refund
-     */
-    private function entryAmount(array $refund): float
-    {
-        $amount = $refund['amount'] ?? 0;
-
-        return is_numeric($amount) ? (float) $amount : 0.0;
-    }
-
     private function backfillLegacyRefunds(Transaction $transaction): void
     {
         if ($transaction->refunds()->exists()) {
             return;
         }
 
-        foreach ($this->legacyRefunds($transaction) as $refund) {
+        foreach ($this->ledger->payloadRefunds($transaction) as $refund) {
             $reason = $refund['reason'] ?? null;
             $request = $refund['request'] ?? [];
 
             $transaction->refunds()->create([
-                'amount' => $this->entryAmount($refund),
+                'amount' => $this->ledger->entryAmount($refund),
                 'reason' => is_string($reason) ? $reason : null,
                 'request' => is_array($request) ? $request : [],
             ]);
@@ -208,8 +172,6 @@ final readonly class RefundTransactionAction
      */
     private function appendRefundPayload(Transaction $transaction, array $request, string $reason, ?string $idempotencyKey): array
     {
-        $this->backfillLegacyRefunds($transaction);
-
         $payload = $transaction->getAttribute('payload');
         $payload = is_array($payload) ? $payload : [];
         $refunds = $payload['refunds'] ?? [];
@@ -222,13 +184,21 @@ final readonly class RefundTransactionAction
         ], fn (mixed $value): bool => $value !== null);
         $payload['refunds'] = $refunds;
 
-        $transaction->refunds()->create([
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, float|string>  $request
+     */
+    private function recordRefund(Transaction $transaction, array $request, string $reason, ?string $idempotencyKey): Refund
+    {
+        $this->backfillLegacyRefunds($transaction);
+
+        return $transaction->refunds()->create([
             'amount' => (float) $request['amount'],
             'reason' => $reason,
             'idempotency_key' => $idempotencyKey,
             'request' => $request,
         ]);
-
-        return $payload;
     }
 }

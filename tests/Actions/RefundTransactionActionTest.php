@@ -6,7 +6,9 @@ use Akira\Sisp\Actions\GenerateInvoiceAction;
 use Akira\Sisp\Actions\RefundTransactionAction;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\Event;
 
 it('refunds a completed transaction for the full original amount', function (): void {
     $t = Transaction::factory()->create([
@@ -236,4 +238,45 @@ it('counts refunds recorded in the refunds table but missing from the payload', 
     $transaction->refunds()->create(['amount' => 50.0, 'reason' => 'payload_overwritten', 'request' => []]);
 
     expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))->toBe(20.0);
+});
+
+it('fully refunds a transaction whose parts leave less than a centavo', function (): void {
+    Event::fake([TransactionRefunded::class]);
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    $action = resolve(RefundTransactionAction::class);
+
+    $t = $action->handle($t, 33.333333);
+    $t = $action->handle($t, 33.333333);
+
+    expect($t->status)->toBe(TransactionStatus::completed);
+
+    $t = $action->handle($t, 33.333333);
+
+    expect($t->status)->toBe(TransactionStatus::refunded)
+        ->and($t->refundableAmount())->toBe(0.0)
+        ->and($t->isPartiallyRefunded())->toBeFalse();
+
+    Event::assertDispatched(
+        TransactionRefunded::class,
+        fn (TransactionRefunded $event): bool => $event->remainingAmount === 0.0 && $event->transaction->status === TransactionStatus::refunded,
+    );
+});
+
+it('keeps a transaction completed while a centavo or more is left to refund', function (): void {
+    $t = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    $t = resolve(RefundTransactionAction::class)->handle($t, 99.99);
+
+    expect($t->status)->toBe(TransactionStatus::completed)
+        ->and($t->refundableAmount())->toBe(0.01);
 });

@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Akira\Sisp\Support;
+
+use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Models\Transaction;
+
+final readonly class RefundLedger
+{
+    public const int SMALLEST_REFUNDABLE_THOUSANDTHS = 10;
+
+    public function refundedThousandths(Transaction $transaction): int
+    {
+        $fromPayload = array_sum(array_map(
+            fn (array $refund): int => SispAmount::toThousandths($this->entryAmount($refund)),
+            $this->payloadRefunds($transaction),
+        ));
+
+        return max($fromPayload, $this->recordedThousandths($transaction));
+    }
+
+    public function refundableThousandths(Transaction $transaction): int
+    {
+        if ($transaction->status !== TransactionStatus::completed) {
+            return 0;
+        }
+
+        $remaining = SispAmount::toThousandths($transaction->amount) - $this->refundedThousandths($transaction);
+
+        return $this->isSettled($remaining) ? 0 : $remaining;
+    }
+
+    public function isSettled(int $remainingThousandths): bool
+    {
+        return $remainingThousandths < self::SMALLEST_REFUNDABLE_THOUSANDTHS;
+    }
+
+    /**
+     * @return array<int, array<array-key, mixed>>
+     */
+    public function payloadRefunds(Transaction $transaction): array
+    {
+        $payload = $transaction->getAttribute('payload');
+        $payload = is_array($payload) ? $payload : [];
+        $refunds = $payload['refunds'] ?? [];
+
+        if (! is_array($refunds)) {
+            return [];
+        }
+
+        return array_values(array_filter($refunds, is_array(...)));
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $refund
+     */
+    public function entryAmount(array $refund): float
+    {
+        $amount = $refund['amount'] ?? 0;
+
+        return is_numeric($amount) ? (float) $amount : 0.0;
+    }
+
+    private function recordedThousandths(Transaction $transaction): int
+    {
+        if ($transaction->relationLoaded('refunds')) {
+            return (int) $transaction->refunds->sum('amount_thousandths');
+        }
+
+        return (int) $transaction->refunds()->sum('amount_thousandths');
+    }
+}
