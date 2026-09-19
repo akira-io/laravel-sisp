@@ -249,7 +249,7 @@ Invalid POST callbacks are rejected by `CallbackController` before transaction l
 
 ### Payment Result Page
 
-The result page at `GET /sisp/callback?ref=<merchant_ref>` renders only for a URL signed by `BuildPaymentResultUrlAction`, which expires after 30 minutes. The POST callback and the signed cancel route redirect the customer to that URL. An unsigned, expired or altered link redirects to `config('sisp.redirect_url', '/')`, so a merchant reference alone does not reveal a payment, its invoice or its retry link. The Inertia props do not include `merchant_session`.
+The result page at `GET /sisp/callback?ref=<merchant_ref>` shows everything only for a URL signed by `BuildPaymentResultUrlAction`, which expires after 30 minutes. The POST callback and the signed cancel route redirect the customer to that URL. An unsigned, expired or altered link gets a reduced page: status, amount, currency, reference and refusal reason, without the merchant session, the invoice or the retry link, so a merchant reference alone does not open the retry form or the invoice. Unknown references redirect to `config('sisp.redirect_url', '/')`.
 
 ### Callback Fingerprint Formulas
 

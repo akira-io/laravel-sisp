@@ -139,5 +139,6 @@ it('redirects a signed cancellation to a result page link that expires', functio
     $this->travel(31)->minutes();
 
     $this->get((string) $response->headers->get('Location'))
-        ->assertRedirect(config('sisp.redirect_url', '/'));
+        ->assertOk()
+        ->assertDontSee('/sisp/retry-payment', false);
 });

@@ -33,13 +33,32 @@ it('renderInertia includes invoice data when present', function (): void {
         ->and($data['props']['invoice']['pdf_url'])->toContain('invoices/test.pdf');
 });
 
-it('renderInertia does not expose the merchant session', function (): void {
-    $transaction = Transaction::factory()->create(['merchant_session' => 'MS-SECRET']);
+it('renderInertia keeps the merchant session on the full page', function (): void {
+    $transaction = Transaction::factory()->create(['merchant_session' => 'MS-OWNER']);
 
     $request = request();
     $request->headers->set(Header::INERTIA, 'true');
     $data = resolve(RenderPaymentResponseAction::class)->renderInertia($transaction, [])->toResponse($request)->getData(true);
 
+    expect($data['props']['transaction']['merchant_session'])->toBe('MS-OWNER');
+});
+
+it('renderInertia leaves the merchant session, the invoice and the retry link out of the reduced page', function (): void {
+    $transaction = Transaction::factory()->create(['merchant_session' => 'MS-SECRET', 'status' => 'failed']);
+    Invoice::query()->create([
+        'transaction_id' => $transaction->id,
+        'invoice_number' => 'INV-REDUCED-1',
+        'invoice_date' => now(),
+        'status' => 'pending',
+    ]);
+
+    $request = request();
+    $request->headers->set(Header::INERTIA, 'true');
+    $data = resolve(RenderPaymentResponseAction::class)->renderInertia($transaction, [], restricted: true)->toResponse($request)->getData(true);
+
     expect($data['props']['transaction'])->not->toHaveKey('merchant_session')
-        ->and($data['props']['transaction']['merchant_ref'])->toBe($transaction->merchant_ref);
+        ->and($data['props']['transaction']['merchant_ref'])->toBe($transaction->merchant_ref)
+        ->and($data['props']['invoice'])->toBeNull()
+        ->and($data['props']['allowRetry'])->toBeFalse()
+        ->and($data['props']['retryUrl'])->toBeNull();
 });

@@ -801,8 +801,9 @@ Handles the SISP callback route.
 
 ```php
 // GET /sisp/callback?ref=<merchant_ref>&expires=...&signature=...
-// Renders the payment response for a known merchant reference
-// when the URL carries a valid signature (see BuildPaymentResultUrlAction).
+// Renders the payment response for a known merchant reference: the full
+// page when the URL carries a valid signature (see BuildPaymentResultUrlAction),
+// a reduced page without session, invoice or retry link otherwise.
 
 // POST /sisp/callback
 // 1. Logs a user cancellation, which SISP posts as

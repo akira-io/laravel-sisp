@@ -21,9 +21,9 @@ final readonly class RenderPaymentResponseAction
         private InertiaAvailability $inertiaAvailability,
     ) {}
 
-    public function renderBlade(Transaction $transaction, array $payload): View
+    public function renderBlade(Transaction $transaction, array $payload, bool $restricted = false): View
     {
-        $allowRetry = $this->canRetryPayment->handle($transaction);
+        $allowRetry = ! $restricted && $this->canRetryPayment->handle($transaction);
 
         /** @var view-string $view */
         $view = 'sisp::payment-response';
@@ -37,25 +37,17 @@ final readonly class RenderPaymentResponseAction
         ]);
     }
 
-    public function renderInertia(Transaction $transaction, array $payload, string $component = 'Sisp/PaymentResponse'): mixed
+    public function renderInertia(Transaction $transaction, array $payload, string $component = 'Sisp/PaymentResponse', bool $restricted = false): mixed
     {
         if (! $this->inertiaAvailability->available()) {
-            return $this->renderBlade($transaction, $payload);
+            return $this->renderBlade($transaction, $payload, $restricted);
         }
 
-        $invoice = $transaction->invoice;
-        $allowRetry = $this->canRetryPayment->handle($transaction);
+        $invoice = $restricted ? null : $transaction->invoice;
+        $allowRetry = ! $restricted && $this->canRetryPayment->handle($transaction);
 
         return Inertia::render($component, [
-            'transaction' => [
-                'id' => $transaction->id,
-                'status' => $transaction->status,
-                'amount' => $transaction->amount,
-                'formatted_amount' => $transaction->formatted_amount,
-                'currency' => $transaction->currency,
-                'merchant_ref' => $transaction->merchant_ref,
-                'message_type' => $transaction->message_type,
-            ],
+            'transaction' => $this->transactionProps($transaction, $restricted),
             'error' => $this->getStructuredError($transaction),
             'translations' => $this->getTranslations->handle(),
             'allowRetry' => $allowRetry,
@@ -69,6 +61,27 @@ final readonly class RenderPaymentResponseAction
             ] : null,
             'payload' => $payload,
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function transactionProps(Transaction $transaction, bool $restricted): array
+    {
+        $props = [
+            'id' => $transaction->id,
+            'status' => $transaction->status,
+            'amount' => $transaction->amount,
+            'formatted_amount' => $transaction->formatted_amount,
+            'currency' => $transaction->currency,
+            'merchant_ref' => $transaction->merchant_ref,
+            'merchant_session' => $transaction->merchant_session,
+            'message_type' => $transaction->message_type,
+        ];
+
+        if ($restricted) {
+            unset($props['merchant_session']);
+        }
+
+        return $props;
     }
 
     /** @return array<string, string>|null */
