@@ -64,7 +64,7 @@ final readonly class RefundTransactionAction
             TransactionLogContext::run(
                 'refund',
                 fn (): bool => $transaction->update([
-                    'status' => $remainingThousandths === 0 ? TransactionStatus::refunded->value : TransactionStatus::completed->value,
+                    'status' => $this->ledger->isSettled($remainingThousandths) ? TransactionStatus::refunded->value : TransactionStatus::completed->value,
                     'merchant_response' => "{$reason}::{$refundAmount}",
                     'payload' => $payload,
                     'refunded_at' => now(),
@@ -79,7 +79,7 @@ final readonly class RefundTransactionAction
             $refundAmount,
             $reason,
             $refund,
-            SispAmount::fromThousandths($remainingThousandths),
+            SispAmount::fromThousandths($this->ledger->isSettled($remainingThousandths) ? 0 : $remainingThousandths),
         ));
 
         return $transaction;
