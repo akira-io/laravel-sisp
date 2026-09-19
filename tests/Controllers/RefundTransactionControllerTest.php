@@ -226,3 +226,66 @@ it('returns 400 instead of a server error for an amount too large to convert', f
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 })->with(['1e20', '1e400']);
+
+it('refunds a retried request with the same idempotency key only once', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+    $payload = ['amount' => 40.0, 'idempotency_key' => 'http-retry-1'];
+
+    $this->actingAs(new RefundRouteUser())->postJson(route('sisp.refund', $transaction), $payload)->assertOk();
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), $payload)
+        ->assertOk()
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('transaction.status', TransactionStatus::completed->value)
+        ->assertJsonPath('transaction.merchant_response', 'user_refund::40');
+
+    expect($transaction->refunds()->count())->toBe(1)
+        ->and($transaction->refresh()->payload['refunds'])->toHaveCount(1);
+});
+
+it('returns 400 when the idempotency key is reused with another amount', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 40.0, 'idempotency_key' => 'http-retry-2'])
+        ->assertOk();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 30.0, 'idempotency_key' => 'http-retry-2'])
+        ->assertStatus(400)
+        ->assertJsonPath('message', 'Idempotency key was already used for a refund of a different amount.');
+
+    expect($transaction->refunds()->count())->toBe(1);
+});
+
+it('rejects an idempotency key that is not a short string', function (mixed $key): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 40.0, 'idempotency_key' => $key])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('idempotency_key');
+
+    expect($transaction->refunds()->count())->toBe(0);
+})->with([
+    'too long' => [str_repeat('k', 256)],
+    'array' => [['k']],
+    'integer' => [123],
+]);
+
+it('treats a null or empty idempotency key as no key', function (mixed $key): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 40.0, 'idempotency_key' => $key])
+        ->assertOk();
+
+    expect($transaction->refunds()->sole()->idempotency_key)->toBeNull();
+})->with([
+    'null' => [null],
+    'empty' => [''],
+]);

@@ -1,6 +1,6 @@
 # Upgrading from 2.x to 3.0
 
-Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and four new migrations must be published and run.
+Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and five new migrations must be published and run.
 
 **Estimated effort:**
 
@@ -154,7 +154,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 
 ## Database migrations (action required)
 
-3.0 ships four new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+3.0 ships five new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
 
 | Migration | What it does |
 | --- | --- |
@@ -162,6 +162,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 | `create_sisp_refunds_table` | Creates the refunds table (`sisp.tables.refunds`, default `sisp_refunds`) and copies the refund history stored in each transaction's `payload['refunds']` into it. The copy skips transactions already present in the table, so it is safe to re-run after an interruption. Transactions whose payload cannot be read are listed in a `SISP refund history could not be read for some transactions.` warning in the log. |
 | `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
 | `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
+| `update_sisp_refunds_add_idempotency_key` | Adds a nullable `idempotency_key` column to the refunds table and a unique index on `transaction_id` and `idempotency_key`. It also gives `transaction_id` an index of its own, so the foreign key does not depend on the unique index. It must run after `create_sisp_refunds_table` and before 3.0 takes refunds: 3.0 writes the column on every refund, keyed or not. |
 
 ```bash
 php artisan vendor:publish --tag=sisp-migrations
@@ -174,7 +175,7 @@ Plan the deploy around these points:
 
 - **Run the upgrade in maintenance mode** (`php artisan down`), or at least stop taking refunds, from the moment `migrate` starts until 3.0 serves every request. The callback writes the new columns, and once a transaction has rows in the refunds table 3.0 counts refunds only from that table. A refund that a still-running 2.x release records after the copy lands only in `payload['refunds']`, so 3.0 would overstate the refundable amount and allow the same money to be refunded twice. Zero-downtime deploys that run `migrate` before switching releases hit exactly this window.
 - **Large transactions tables take time and locks.** The refunds copy reads every transaction, payload included, and writes one row per refund; on PostgreSQL and SQLite the whole migration runs in one database transaction, so an interrupted run starts over. The index on `status` and `created_at` is created without `CONCURRENTLY`, which blocks writes to the transactions table on PostgreSQL while it builds, and on MySQL before 8.0.29 the new columns rebuild the table. Run it in a low-traffic window, or create the `status`/`created_at` index yourself beforehand: the migration skips an index that already exists.
-- **Back up before rolling back.** Rolling back `update_laravel_sisp_transactions_add_callback_error_fields` drops `error_code`, `error_message` and `callback_raw_payload` for good. Rolling back the refunds table loses nothing, because every refund is still mirrored in `payload['refunds']`.
+- **Back up before rolling back.** Rolling back `update_laravel_sisp_transactions_add_callback_error_fields` drops `error_code`, `error_message` and `callback_raw_payload` for good. Rolling back the refunds table loses nothing, because every refund is still mirrored in `payload['refunds']`. Rolling back `update_sisp_refunds_add_idempotency_key` drops the stored keys, so a retry sent after the rollback with a key used before it is refunded again.
 
 The refund history is still appended to `payload['refunds']` as well, so code reading it keeps working. New code should read `$transaction->refunds()` (`Akira\Sisp\Models\Refund`).
 
@@ -229,6 +230,7 @@ See [docs/09-troubleshooting.md](docs/09-troubleshooting.md#cleanup-commands) fo
 - **The cancellation callback requires both identifiers.** It only cancels a `pending` transaction matching a non-empty `merchantRef` and `merchantSession`. The callback route now carries the `throttle:sisp-callback` middleware, which limits cancellation callbacks (`UserCancelled` or `userCancelled`) to 10 per minute per merchant reference and 30 per minute per IP address; override it with `sisp.middleware.callback`. Behind a load balancer, configure `TrustProxies` so customers do not share one address bucket. Do not rely on it to protect guessable references.
 - **Status comes from the documented message type table.** Only `messageType = 6` fails a transaction. A known success message type completes it only when `merchantResp` has the expected value; otherwise the transaction stays `pending` and a warning is logged.
 - **Refused callbacks keep their reason.** The error fingerprint formula validates SISP refusals, and the refusal code and message are stored in `error_code` and `error_message` and shown on the response screen. The raw callback is stored encrypted in `callback_raw_payload`, with the card number masked to its last four digits, and encrypted attributes are redacted in `sisp_transaction_logs`.
+- **Refunds accept an idempotency key.** `RefundTransactionAction::handle()` takes an optional fourth argument `?string $idempotencyKey`, `RefundBuilder` has `idempotencyKey()`, and `POST /sisp/refund/{transaction}` accepts `idempotency_key`. A retry with the same key and amount returns the transaction without refunding again or dispatching `TransactionRefunded`; the same key with another amount is refused with `LogicException` (400 on the route). Calls without a key behave as before, so a client that retries after a timeout without a key can still refund twice. See [docs/05-transaction-management.md](docs/05-transaction-management.md#idempotent-refunds).
 - **Deprecations.** `ErrorMessageType` and `GetPaymentErrorResponseAction` are deprecated and no longer used by the package. They remain for published views that read the old error array shape.
 
 ---
@@ -264,6 +266,7 @@ Finally, run a sandbox payment end to end (`SISP_SANDBOX=true`), one refused pay
 - [ ] `match` expressions and invoice queries handle `InvoiceStatus::refunded`
 - [ ] Direct calls to `CancelTransactionAction` handle `LogicException` for `failed` and `refunded` transactions
 - [ ] Clients of `POST /sisp/refund/{transaction}` handle a 422 response
+- [ ] Clients that retry `POST /sisp/refund/{transaction}` send an `idempotency_key`
 - [ ] No manual `new` instantiation of the classes in the constructor table
 - [ ] `TransactionCancelled` listeners reviewed for the callback and `expire-pending` paths
 - [ ] `sisp:expire-pending` and `sisp:prune-request-payloads` scheduled, if you want them

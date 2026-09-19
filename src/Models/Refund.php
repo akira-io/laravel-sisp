@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read  float $amount
  * @property-read  int $amount_thousandths
  * @property-read  string|null $reason
+ * @property-read  string|null $idempotency_key
  * @property-read  array<string, mixed>|null $request
  * @property-read  Transaction $transaction
  */
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'transaction_id',
     'amount',
     'reason',
+    'idempotency_key',
     'request',
 ])]
 final class Refund extends Model

@@ -294,6 +294,30 @@ $transaction = app(RefundTransactionAction::class)->handle(
 );
 ```
 
+### Idempotent Refunds
+
+A refund that times out on the client can be retried safely by sending the same idempotency key with each attempt. The first call refunds; a later call with the same key and the same amount returns the transaction as it stands, without a second refund and without a second `TransactionRefunded` event:
+
+```php
+$transaction = Sisp::refund($transaction)
+    ->amount(40.00)
+    ->idempotencyKey($orderReturn->uuid)
+    ->process();
+
+$transaction = app(RefundTransactionAction::class)->handle(
+    transaction: $transaction,
+    refundAmount: 40.00,
+    reason: 'partial_return',
+    idempotencyKey: $orderReturn->uuid,
+);
+```
+
+- The key is scoped to the transaction: the same key on another transaction is a new refund.
+- Reusing a key with a different amount throws `LogicException`.
+- A blank key, or one longer than 255 characters, throws `LogicException` before anything is refunded.
+- The key is stored in the `idempotency_key` column of the refunds table, with a unique index on `transaction_id` and `idempotency_key`.
+- Without a key every call is a new refund, as before. Generate one key per intended refund, not per attempt.
+
 ### Refund Rules
 
 Can be refunded:
@@ -341,16 +365,17 @@ POST to `/sisp/refund/{transaction}`:
 POST /sisp/refund/{transaction}
 {
     "amount": 500.00,
-    "reason": "customer_request"
+    "reason": "customer_request",
+    "idempotency_key": "return-8f14e45f"
 }
 ```
 
-`amount` is required, numeric and must be greater than zero. `reason` is optional, a string of at most 255 characters, and defaults to `user_refund`.
+`amount` is required, numeric and must be greater than zero. `reason` is optional, a string of at most 255 characters, and defaults to `user_refund`. `idempotency_key` is optional, a string of at most 255 characters, and `null` or an empty string count as no key; a retry with the same key and amount answers `200` without refunding again (see [Idempotent Refunds](#idempotent-refunds)).
 
 Responses:
 
 - `200` the refund succeeded, with the updated transaction in the body
-- `400` the transaction cannot be refunded, or the amount exceeds the refundable balance
+- `400` the transaction cannot be refunded, the amount exceeds the refundable balance, or the idempotency key was already used with a different amount
 - `403` the authenticated user is not allowed to refund this transaction
 - `422` the payload failed validation, with the messages under `errors`
 

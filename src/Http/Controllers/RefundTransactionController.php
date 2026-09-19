@@ -23,6 +23,7 @@ final readonly class RefundTransactionController
                 $transaction,
                 $request->refundAmount(),
                 $request->refundReason(),
+                $request->refundIdempotencyKey(),
             );
 
             return response()->json([

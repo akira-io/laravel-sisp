@@ -533,10 +533,11 @@ $builder = Sisp::payment();
 $transaction = Sisp::refund($transaction)
     ->amount(500.0)          // or ->full()
     ->reason('user_refund')  // optional, defaults to user_refund
+    ->idempotencyKey($key)   // optional, makes a retry safe
     ->process();             // returns the updated Transaction
 ```
 
-`process()` throws `LogicException` when no amount was set, when the transaction is not refundable, or when the amount exceeds the refundable balance.
+`process()` throws `LogicException` when no amount was set, when the transaction is not refundable, when the amount exceeds the refundable balance, when the idempotency key is blank or longer than 255 characters, or when the key was already used with a different amount.
 
 ## Drivers (v2)
 
@@ -698,11 +699,14 @@ Refund a completed transaction. The action supports SISP total reversal and part
 app(RefundTransactionAction::class)->handle(
     Transaction $transaction,
     float $refundAmount,
-    string $reason = 'user_refund'
+    string $reason = 'user_refund',
+    ?string $idempotencyKey = null
 ): Transaction
 
 // Throws LogicException if cannot refund
 ```
+
+With an idempotency key, a refund already recorded under that key for the transaction is answered with the transaction as it stands, without a new refund or a new `TransactionRefunded` event. See [Idempotent Refunds](05-transaction-management.md#idempotent-refunds).
 
 ### BuildRefundRequestAction
 
