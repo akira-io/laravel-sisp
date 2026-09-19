@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Mcp\Servers\SispOpsServer;
 use Akira\Sisp\Mcp\Tools\Ops\CancelTransactionTool;
 use Akira\Sisp\Mcp\Tools\Ops\RefundTransactionTool;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\Event;
 
 it('refunds a completed transaction in full', function (): void {
     $transaction = Transaction::factory()->completed()->create([
@@ -102,3 +104,38 @@ it('reports why a failed or refunded transaction cannot be cancelled', function 
 
     expect($transaction->fresh()->status->value)->toBe($status);
 })->with(['failed', 'refunded']);
+
+it('refunds once when a retried call repeats the idempotency key', function (): void {
+    Event::fake([TransactionRefunded::class]);
+    $transaction = Transaction::factory()->completed()->create([
+        'amount' => 100.0,
+        'merchant_ref' => 'REF-RETRY',
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+    $arguments = ['transaction' => 'REF-RETRY', 'amount' => 40.0, 'idempotency_key' => 'agent-retry-1'];
+
+    SispOpsServer::tool(RefundTransactionTool::class, $arguments)->assertOk();
+    SispOpsServer::tool(RefundTransactionTool::class, $arguments)->assertOk();
+
+    expect($transaction->refunds()->count())->toBe(1)
+        ->and($transaction->refunds()->sum('amount_thousandths'))->toBe(40000);
+
+    Event::assertDispatchedTimes(TransactionRefunded::class, 1);
+});
+
+it('refuses to reuse an idempotency key for another amount', function (): void {
+    $transaction = Transaction::factory()->completed()->create([
+        'amount' => 100.0,
+        'merchant_ref' => 'REF-REUSE',
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    SispOpsServer::tool(RefundTransactionTool::class, ['transaction' => 'REF-REUSE', 'amount' => 40.0, 'idempotency_key' => 'agent-key'])->assertOk();
+
+    SispOpsServer::tool(RefundTransactionTool::class, ['transaction' => 'REF-REUSE', 'amount' => 30.0, 'idempotency_key' => 'agent-key'])
+        ->assertHasErrors(['Refund failed']);
+
+    expect($transaction->refunds()->count())->toBe(1);
+});

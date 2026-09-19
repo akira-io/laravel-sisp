@@ -39,6 +39,7 @@ final class RefundTransactionTool extends Tool
                 $transaction,
                 (float) $validated['amount'],
                 (string) ($validated['reason'] ?? 'user_refund'),
+                isset($validated['idempotency_key']) ? (string) $validated['idempotency_key'] : null,
             );
         } catch (LogicException $e) {
             return Response::error('Refund failed: '.$e->getMessage());
@@ -61,6 +62,8 @@ final class RefundTransactionTool extends Tool
                 ->required(),
             'reason' => $schema->string()
                 ->description('Reason recorded with the refund.'),
+            'idempotency_key' => $schema->string()
+                ->description('Key that makes a retried refund safe: repeating the call with the same key and amount refunds once. Reuse it when retrying after a timeout.'),
         ];
     }
 }

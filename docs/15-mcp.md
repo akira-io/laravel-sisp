@@ -144,10 +144,11 @@ They never return the merchant session, the request or callback payloads, the ca
 data.
 
 Refund takes the same payload as the HTTP refund route: `amount` is required and must be greater than
-zero, `reason` is optional and at most 255 characters. It runs through `RefundTransactionAction`, which
-locks the transaction row, refuses anything but a completed transaction and never refunds more than the
-remaining balance. A repeated partial refund is a second refund: confirm before retrying one that timed
-out. Cancel runs through `CancelTransactionAction` and reports why a completed, failed, refunded or
+zero, `reason` is optional and at most 255 characters, and `idempotency_key` is optional. It runs through
+`RefundTransactionAction`, which locks the transaction row, refuses anything but a completed transaction
+and never refunds more than the remaining balance. Pass an `idempotency_key` and reuse it when retrying
+after a timeout: the same key and amount refund once, and the same key with another amount is refused.
+Without a key, a repeated partial refund is a second refund. Cancel runs through `CancelTransactionAction` and reports why a completed, failed, refunded or
 already cancelled transaction cannot be cancelled.
 
 ## Resources and prompts
