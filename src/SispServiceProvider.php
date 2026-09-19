@@ -70,6 +70,7 @@ final class SispServiceProvider extends PackageServiceProvider
         $this->registerComponents();
         $this->registerFactories();
         $this->registerCallbackRateLimiter();
+        $this->registerMcp();
 
         return parent::boot();
     }
@@ -90,6 +91,15 @@ final class SispServiceProvider extends PackageServiceProvider
 
             return [Limit::perMinute(10)->by('ref:'.$merchantRef), $perAddress];
         });
+    }
+
+    private function registerMcp(): void
+    {
+        if (! config('sisp.mcp.enabled', false)) {
+            return;
+        }
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
     }
 
     private function registerFactories(): void

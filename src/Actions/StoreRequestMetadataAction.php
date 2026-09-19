@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Models\RequestMetadata;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\SensitiveData;
 use Exception;
 use Illuminate\Http\Request;
 use Stevebauman\Location\Facades\Location;
@@ -45,55 +46,17 @@ final readonly class StoreRequestMetadataAction
     }
 
     /**
-     * @return array{
-     *     method: string,
-     *     path: string,
-     *     query: array<string, mixed>,
-     *     payload: array<string, mixed>,
-     *     headers: array<string, mixed>
-     * }
+     * @return array{method: string, path: string, query: array<array-key, mixed>, payload: array<array-key, mixed>, headers: array<array-key, mixed>}
      */
     private function customMetadata(Request $request): array
     {
         return [
             'method' => $request->method(),
             'path' => $request->path(),
-            'query' => $this->redactSensitiveData($request->query()),
-            'payload' => $this->redactSensitiveData($request->request->all()),
-            'headers' => $this->redactSensitiveData($request->headers->all()),
+            'query' => SensitiveData::redact($request->query()),
+            'payload' => SensitiveData::redact($request->request->all()),
+            'headers' => SensitiveData::redact($request->headers->all()),
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function redactSensitiveData(array $data): array
-    {
-        foreach ($data as $key => $value) {
-            if ($this->isSensitiveKey((string) $key)) {
-                $data[$key] = '[redacted]';
-
-                continue;
-            }
-
-            if (is_array($value)) {
-                /** @var array<string, mixed> $value */
-                $data[$key] = $this->redactSensitiveData($value);
-            }
-        }
-
-        return $data;
-    }
-
-    private function isSensitiveKey(string $key): bool
-    {
-        $key = mb_strtolower($key);
-
-        return array_any(
-            ['authorization', 'cookie', 'password', 'passwd', 'secret', 'token', 'card', 'cvv', 'cvc', 'key', 'pin'],
-            fn (string $sensitiveKey): bool => str_contains($key, $sensitiveKey),
-        );
     }
 
     private function generateDeviceFingerprint(Request $request): string

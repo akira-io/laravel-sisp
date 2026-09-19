@@ -524,4 +524,36 @@ return [
         'callback' => ['throttle:sisp-callback'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MCP Server
+    |--------------------------------------------------------------------------
+    |
+    | Exposes the package to AI agents through the Model Context Protocol.
+    | Disabled by default so host applications opt in explicitly. The local
+    | transport serves coding agents on the developer machine; the web
+    | transport serves remote clients behind authentication. Destructive
+    | payment tools and reconciliation stay off the web transport unless
+    | expose_destructive is on. Status queries and reconciliation share a
+    | per-minute limit per caller and across all callers.
+    | Every web tool call must pass the Gate ability, which denies all users
+    | until the host application defines it.
+    |
+    */
+    'mcp' => [
+        'enabled' => env('SISP_MCP_ENABLED', false),
+        'local' => env('SISP_MCP_LOCAL', true),
+        'web' => [
+            'enabled' => env('SISP_MCP_WEB_ENABLED', false),
+            'path' => env('SISP_MCP_WEB_PATH', '/sisp/mcp'),
+            'middleware' => ['auth:sanctum', 'throttle:60,1'],
+            'ability' => env('SISP_MCP_WEB_ABILITY', 'sisp-mcp'),
+            'expose_destructive' => env('SISP_MCP_WEB_DESTRUCTIVE', false),
+        ],
+        'gateway_rate_limit' => [
+            'per_caller' => env('SISP_MCP_GATEWAY_LIMIT_PER_CALLER', 10),
+            'global' => env('SISP_MCP_GATEWAY_LIMIT_GLOBAL', 60),
+        ],
+    ],
+
 ];
