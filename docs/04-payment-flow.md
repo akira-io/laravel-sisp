@@ -276,7 +276,7 @@ app(BuildPaymentResultUrlAction::class)->handle($transaction);
 // URL::temporarySignedRoute('sisp.callback', now()->addMinutes(30), ['ref' => $transaction->merchant_ref])
 ```
 
-The GET callback renders the payment response for the `ref` query parameter only when the signature is valid. Unsigned, expired, missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
+The GET callback renders the payment response for the `ref` query parameter. With a valid signature it is the full page. Without one (unsigned, expired or tampered) it is a reduced page without the merchant session, the invoice or the retry link. Missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
 
 ## Step 10: Timeout Reconciliation
 

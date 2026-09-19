@@ -184,60 +184,47 @@ For the full v2 design, see [docs/12-architecture.md](docs/12-architecture.md).
 ## Upgrading from 2.1 to 2.2
 
 `composer update` is enough for the application to keep taking payments.
-Public constructors and controller signatures stay as they were in 2.1.
-Section 1 is a security fix that breaks unsigned links to the payment result
-page; read it before you upgrade. Section 6 lists other behaviour that changed.
+Public constructors and controller signatures stay as they were in 2.1, and
+existing links keep working. Section 6 lists behaviour that changed.
 
-### 1. The payment result page needs a signed link (security fix)
+### 1. The payment result page reveals less without a signed link (security fix)
 
-In 2.1, `GET /sisp/callback?ref=<merchant_ref>` rendered the result page for
-any existing transaction. The default merchant reference is a timestamp, so
-anyone could enumerate them and read the status, amount and currency of other
-customers' payments. With Inertia the page also carried the merchant session,
-the invoice number and the invoice PDF URL, and for a `failed` transaction
-with `sisp.allow_retry` enabled it carried a freshly signed retry link that
-opens the retry form prefilled with the customer's email, phone and address.
+In 2.1, `GET /sisp/callback?ref=<merchant_ref>` rendered the whole result page
+for any existing transaction. The default merchant reference is a timestamp,
+so anyone could enumerate them. With Inertia the page also carried the
+merchant session, the invoice number and the invoice PDF URL, and for a
+`failed` transaction with `sisp.allow_retry` enabled it carried a freshly
+signed retry link that opens the retry form prefilled with the customer's
+email, phone and address.
 
 In 2.2 the POST callback and the signed `/sisp/cancel` route redirect to a
 temporary signed URL, valid for 30 minutes, built by
-`BuildPaymentResultUrlAction`. The GET route renders the page only when that
-signature is valid; an unsigned, expired, tampered or unknown link redirects
-to `sisp.redirect_url`.
+`BuildPaymentResultUrlAction`. With a valid signature the page is the same as
+in 2.1. Without one (an unsigned, expired or tampered link) the page still
+renders, as 2.1 did, but reduced: status, amount, currency, reference and
+refusal reason only, with no merchant session, no invoice and no retry link.
+Unknown references still redirect to `sisp.redirect_url`.
 
-This breaks every stored or hand-built `/sisp/callback?ref=...` link: emails,
-order pages, bookmarks and customer support tools that pointed at it now land
-on `sisp.redirect_url`. It ships in a 2.x release as an exception to the
-no-breaking-changes rule for the previous major, because the leak cannot be
-closed without it. What to do:
+Existing `/sisp/callback?ref=...` links in emails, order pages and support
+tools keep opening the page; they no longer offer the retry button or the
+invoice download. To give a customer those back, build the link with
+`BuildPaymentResultUrlAction` at the moment you send them:
 
-- To send a customer back to the result page, build the link with
-  `BuildPaymentResultUrlAction`, at the moment you send them:
+```php
+use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
 
-  ```php
-  use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
+return redirect(app(BuildPaymentResultUrlAction::class)->handle($transaction));
+```
 
-  return redirect(app(BuildPaymentResultUrlAction::class)->handle($transaction));
-  ```
+The link expires after 30 minutes, so it does not suit an email. The
+signature covers the whole URL: behind a TLS-terminating proxy configure
+trusted proxies, and query parameters added on the way (`utm_*`, `fbclid`)
+turn it into the reduced page.
 
-  The link expires after 30 minutes, so do not store it or put it in an email.
-  For a lasting link, point at a page of your own that checks the customer
-  owns the transaction.
-- The Inertia `transaction` prop no longer has `merchant_session`. If a
-  published page component read it, remove that use; the `TransactionData`
-  type in the published `payment-response-data.ts` drops the field too.
-- The signature covers the whole URL. Behind a TLS-terminating proxy,
-  configure trusted proxies so the request is seen as `https`; with
-  `URL::forceScheme('https')` and no trusted proxies every result page
-  redirects to `sisp.redirect_url`. Query parameters added on the way
-  (`utm_*`, `fbclid`) also invalidate it.
-- Reloading the result page more than 30 minutes after the payment redirects
-  to `sisp.redirect_url`. The link stays in browser history and server access
-  logs, and any analytics script on an Inertia layout sends it to its vendor;
-  the 30 minute limit bounds that exposure.
-- Tests that call `GET /sisp/callback?ref=` directly need
-  `URL::signedRoute('sisp.callback', ['ref' => ...])`, and tests that assert
-  the callback redirect can use
-  `assertRedirectToSignedRoute('sisp.callback', ['ref' => ...])`.
+`RenderPaymentResponseAction::renderBlade()` and `renderInertia()`, and
+`RenderPaymentResponseBasedOnConfigAction::handle()`, gain an optional
+trailing `bool $restricted = false`; a published page component receives no
+`merchant_session` on the reduced page.
 
 ### 2. Publish and run the new migrations (recommended)
 

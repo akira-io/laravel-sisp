@@ -95,7 +95,7 @@ final readonly class CallbackController
     {
         $merchantRef = $request->query('ref');
 
-        if (! $merchantRef || ! $request->hasValidSignature()) {
+        if (! $merchantRef) {
             return redirect(config('sisp.redirect_url', '/'));
         }
 
@@ -110,7 +110,7 @@ final readonly class CallbackController
             app()->setLocale($transaction->locale);
         }
 
-        return $this->renderResponse->handle($transaction, []);
+        return $this->renderResponse->handle($transaction, [], restricted: ! $request->hasValidSignature());
     }
 
     private function handlePostRequest(Request $request): RedirectResponse

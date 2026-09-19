@@ -148,7 +148,8 @@ it('runs a failed payment flow and exposes signed retry without paying the invoi
     $this->travel(31)->minutes();
 
     $this->get((string) $callback->headers->get('Location'))
-        ->assertRedirect(config('sisp.redirect_url', '/'));
+        ->assertOk()
+        ->assertDontSee('/sisp/retry-payment', false);
 });
 
 it('runs retry through the signed public route with the same SISP identifiers', function (): void {

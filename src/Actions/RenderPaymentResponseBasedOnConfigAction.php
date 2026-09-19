@@ -14,16 +14,17 @@ final readonly class RenderPaymentResponseBasedOnConfigAction
         private LoadConfig $config,
     ) {}
 
-    public function handle(Transaction $transaction, array $payload): mixed
+    public function handle(Transaction $transaction, array $payload, bool $restricted = false): mixed
     {
         if ($this->config->shouldUseInertia()) {
             return $this->render->renderInertia(
                 $transaction,
                 $payload,
-                $this->config->getPaymentResponseComponent()
+                $this->config->getPaymentResponseComponent(),
+                $restricted,
             );
         }
 
-        return $this->render->renderBlade($transaction, $payload);
+        return $this->render->renderBlade($transaction, $payload, $restricted);
     }
 }
