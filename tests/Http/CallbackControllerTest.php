@@ -383,7 +383,7 @@ it('keeps the result link valid when a proxy changes the scheme and host', funct
 
     $resultUrl = $this->post(route('sisp.callback'), callback_controller_payload($transaction))
         ->headers->get('Location');
-    $parts = parse_url($resultUrl);
+    $parts = parse_url((string) $resultUrl);
 
     $this->get('https://shop.example'.$parts['path'].'?'.$parts['query'])->assertOk();
 });
