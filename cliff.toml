@@ -25,6 +25,10 @@ render_always = false
 conventional_commits = true
 filter_unconventional = true
 split_commits = false
+commit_preprocessors = [
+  { pattern = '^fix\(callback\)!: sign the payment result page link', replace = "fix(callback): sign the payment result page link" },
+  { pattern = 'BREAKING CHANGE: GET /sisp/callback\?ref= without a valid signature', replace = "Superseded by the reduced result page: GET /sisp/callback?ref= without a valid signature" },
+]
 commit_parsers = [
   { field = "breaking", pattern = "true", group = "<!-- 0 -->Breaking Changes" },
   { message = "^feat", group = "Features" },
