@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Actions\CanRetryPaymentAction;
 use Akira\Sisp\Actions\GetPaymentErrorResponseAction;
 use Akira\Sisp\Actions\GetPaymentResponseTranslationsAction;
@@ -17,12 +18,14 @@ use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Http\Controllers\CallbackController;
+use Akira\Sisp\Http\Controllers\CancelTransactionController;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Support\InertiaAvailability;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 it('fails a transaction built with the 2.1 constructor arguments', function (): void {
     $transaction = Transaction::factory()->create(['status' => 'pending']);
@@ -95,4 +98,42 @@ it('rejects an invalid fingerprint through a callback controller built with the 
 
     expect($response->getTargetUrl())->toEndWith('/home')
         ->and($transaction->refresh()->status->value)->toBe('pending');
+});
+
+it('redirects to the signed result page through a callback controller built with the 2.1 arguments', function (): void {
+    config()->set('sisp.sandbox', true);
+    $controller = new CallbackController(
+        resolve(RenderPaymentResponseBasedOnConfigAction::class),
+        resolve(StoreRequestMetadataAction::class),
+        resolve(UpdateInvoiceStatusAction::class),
+        resolve(LoadConfig::class),
+    );
+    $transaction = Transaction::factory()->create([
+        'status' => 'pending',
+        'amount' => 1000,
+        'currency' => '132',
+    ]);
+    $payload = Sisp::generateSandboxPayload(PaymentRequestData::from([
+        'amount' => $transaction->amount,
+        'merchantRef' => $transaction->merchant_ref,
+        'merchantSession' => $transaction->merchant_session,
+        'timeStamp' => '2024-01-01 00:00:00',
+        'currency' => $transaction->currency,
+        'transactionCode' => '1',
+    ]));
+
+    $response = $controller(Request::create('/', 'POST', $payload->toArray()));
+
+    expect(URL::hasValidSignature(Request::create($response->getTargetUrl())))->toBeTrue()
+        ->and($response->getTargetUrl())->toContain('ref='.$transaction->merchant_ref);
+});
+
+it('redirects to the signed result page through a cancel controller built with the 2.1 arguments', function (): void {
+    $controller = new CancelTransactionController(resolve(CancelTransactionAction::class));
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    $response = $controller(Request::create('/', 'GET', ['merchantRef' => $transaction->merchant_ref]));
+
+    expect(URL::hasValidSignature(Request::create($response->getTargetUrl())))->toBeTrue()
+        ->and($transaction->refresh()->status->value)->toBe('cancelled');
 });

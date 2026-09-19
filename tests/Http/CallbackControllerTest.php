@@ -12,6 +12,7 @@ use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
@@ -45,7 +46,7 @@ it('renders response for existing transaction via GET', function (): void {
         'locale' => 'pt',
     ]);
 
-    $this->get(route('sisp.callback', ['ref' => 'MR-G1']))
+    $this->get(URL::signedRoute('sisp.callback', ['ref' => 'MR-G1']))
         ->assertOk();
 });
 
@@ -68,7 +69,7 @@ it('handles POST callback and redirects to GET with ref', function (): void {
     ]));
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G2']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-G2']);
 
     $t->refresh();
 
@@ -94,7 +95,7 @@ it('accepts successful callbacks when the signed response omits transaction code
     unset($payload['transactionCode']);
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-NO-TRANSACTION-CODE']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-NO-TRANSACTION-CODE']);
 
     $transaction->refresh();
 
@@ -117,7 +118,7 @@ it('accepts successful callbacks when optional unsigned response fields are omit
     unset($payload['currency'], $payload['transactionCode'], $payload['posID']);
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-OPTIONAL-UNSIGNED-FIELDS']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-OPTIONAL-UNSIGNED-FIELDS']);
 
     $transaction->refresh();
 
@@ -143,7 +144,7 @@ it('rejects callbacks when optional unsigned response fields are present but emp
     $payload['posID'] = '';
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-EMPTY-UNSIGNED-FIELDS']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-EMPTY-UNSIGNED-FIELDS']);
 
     $transaction->refresh();
 
@@ -243,7 +244,7 @@ it('records signed amount mismatches as failed without completing the transactio
     ]);
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction, ['amount' => 25]))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-AMOUNT-MISMATCH']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-AMOUNT-MISMATCH']);
 
     $transaction->refresh();
 
@@ -262,7 +263,7 @@ it('records signed currency mismatches as failed without completing the transact
     ]);
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction, ['currency' => '978']))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-CURRENCY-MISMATCH']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-CURRENCY-MISMATCH']);
 
     $transaction->refresh();
 
@@ -303,7 +304,7 @@ it('records signed pos id mismatches as failed without completing the transactio
     ]))->toArray();
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-POS-MISMATCH']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-POS-MISMATCH']);
 
     $transaction->refresh();
 
@@ -324,7 +325,7 @@ it('reconciles zero transaction codes without falling back to config default', f
     ]);
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-ZERO-CODE']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-ZERO-CODE']);
 
     expect($transaction->refresh()->status->value)->toBe('completed');
 });
@@ -346,7 +347,7 @@ it('leaves the fingerprint to the configured pipes when ValidateFingerprint is n
     $payload['resultFingerPrint'] = 'checked-elsewhere';
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-CUSTOM-PIPES']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-CUSTOM-PIPES']);
 
     expect($transaction->refresh()->status->value)->toBe('completed');
 });

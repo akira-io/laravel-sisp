@@ -168,7 +168,7 @@ it('allows a later successful callback for the same SISP transaction after a fai
     $payload = transaction_retry_callback_payload($transaction->refresh(), 'S-SAME-SISP-RETRY', 'success');
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'R-SAME-SISP-RETRY']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-SAME-SISP-RETRY']);
 
     $transaction->refresh();
     $attempt = $transaction->attempts()

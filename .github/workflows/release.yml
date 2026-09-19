@@ -39,6 +39,21 @@ jobs:
           fi
 
           BUMPED_VERSION="$(git-cliff --config cliff.toml --bumped-version)"
+          TAG_MAJOR="${TAG#v}"
+          TAG_MAJOR="${TAG_MAJOR%%.*}"
+          BUMPED_MAJOR="${BUMPED_VERSION#v}"
+          BUMPED_MAJOR="${BUMPED_MAJOR%%.*}"
+          MAINTENANCE_BRANCH="origin/${TAG_MAJOR}.x"
+          DEFAULT_BRANCH="$(git remote show origin | sed -n 's/.*HEAD branch: //p')"
+
+          if [ "${BUMPED_MAJOR}" -gt "${TAG_MAJOR}" ] \
+            && git rev-parse --verify --quiet "refs/remotes/${MAINTENANCE_BRANCH}" >/dev/null \
+            && git merge-base --is-ancestor "${GITHUB_SHA}" "${MAINTENANCE_BRANCH}" \
+            && ! git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${DEFAULT_BRANCH}"; then
+            BUMPED_VERSION="$(git-cliff --config cliff.toml --bump minor --bumped-version)"
+            echo "::warning::${MAINTENANCE_BRANCH#origin/} carries breaking changes since the last release. A maintenance line cannot move to the next major, so the release is checked as ${BUMPED_VERSION}; document the break in UPGRADE.md."
+          fi
+
           if [ "${BUMPED_VERSION}" != "${TAG}" ]; then
             echo "::error::Tag ${TAG} does not match the version git-cliff computes from the commits since the last release (${BUMPED_VERSION}). Delete the tag, re-tag as ${BUMPED_VERSION}, and push again: git tag -d ${TAG} && git push origin :refs/tags/${TAG} && git tag ${BUMPED_VERSION} && git push --follow-tags"
             exit 1

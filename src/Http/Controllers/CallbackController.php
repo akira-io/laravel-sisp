@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Controllers;
 
+use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
@@ -24,14 +25,18 @@ final readonly class CallbackController
 {
     private CallbackFingerprintValidator $validateFingerprint;
 
+    private BuildPaymentResultUrlAction $paymentResultUrl;
+
     public function __construct(
         private RenderPaymentResponseBasedOnConfigAction $renderResponse,
         private StoreRequestMetadataAction $storeMetadata,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private LoadConfig $config,
         ?CallbackFingerprintValidator $validateFingerprint = null,
+        ?BuildPaymentResultUrlAction $paymentResultUrl = null,
     ) {
         $this->validateFingerprint = $validateFingerprint ?? resolve(CallbackFingerprintValidator::class);
+        $this->paymentResultUrl = $paymentResultUrl ?? resolve(BuildPaymentResultUrlAction::class);
     }
 
     public function __invoke(Request $request): mixed
@@ -41,7 +46,7 @@ final readonly class CallbackController
         }
 
         if ($request->isMethod('get')) {
-            return $this->handleGetRequest();
+            return $this->handleGetRequest($request);
         }
 
         return $this->handlePostRequest($request);
@@ -86,11 +91,11 @@ final readonly class CallbackController
             ->first();
     }
 
-    private function handleGetRequest(): mixed
+    private function handleGetRequest(Request $request): mixed
     {
-        $merchantRef = request()->query('ref');
+        $merchantRef = $request->query('ref');
 
-        if (! $merchantRef) {
+        if (! $merchantRef || ! $request->hasValidSignature()) {
             return redirect(config('sisp.redirect_url', '/'));
         }
 
@@ -140,7 +145,7 @@ final readonly class CallbackController
 
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
-        return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+        return redirect($this->paymentResultUrl->handle($transaction));
     }
 
     private function rejectsFingerprint(CallbackPayload $payload): bool

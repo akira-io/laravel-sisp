@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Controllers;
 
+use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
 use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -12,9 +13,14 @@ use LogicException;
 
 final readonly class CancelTransactionController
 {
+    private BuildPaymentResultUrlAction $paymentResultUrl;
+
     public function __construct(
         private CancelTransactionAction $cancelTransaction,
-    ) {}
+        ?BuildPaymentResultUrlAction $paymentResultUrl = null,
+    ) {
+        $this->paymentResultUrl = $paymentResultUrl ?? resolve(BuildPaymentResultUrlAction::class);
+    }
 
     public function __invoke(Request $request): RedirectResponse
     {
@@ -28,7 +34,7 @@ final readonly class CancelTransactionController
         try {
             $this->cancelTransaction->handle($transaction, $reason);
 
-            return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+            return redirect($this->paymentResultUrl->handle($transaction));
 
         } catch (LogicException $e) {
             return back()->with('error', $e->getMessage());

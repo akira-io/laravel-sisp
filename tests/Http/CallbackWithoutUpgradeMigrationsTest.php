@@ -33,7 +33,7 @@ function callbackOnTheTwoOneSchema(Transaction $transaction, string $status): vo
     ]), $status);
 
     test()->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => $transaction->merchant_ref]));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => $transaction->merchant_ref]);
 }
 
 it('runs on a schema without the 2.2 migrations', function (): void {
