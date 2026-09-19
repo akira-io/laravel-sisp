@@ -6,6 +6,7 @@ use Akira\Sisp\Events\TransactionCancelled;
 use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
@@ -294,6 +295,22 @@ it('does not rate limit callbacks that are not cancellations', function (): void
     ]);
 
     foreach (range(1, 20) as $ignored) {
-        $this->get(route('sisp.callback', ['ref' => $transaction->merchant_ref]))->assertOk();
+        $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false))->assertOk();
     }
 });
+
+it('ignores a cancellation whose reference or session is not a string', function (array $keys): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-ARRAY',
+        'merchant_session' => 'MS-ARRAY',
+        'status' => 'pending',
+    ]);
+
+    $this->post(route('sisp.callback'), [...$keys, 'UserCancelled' => 'true'])
+        ->assertRedirect('/home');
+
+    expect($transaction->refresh()->status->value)->toBe('pending');
+})->with([
+    'reference' => [['merchantRef' => ['MR-ARRAY'], 'merchantSession' => 'MS-ARRAY']],
+    'session' => [['merchantRef' => 'MR-ARRAY', 'merchantSession' => ['MS-ARRAY']]],
+]);

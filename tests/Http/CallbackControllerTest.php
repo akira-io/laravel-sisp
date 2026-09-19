@@ -2,11 +2,17 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Facades\Sisp;
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Pipelines\Callback\HandleCallbackPipeline;
+use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\Sisp as SispManager;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
 use Akira\Sisp\ValueObjects\SispCredentials;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 
 beforeEach(function (): void {
     config()->set('sisp.sandbox', true);
@@ -40,7 +46,7 @@ it('renders response for existing transaction via GET', function (): void {
         'locale' => 'pt',
     ]);
 
-    $this->get(route('sisp.callback', ['ref' => 'MR-G1']))
+    $this->get(URL::signedRoute('sisp.callback', ['ref' => 'MR-G1'], absolute: false))
         ->assertOk();
 });
 
@@ -63,7 +69,7 @@ it('handles POST callback and redirects to GET with ref', function (): void {
     ]));
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G2']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-G2'], absolute: false);
 
     $t->refresh();
 
@@ -89,7 +95,7 @@ it('accepts successful callbacks when the signed response omits transaction code
     unset($payload['transactionCode']);
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-NO-TRANSACTION-CODE']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-NO-TRANSACTION-CODE'], absolute: false);
 
     $transaction->refresh();
 
@@ -112,7 +118,7 @@ it('accepts successful callbacks when optional unsigned response fields are omit
     unset($payload['currency'], $payload['transactionCode'], $payload['posID']);
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-OPTIONAL-UNSIGNED-FIELDS']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-OPTIONAL-UNSIGNED-FIELDS'], absolute: false);
 
     $transaction->refresh();
 
@@ -138,7 +144,7 @@ it('rejects callbacks when optional unsigned response fields are present but emp
     $payload['posID'] = '';
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-EMPTY-UNSIGNED-FIELDS']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-EMPTY-UNSIGNED-FIELDS'], absolute: false);
 
     $transaction->refresh();
 
@@ -146,14 +152,25 @@ it('rejects callbacks when optional unsigned response fields are present but emp
         ->and($transaction->merchant_response)->toBe('callback_details_mismatch');
 });
 
-it('records callbacks with invalid fingerprints as failed and redirects to response page', function (): void {
+it('rejects callbacks with invalid fingerprints without touching the transaction', function (string $status): void {
     $transaction = Transaction::factory()->create([
         'merchant_ref' => 'MR-G3',
         'merchant_session' => 'MS-G3',
         'amount' => 20,
         'currency' => '132',
+        'status' => $status,
+        'merchant_response' => 'gateway said so',
+        'error_code' => '3',
+        'error_message' => 'Saldo insuficiente',
+    ]);
+    $invoice = Invoice::query()->create([
+        'transaction_id' => $transaction->id,
+        'invoice_number' => "INV-G3-{$status}",
+        'invoice_date' => now(),
         'status' => 'pending',
     ]);
+
+    Event::fake([PaymentFailed::class]);
 
     $payload = Sisp::generateSandboxPayload(PaymentRequestData::from([
         'amount' => 20,
@@ -165,15 +182,22 @@ it('records callbacks with invalid fingerprints as failed and redirects to respo
     ]))->toArray();
     $payload['resultFingerPrint'] = 'invalid-fingerprint';
 
+    config()->set('sisp.redirect_url', '/home');
+
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-G3']));
+        ->assertRedirect('/home');
 
     $transaction->refresh();
 
-    expect($transaction->status->value)->toBe('failed')
-        ->and($transaction->merchant_response)->toBe('invalid_callback_fingerprint')
-        ->and($transaction->fingerprint)->toBe('invalid-fingerprint');
-});
+    expect($transaction->status->value)->toBe($status)
+        ->and($transaction->merchant_response)->toBe('gateway said so')
+        ->and($transaction->error_code)->toBe('3')
+        ->and($transaction->error_message)->toBe('Saldo insuficiente')
+        ->and($transaction->fingerprint)->not->toBe('invalid-fingerprint')
+        ->and($invoice->refresh()->status->value)->toBe('pending');
+
+    Event::assertNotDispatched(PaymentFailed::class);
+})->with(['pending', 'failed', 'refunded', 'cancelled']);
 
 it('redirects invalid callbacks with unknown transaction keys', function (): void {
     config()->set('sisp.redirect_url', '/home');
@@ -220,7 +244,7 @@ it('records signed amount mismatches as failed without completing the transactio
     ]);
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction, ['amount' => 25]))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-AMOUNT-MISMATCH']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-AMOUNT-MISMATCH'], absolute: false);
 
     $transaction->refresh();
 
@@ -239,7 +263,7 @@ it('records signed currency mismatches as failed without completing the transact
     ]);
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction, ['currency' => '978']))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-CURRENCY-MISMATCH']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-CURRENCY-MISMATCH'], absolute: false);
 
     $transaction->refresh();
 
@@ -280,7 +304,7 @@ it('records signed pos id mismatches as failed without completing the transactio
     ]))->toArray();
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-POS-MISMATCH']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-POS-MISMATCH'], absolute: false);
 
     $transaction->refresh();
 
@@ -301,7 +325,83 @@ it('reconciles zero transaction codes without falling back to config default', f
     ]);
 
     $this->post(route('sisp.callback'), callback_controller_payload($transaction))
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-ZERO-CODE']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-ZERO-CODE'], absolute: false);
 
     expect($transaction->refresh()->status->value)->toBe('completed');
+});
+
+it('leaves the fingerprint to the configured pipes when ValidateFingerprint is not among them', function (): void {
+    config()->set('sisp.pipelines.callback', array_values(array_diff(
+        HandleCallbackPipeline::DEFAULT_PIPES,
+        [ValidateFingerprint::class],
+    )));
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-CUSTOM-PIPES',
+        'merchant_session' => 'MS-CUSTOM-PIPES',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+    $payload['resultFingerPrint'] = 'checked-elsewhere';
+
+    $this->post(route('sisp.callback'), $payload)
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-CUSTOM-PIPES'], absolute: false);
+
+    expect($transaction->refresh()->status->value)->toBe('completed');
+});
+
+it('opens the result page from the callback redirect only within 30 minutes', function (): void {
+    config()->set('sisp.redirect_url', '/home');
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-EXPIRY',
+        'merchant_session' => 'MS-EXPIRY',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
+    ]);
+
+    $resultUrl = $this->post(route('sisp.callback'), callback_controller_payload($transaction))
+        ->headers->get('Location');
+
+    $this->get($resultUrl)->assertOk();
+
+    $this->travel(31)->minutes();
+
+    $this->get($resultUrl)->assertRedirect('/home');
+});
+
+it('keeps the result link valid when a proxy changes the scheme and host', function (): void {
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-PROXY',
+        'merchant_session' => 'MS-PROXY',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
+    ]);
+
+    $resultUrl = $this->post(route('sisp.callback'), callback_controller_payload($transaction))
+        ->headers->get('Location');
+    $parts = parse_url((string) $resultUrl);
+
+    $this->get('https://shop.example'.$parts['path'].'?'.$parts['query'])->assertOk();
+});
+
+it('rejects a callback whose amount is too large to sign without an error', function (): void {
+    config()->set('sisp.redirect_url', '/home');
+    $transaction = Transaction::factory()->create([
+        'merchant_ref' => 'MR-HUGE',
+        'merchant_session' => 'MS-HUGE',
+        'amount' => 20,
+        'currency' => '132',
+        'status' => 'pending',
+    ]);
+
+    $payload = callback_controller_payload($transaction);
+    $payload['merchantRespPurchaseAmount'] = '1e20';
+
+    $this->post(route('sisp.callback'), $payload)->assertRedirect('/home');
+
+    expect($transaction->refresh()->status->value)->toBe('pending');
 });

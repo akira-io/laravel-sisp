@@ -105,11 +105,10 @@ final readonly class RefundTransactionAction
 
     private function refundedThousandths(Transaction $transaction): int
     {
-        if ($transaction->refunds()->exists()) {
-            return (int) $transaction->refunds()->sum('amount_thousandths');
-        }
-
-        return $this->legacyRefundedThousandths($transaction);
+        return max(
+            $this->legacyRefundedThousandths($transaction),
+            (int) $transaction->refunds()->sum('amount_thousandths'),
+        );
     }
 
     private function legacyRefundedThousandths(Transaction $transaction): int

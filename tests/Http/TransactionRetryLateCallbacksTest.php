@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Actions\FingerPrint\PaymentErrorResponseFingerPrintAction;
 use Akira\Sisp\Actions\FingerPrint\PaymentResponseFingerPrintAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
@@ -47,7 +48,7 @@ it('does not let a late failed callback from a superseded attempt overwrite the 
     );
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'R-LATE-FAILED-CALLBACK']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-LATE-FAILED-CALLBACK'], absolute: false);
 
     $transaction->refresh();
     $attempts = $transaction->attempts()->orderBy('attempt_number')->get();
@@ -98,7 +99,7 @@ it('promotes the transaction when a late successful callback belongs to a supers
     );
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'R-LATE-SUCCESS-CALLBACK']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'R-LATE-SUCCESS-CALLBACK'], absolute: false);
 
     $transaction->refresh();
     $attempts = $transaction->attempts()->orderBy('attempt_number')->get();
@@ -139,7 +140,9 @@ function late_callback_payload(
     $payloadData = $payload->toArray();
     $payloadData['merchantRespTid'] = $gatewayTransactionId;
     $payload = CallbackPayload::from($payloadData);
-    $payloadData['resultFingerPrint'] = resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
+    $payloadData['resultFingerPrint'] = $payload->isError()
+        ? resolve(PaymentErrorResponseFingerPrintAction::class)->handle($payload)
+        : resolve(PaymentResponseFingerPrintAction::class)->handle($payload);
 
     return CallbackPayload::from($payloadData);
 }

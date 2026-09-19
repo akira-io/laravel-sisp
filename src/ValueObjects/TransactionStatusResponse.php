@@ -17,12 +17,13 @@ final readonly class TransactionStatusResponse
         public string $transactionStatusDescription,
         public string $message,
         public array $raw,
+        public bool $answered = true,
     ) {}
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public static function from(array $data): self
+    public static function from(array $data, bool $answered = true): self
     {
         return new self(
             result: (bool) ($data['result'] ?? false),
@@ -30,6 +31,7 @@ final readonly class TransactionStatusResponse
             transactionStatusDescription: (string) ($data['transactionStatusDescription'] ?? ''),
             message: (string) ($data['msg'] ?? ''),
             raw: $data,
+            answered: $answered,
         );
     }
 

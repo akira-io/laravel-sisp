@@ -50,7 +50,7 @@ final readonly class FailTransactionAction
                     'response_code' => $payload->merchantRespCp,
                     'fingerprint' => $payload->fingerprint,
                     'status' => TransactionStatus::failed,
-                    'error_code' => $trustPayload && $payload->errorCode !== '' ? $payload->errorCode : null,
+                    'error_code' => $trustPayload && $payload->errorCode !== '' ? mb_substr($payload->errorCode, 0, 4) : null,
                     'error_message' => $trustPayload ? $this->resolveCustomerErrorMessage->handle($payload) : null,
                     'callback_raw_payload' => $trustPayload ? $this->maskCallbackRawPayload->handle($payload->raw) : null,
                 ])

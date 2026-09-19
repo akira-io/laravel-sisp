@@ -104,7 +104,7 @@ it('runs a successful payment from payment request through signed callback and i
     $payload = real_sisp_flow_callback_payload($transaction, 'success');
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => $transaction->merchant_ref]));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false);
 
     $transaction->refresh();
     $invoice = $transaction->invoice()->firstOrFail();
@@ -116,7 +116,7 @@ it('runs a successful payment from payment request through signed callback and i
 
     Storage::disk('public')->assertExists($invoice->pdf_path);
 
-    $this->get(route('sisp.callback', ['ref' => $transaction->merchant_ref]))
+    $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false))
         ->assertOk()
         ->assertSee($transaction->merchant_ref);
 });
@@ -130,7 +130,7 @@ it('runs a failed payment flow and exposes signed retry without paying the invoi
     $transaction = Transaction::query()->with('invoice')->sole();
 
     $this->post(route('sisp.callback'), real_sisp_flow_callback_payload($transaction, 'failed')->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => $transaction->merchant_ref]));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false);
 
     $transaction->refresh();
     $invoice = $transaction->invoice()->firstOrFail();
@@ -139,7 +139,7 @@ it('runs a failed payment flow and exposes signed retry without paying the invoi
         ->and($invoice->status)->toBe(InvoiceStatus::cancelled)
         ->and($invoice->pdf_path)->toBeNull();
 
-    $this->get(route('sisp.callback', ['ref' => $transaction->merchant_ref]))
+    $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref], absolute: false))
         ->assertOk()
         ->assertSee('/sisp/retry-payment', false);
 });

@@ -214,3 +214,15 @@ it('answers 403 before validating when the gate denies the refund', function ():
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
+
+it('returns 400 instead of a server error for an amount too large to convert', function (string $amount): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => $amount])
+        ->assertBadRequest()
+        ->assertJsonPath('success', false);
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+})->with(['1e20', '1e400']);

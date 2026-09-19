@@ -48,7 +48,7 @@ it('completes a transaction through the callback pipeline with a valid sandbox p
     Event::assertDispatched(PaymentCompleted::class);
 });
 
-it('short-circuits and fails the transaction when the fingerprint is invalid', function (): void {
+it('short-circuits without touching the transaction when the fingerprint is invalid', function (): void {
     Event::fake();
 
     Transaction::factory()->create([
@@ -78,12 +78,13 @@ it('short-circuits and fails the transaction when the fingerprint is invalid', f
 
     expect($context->failed())->toBeTrue()
         ->and($context->failureReason)->toBe('invalid_callback_fingerprint')
-        ->and($context->transaction()->status->value)->toBe('failed')
-        ->and($context->transaction()->merchant_response)->toBe('invalid_callback_fingerprint')
-        ->and($context->transaction()->error_message)->toBeNull()
-        ->and($context->transaction()->callback_raw_payload)->toBeNull();
+        ->and($context->transactionStatusPropagated)->toBeFalse()
+        ->and($context->transaction()->refresh()->status->value)->toBe('pending')
+        ->and($context->transaction()->merchant_response)->not->toBe('invalid_callback_fingerprint')
+        ->and($context->transaction()->fingerprint)->not->toBe('tampered-fingerprint')
+        ->and($context->attempt()->refresh()->fingerprint)->not->toBe('tampered-fingerprint');
 
-    Event::assertDispatched(PaymentFailed::class);
+    Event::assertNotDispatched(PaymentFailed::class);
 });
 
 it('fails the transaction when callback details do not match', function (): void {

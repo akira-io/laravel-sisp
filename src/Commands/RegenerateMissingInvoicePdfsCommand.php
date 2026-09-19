@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Actions\GenerateInvoicePdfAction;
+use Akira\Sisp\Commands\Concerns\ValidatesIntegerOptions;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Models\Invoice;
 use Illuminate\Console\Attributes\Description;
@@ -17,8 +18,14 @@ use Throwable;
 #[Description('Regenerate PDFs for paid invoices that are missing PDF files')]
 final class RegenerateMissingInvoicePdfsCommand extends Command
 {
+    use ValidatesIntegerOptions;
+
     public function handle(GenerateInvoicePdfAction $generatePdf): int
     {
+        if ($this->rejectsIntegerOption('limit', 1, 'The --limit option must be a whole number of at least 1.')) {
+            return self::FAILURE;
+        }
+
         $this->info('🔍 Searching for paid invoices without PDFs...');
 
         $query = Invoice::query()

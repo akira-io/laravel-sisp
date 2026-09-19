@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Controllers;
 
+use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
 use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
 use Akira\Sisp\Configuration\LoadConfig;
+use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
+use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use LogicException;
 
 final readonly class CallbackController
@@ -28,6 +32,8 @@ final readonly class CallbackController
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private CancelTransactionAction $cancelTransaction,
         private LoadConfig $config,
+        private CallbackFingerprintValidator $validateFingerprint,
+        private BuildPaymentResultUrlAction $paymentResultUrl,
     ) {}
 
     public function __invoke(Request $request): mixed
@@ -37,7 +43,7 @@ final readonly class CallbackController
         }
 
         if ($request->isMethod('get')) {
-            return $this->handleGetRequest();
+            return $this->handleGetRequest($request);
         }
 
         return $this->handlePostRequest($request);
@@ -63,10 +69,10 @@ final readonly class CallbackController
 
     private function resolveCancelledTransaction(Request $request): ?Transaction
     {
-        $merchantRef = $request->string('merchantRef')->toString();
-        $merchantSession = $request->string('merchantSession')->toString();
+        $merchantRef = $request->input('merchantRef');
+        $merchantSession = $request->input('merchantSession');
 
-        if ($merchantRef === '' || $merchantSession === '') {
+        if (! is_string($merchantRef) || ! is_string($merchantSession) || $merchantRef === '' || $merchantSession === '') {
             return null;
         }
 
@@ -77,11 +83,11 @@ final readonly class CallbackController
             ->first();
     }
 
-    private function handleGetRequest(): mixed
+    private function handleGetRequest(Request $request): mixed
     {
-        $merchantRef = request()->query('ref');
+        $merchantRef = $request->query('ref');
 
-        if (! $merchantRef) {
+        if (! $merchantRef || ! $request->hasValidSignature(absolute: false)) {
             return redirect(config('sisp.redirect_url', '/'));
         }
 
@@ -107,6 +113,14 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
+        if ($this->rejectsFingerprint($payload)) {
+            Log::warning('SISP callback rejected: the fingerprint does not match.', [
+                'merchant_ref' => $payload->merchantRef,
+            ]);
+
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+
         if ($this->isAlreadyProcessed($payload)) {
             return redirect(config('sisp.redirect_url', '/'))->with('info', 'This payment has already been processed.');
         }
@@ -123,7 +137,20 @@ final readonly class CallbackController
 
         $this->updateInvoiceStatus->handle($transaction, $transaction->status);
 
-        return to_route('sisp.callback', ['ref' => $transaction->merchant_ref]);
+        return redirect($this->paymentResultUrl->handle($transaction));
+    }
+
+    private function rejectsFingerprint(CallbackPayload $payload): bool
+    {
+        if (! in_array(ValidateFingerprint::class, $this->config->getCallbackPipes(), true)) {
+            return false;
+        }
+
+        try {
+            return ! $this->validateFingerprint->handle($payload);
+        } catch (InvalidArgumentException) {
+            return true;
+        }
     }
 
     private function isAlreadyProcessed(CallbackPayload $payload): bool

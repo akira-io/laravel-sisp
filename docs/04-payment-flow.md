@@ -67,7 +67,7 @@ Since v2, both halves of the flow are implemented as Laravel pipelines made of s
 | Pipe | Responsibility |
 | --- | --- |
 | `ResolveTransaction` | Finds the transaction by merchant reference and session |
-| `ValidateFingerprint` | Verifies the SHA512 callback fingerprint; fails the transaction and short-circuits on mismatch |
+| `ValidateFingerprint` | Verifies the SHA512 callback fingerprint; logs and short-circuits on mismatch without writing to the transaction |
 | `EnsureCallbackMatchesTransaction` | Reconciles amount, currency, transaction code, and POS ID |
 | `ApplyTransactionStatus` | Maps the SISP message type to a transaction status |
 | `DispatchPaymentEvents` | Dispatches `PaymentCompleted` / `PaymentFailed` / `PaymentPending` |
@@ -207,7 +207,7 @@ After payment, SISP POSTs to `/sisp/callback` with:
 Invalid POST callbacks are redirected to `config('sisp.redirect_url', '/')` before any transaction lookup.
 
 ### 9.2 Required Callback Keys
-After the fingerprint passes, the callback must include:
+Before the fingerprint is checked, the callback must include:
 
 - `merchantRespMerchantRef`
 - `merchantRespMerchantSession`
@@ -269,13 +269,14 @@ The controller updates the linked invoice status after the transaction is update
 - `PaymentPending` - Still processing
 
 ### 9.11 Response Rendering
-The POST callback redirects to:
+The POST callback redirects to a temporary signed URL, valid for 30 minutes:
 
 ```php
-route('sisp.callback', ['ref' => $transaction->merchant_ref])
+app(BuildPaymentResultUrlAction::class)->handle($transaction);
+// URL::temporarySignedRoute('sisp.callback', now()->addMinutes(30), ['ref' => $transaction->merchant_ref])
 ```
 
-The GET callback renders the payment response for the `ref` query parameter. Missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
+The GET callback renders the payment response for the `ref` query parameter only when the signature is valid. Unsigned, expired, missing or unknown references redirect to `config('sisp.redirect_url', '/')`.
 
 ## Step 10: Timeout Reconciliation
 

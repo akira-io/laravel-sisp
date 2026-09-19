@@ -52,10 +52,10 @@ final readonly class LegacyMerchantReferenceGenerator implements Generator
 ],
 ```
 
-Only do this if something outside the package requires it. With the 2.x shape both values are the second the payment started, and the session is the reference with `S` in place of `R`, so anyone can enumerate them. That matters in two places:
+Only do this if something outside the package requires it. With the 2.x shape both values are the second the payment started, and the session is the reference with `S` in place of `R`, so anyone can enumerate them. That matters for the cancellation callback, and less than it did for the result page:
 
 - The customer cancellation callback carries no fingerprint. The reference and session are the only things identifying the transaction it cancels, so guessable values let a third party cancel pending payments.
-- `GET /sisp/callback?ref=<merchantReference>` renders the payment result page for that reference, so guessable references let a third party read other customers' payment results.
+- The POST callback's own redirect to the result page is signed in 3.0 (see [Payment result page links are signed](#payment-result-page-links-are-signed-action-required-if-you-link-to-it)), so the reference alone no longer opens it. The signed link still carries the reference in plain text, and anyone holding the link can open the page until it expires.
 
 ### Cancellation refuses failed and refunded transactions (action required if you cancel them)
 
@@ -114,7 +114,9 @@ Every `handle()` signature stays backward compatible: `MapTransactionStatusActio
 | `Transaction\UpdateTransactionAction` | `MapTransactionStatusAction`, `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
 | `Transaction\FailTransactionAction` | `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
 | `Transaction\UpdateTransactionAttemptAction` | none | `MaskCallbackRawPayloadAction` |
-| `CallbackController` | `RenderPaymentResponseBasedOnConfigAction`, `StoreRequestMetadataAction`, `UpdateInvoiceStatusAction`, `LoadConfig` | `RenderPaymentResponseBasedOnConfigAction`, `StoreRequestMetadataAction`, `UpdateInvoiceStatusAction`, `CancelTransactionAction`, `LoadConfig` |
+| `CallbackController` | `RenderPaymentResponseBasedOnConfigAction`, `StoreRequestMetadataAction`, `UpdateInvoiceStatusAction`, `LoadConfig` | `RenderPaymentResponseBasedOnConfigAction`, `StoreRequestMetadataAction`, `UpdateInvoiceStatusAction`, `CancelTransactionAction`, `LoadConfig`, `CallbackFingerprintValidator`, `BuildPaymentResultUrlAction` |
+| `CancelTransactionController` | `CancelTransactionAction` | `CancelTransactionAction`, `BuildPaymentResultUrlAction` |
+| `Pipelines\Callback\Pipes\ValidateFingerprint` | `CallbackFingerprintValidator`, `FailTransactionAction` | `CallbackFingerprintValidator` |
 
 ```php
 // 2.x
@@ -127,6 +129,26 @@ new BuildSandboxPayloadAction($successFingerprint, $errorFingerprint, $resolver)
 ```
 
 `CallbackPayload` gained constructor parameters too, all optional and appended after the existing ones, so existing calls keep compiling.
+
+### A forged callback no longer fails the transaction (action required if you relied on `invalid_callback_fingerprint`)
+
+In 2.x a callback whose fingerprint did not match moved the transaction to `failed`, cancelled its invoice, dispatched `PaymentFailed`, stored the sender's transaction id, message type and fingerprint, and cleared the SISP refusal fields. Anyone who knew a merchant reference and session could do that to a payment that was not yet completed.
+
+In 3.0 the callback controller checks the fingerprint before the pipeline, logs a warning and redirects to `sisp.redirect_url`. The transaction, its attempt, its invoice and the request metadata are left alone, and no event is dispatched. The `ValidateFingerprint` pipe behaves the same way for code that runs `HandleCallbackPipeline` directly: it short-circuits with the failure reason `invalid_callback_fingerprint` and writes nothing. The controller only runs this check while `ValidateFingerprint` is in `sisp.pipelines.callback`; if you replaced it, your own pipes decide.
+
+If you listened for `PaymentFailed` or searched for `merchant_response = 'invalid_callback_fingerprint'` to detect forged callbacks, watch the log for `SISP callback rejected: the fingerprint does not match.` instead.
+
+### Payment result page links are signed (action required if you link to it)
+
+The POST callback and the signed `/sisp/cancel` route now redirect to a temporary signed URL for `GET /sisp/callback?ref=<merchantReference>`, valid for 30 minutes. The GET route renders the result page only for a valid signature and redirects to `sisp.redirect_url` otherwise. Links you build yourself must be signed the same way:
+
+```php
+use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
+
+return redirect(app(BuildPaymentResultUrlAction::class)->handle($transaction));
+```
+
+Customers who bookmark the result page are redirected to `sisp.redirect_url` once the link expires. The Inertia `transaction` prop no longer carries `merchant_session`; together with the reference it was enough to cancel a pending payment through the unsigned cancellation callback. Read it from your own records if a page needs it.
 
 ---
 
@@ -167,7 +189,9 @@ Two cleanup commands ship with 3.0. Neither is scheduled by the package; registe
 | `sisp:expire-pending` | Cancels `pending` transactions that never received a callback, with the reason `expired`. `--older-than` must be at least `1`. | 30 days (`SISP_EXPIRE_PENDING_AFTER_DAYS`) |
 | `sisp:prune-request-payloads` | Removes the 3-D Secure `purchaseRequest` blob from `completed`, `failed`, `cancelled` and `refunded` transactions. | 90 days (`SISP_PRUNE_REQUEST_PAYLOADS_AFTER_DAYS`) |
 
-Both accept `--older-than=<days>` and `--limit=<count>` (default 100 per run).
+Both accept `--older-than=<days>` and `--limit=<count>` (default 100 per run). Every numeric option of the package's commands, including `sisp:reconcile-pending` and `sisp:regenerate-pdfs`, must be a whole number; anything else, or a value below the minimum, fails the command instead of processing nothing or everything.
+
+When `sisp.transaction_status.reconciliation_enabled` is on, `sisp:expire-pending` asks SISP for each transaction's status before cancelling it. A transaction SISP reports as paid or refused is completed or failed instead, and one SISP cannot be asked about stays `pending` until the next run.
 
 ```php
 // routes/console.php
@@ -202,7 +226,7 @@ See [docs/09-troubleshooting.md](docs/09-troubleshooting.md#cleanup-commands) fo
 ## Behavioral notes
 
 - **`TransactionCancelled` fires in more places.** In 2.x the customer cancellation callback (`UserCancelled`) only redirected and left the transaction `pending`. In 3.0 it cancels the matching pending transaction through `CancelTransactionAction`, which dispatches `TransactionCancelled` with the reason `user_cancelled`. `sisp:expire-pending` dispatches it too, with the reason `expired`. The signed `/sisp/cancel` route also defaults to `user_cancelled`, so a listener cannot tell it apart from the callback by the reason alone. Listeners written for the explicit cancellation path (the signed `/sisp/cancel` route or your own calls to `CancelTransactionAction`) now also run for these two.
-- **The cancellation callback requires both identifiers.** It only cancels a `pending` transaction matching a non-empty `merchantRef` and `merchantSession`. The callback route now carries the `throttle:sisp-callback` middleware, which limits cancellation callbacks (`UserCancelled` or `userCancelled`) to 10 per minute per merchant reference and 30 per minute per IP address; override it with `sisp.middleware.callback`. Do not rely on it to protect guessable references.
+- **The cancellation callback requires both identifiers.** It only cancels a `pending` transaction matching a non-empty `merchantRef` and `merchantSession`. The callback route now carries the `throttle:sisp-callback` middleware, which limits cancellation callbacks (`UserCancelled` or `userCancelled`) to 10 per minute per merchant reference and 30 per minute per IP address; override it with `sisp.middleware.callback`. Behind a load balancer, configure `TrustProxies` so customers do not share one address bucket. Do not rely on it to protect guessable references.
 - **Status comes from the documented message type table.** Only `messageType = 6` fails a transaction. A known success message type completes it only when `merchantResp` has the expected value; otherwise the transaction stays `pending` and a warning is logged.
 - **Refused callbacks keep their reason.** The error fingerprint formula validates SISP refusals, and the refusal code and message are stored in `error_code` and `error_message` and shown on the response screen. The raw callback is stored encrypted in `callback_raw_payload`, with the card number masked to its last four digits, and encrypted attributes are redacted in `sisp_transaction_logs`.
 - **Deprecations.** `ErrorMessageType` and `GetPaymentErrorResponseAction` are deprecated and no longer used by the package. They remain for published views that read the old error array shape.

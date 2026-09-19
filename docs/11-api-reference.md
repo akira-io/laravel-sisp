@@ -594,7 +594,7 @@ $context->failed();        // bool
 $context->failureReason;   // 'invalid_callback_fingerprint' | 'callback_details_mismatch' | null
 ```
 
-Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`, `ValidateFingerprint`, `EnsureCallbackMatchesTransaction`, `ApplyTransactionStatus`, `DispatchPaymentEvents`. Custom pipes implement `Akira\Sisp\Contracts\CallbackPipe`. Failing pipes mark the transaction `failed`, dispatch `PaymentFailed`, and short-circuit the pipeline.
+Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`, `ValidateFingerprint`, `EnsureCallbackMatchesTransaction`, `ApplyTransactionStatus`, `DispatchPaymentEvents`. Custom pipes implement `Akira\Sisp\Contracts\CallbackPipe`. `ValidateFingerprint` short-circuits on a mismatch without writing to the transaction or dispatching events; the callback controller runs the same check before the pipeline while `ValidateFingerprint` is in `sisp.pipelines.callback`, and redirects to `sisp.redirect_url`. `EnsureCallbackMatchesTransaction` marks the transaction `failed`, dispatches `PaymentFailed`, and short-circuits.
 
 ## Contracts (v2)
 
@@ -799,17 +799,20 @@ $isValid = app(ValidatePaymentResponseFingerprintAction::class)->handle(
 Handles the SISP callback route.
 
 ```php
-// GET /sisp/callback?ref=<merchant_ref>
-// Renders the payment response for a known merchant reference.
+// GET /sisp/callback?ref=<merchant_ref>&expires=...&signature=...
+// Renders the payment response for a known merchant reference
+// when the URL carries a valid signature (see BuildPaymentResultUrlAction).
 
 // POST /sisp/callback
 // 1. Cancels the transaction and its invoice on a user cancellation,
 //    which SISP posts as { merchantRef, merchantSession, UserCancelled }.
-// 2. Validates the callback fingerprint before transaction lookup.
-// 3. Requires merchant reference and merchant session.
+// 2. Requires merchant reference and merchant session.
+// 3. Validates the callback fingerprint before transaction lookup, while
+//    ValidateFingerprint is configured; a mismatch redirects to
+//    sisp.redirect_url without writing anything.
 // 4. Redirects duplicate callbacks when transaction_id is already set.
 // 5. Handles the callback, stores metadata, updates invoice status,
-//    then redirects to GET /sisp/callback?ref=<merchant_ref>.
+//    then redirects to the signed GET /sisp/callback?ref=<merchant_ref>.
 ```
 
 ### RenderPaymentResponseAction

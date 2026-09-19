@@ -50,7 +50,7 @@ Both processing flows are `Illuminate\Pipeline\Pipeline` runs over a mutable con
 - **Payment** — `ProcessPaymentPipeline` over `PaymentContext` (`EnsureIpIsNotBlacklisted` → `EnforceRateLimits` → `BuildPaymentRequest` → `PersistTransaction` → `CaptureRequestMetadata`)
 - **Callback** — `HandleCallbackPipeline` over `CallbackContext` (`ResolveTransaction` → `ValidateFingerprint` → `EnsureCallbackMatchesTransaction` → `ApplyTransactionStatus` → `DispatchPaymentEvents`)
 
-Failure semantics: callback pipes that detect tampering or mismatches mark the transaction `failed`, dispatch `PaymentFailed`, record the reason on the context (`failureReason`), and short-circuit the remaining pipes — exactly the behavior of v1, now in isolated, replaceable units.
+Failure semantics: `ValidateFingerprint` records `invalid_callback_fingerprint` on the context (`failureReason`) and short-circuits without writing, because a forged callback must not change a transaction. `EnsureCallbackMatchesTransaction` marks the transaction `failed`, dispatches `PaymentFailed`, records `callback_details_mismatch` and short-circuits.
 
 ## Actions Pattern
 

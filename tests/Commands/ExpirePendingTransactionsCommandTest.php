@@ -100,7 +100,7 @@ it('rejects a negative window instead of expiring transactions created moments a
     ]);
 
     $this->artisan('sisp:expire-pending', ['--older-than' => -5])
-        ->expectsOutput('The --older-than option must be at least 1 day.')
+        ->expectsOutput('The --older-than option must be a whole number of days, at least 1.')
         ->assertFailed();
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);
@@ -114,7 +114,7 @@ it('rejects a zero window instead of expiring transactions created moments ago',
     ]);
 
     $this->artisan('sisp:expire-pending', ['--older-than' => 0])
-        ->expectsOutput('The --older-than option must be at least 1 day.')
+        ->expectsOutput('The --older-than option must be a whole number of days, at least 1.')
         ->assertFailed();
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::pending);

@@ -298,7 +298,7 @@ SISP_MERCHANT_ID=correct_id
 Check logs for exact error:
 
 ```bash
-tail -f storage/logs/laravel.log | grep -i signature
+tail -f storage/logs/laravel.log | grep -i 'fingerprint does not match'
 ```
 
 ### Callback redirects before processing
@@ -311,9 +311,9 @@ transaction is already in a terminal status.
 
 The controller redirects without processing when:
 
-1. The request is a GET without a valid `ref` query parameter
-2. The POST fingerprint is invalid
-3. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
+1. The request is a GET without a `ref` query parameter or without a valid, unexpired signature
+2. `merchantRespMerchantRef` or `merchantRespMerchantSession` is missing
+3. The POST fingerprint is invalid (checked while `ValidateFingerprint` is in `sisp.pipelines.callback`)
 4. The callback was already processed and the transaction already has a SISP transaction ID
 
 Duplicate callbacks redirect with an `info` flash message: `This payment has already been processed.`
@@ -514,7 +514,9 @@ php artisan sisp:expire-pending --older-than=14
 php artisan sisp:expire-pending --limit=200
 ```
 
-`--older-than` rejects any value below `1`: real timing against production SISP shows the gateway closes its own payment screens at 2m12s and 3m00s, so a transaction younger than a day can still legitimately resolve, and a window of `0` would cancel every uncallbacked pending transaction regardless of age.
+When `sisp.transaction_status.reconciliation_enabled` is on, the command asks SISP for each transaction's status before cancelling it. A transaction SISP reports as paid or refused is completed or failed instead of cancelled, and one SISP cannot be asked about stays `pending` for the next run. Without reconciliation it cancels on age alone, which can cancel a payment whose callback was lost.
+
+`--older-than` and `--limit` must be whole numbers; anything else fails the command. `--older-than` rejects any value below `1`: real timing against production SISP shows the gateway closes its own payment screens at 2m12s and 3m00s, so a transaction younger than a day can still legitimately resolve, and a window of `0` would cancel every uncallbacked pending transaction regardless of age.
 
 Register it, for example weekly:
 
@@ -534,6 +536,8 @@ php artisan sisp:prune-request-payloads
 php artisan sisp:prune-request-payloads --older-than=30
 php artisan sisp:prune-request-payloads --limit=200
 ```
+
+Each transaction is pruned under a row lock, so a refund recorded while the command runs is kept. A payload that cannot be decrypted, for example after an `APP_KEY` rotation, is logged and marked pruned without being changed, so it no longer holds back the rows behind it. Restore the old key in `APP_PREVIOUS_KEYS` before running the command if those payloads must be pruned too.
 
 Unlike `sisp:expire-pending`, `--older-than=0` is accepted: the purchase request blob is personal 3-D Secure data whose customer-facing fields already live in dedicated `customer_*` columns, so purging it immediately on terminal transactions is a defensible "clear it all now" rather than a risk to a live transaction.
 

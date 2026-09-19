@@ -29,7 +29,7 @@ it('does not capture callback metadata when metadata collection is disabled', fu
     ]));
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-NO-METADATA']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-NO-METADATA'], absolute: false);
 
     expect($transaction->refresh()->status->value)->toBe('completed')
         ->and(RequestMetadata::query()->count())->toBe(0);

@@ -12,7 +12,7 @@ final readonly class ResolveCustomerErrorMessageAction
     {
         foreach ([$payload->additionalErrorMessage, $payload->screenError, $payload->errorDescription] as $candidate) {
             if (mb_trim($candidate) !== '') {
-                return $candidate;
+                return mb_substr($candidate, 0, 255);
             }
         }
 

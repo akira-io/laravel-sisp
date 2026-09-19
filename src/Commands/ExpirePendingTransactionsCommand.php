@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Actions\CancelTransactionAction;
+use Akira\Sisp\Actions\QueryTransactionStatusAction;
+use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
+use Akira\Sisp\Commands\Concerns\ValidatesIntegerOptions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Console\Attributes\Description;
@@ -14,6 +17,8 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use LogicException;
+use RuntimeException;
+use Throwable;
 
 #[Signature('sisp:expire-pending
                             {--older-than= : Minimum pending age in days}
@@ -21,13 +26,27 @@ use LogicException;
 #[Description('Cancel pending SISP transactions that never received a callback')]
 final class ExpirePendingTransactionsCommand extends Command
 {
-    public function handle(Repository $config, CancelTransactionAction $cancel): int
-    {
+    use ValidatesIntegerOptions;
+
+    public function handle(
+        Repository $config,
+        CancelTransactionAction $cancel,
+        QueryTransactionStatusAction $queryTransactionStatus,
+        ReconcileTransactionStatusAction $reconcile,
+    ): int {
+        if ($this->rejectsIntegerOption('older-than', 1, 'The --older-than option must be a whole number of days, at least 1.')) {
+            return self::FAILURE;
+        }
+
+        if ($this->rejectsIntegerOption('limit', 1, 'The --limit option must be a whole number of at least 1.')) {
+            return self::FAILURE;
+        }
+
         $olderThan = $this->option('older-than');
         $days = $olderThan !== null ? (int) $olderThan : (int) $config->get('sisp.expire_pending_after_days', 30);
 
         if ($days < 1) {
-            $this->error('The --older-than option must be at least 1 day.');
+            $this->error('The sisp.expire_pending_after_days setting must be at least 1 day.');
 
             return self::FAILURE;
         }
@@ -50,8 +69,17 @@ final class ExpirePendingTransactionsCommand extends Command
 
         $expired = 0;
         $skipped = 0;
+        $settled = 0;
+
+        $reconciliationEnabled = (bool) $config->get('sisp.transaction_status.reconciliation_enabled', false);
 
         foreach ($transactions as $transaction) {
+            if ($reconciliationEnabled && ! $this->isStillPendingAtSisp($transaction, $queryTransactionStatus, $reconcile)) {
+                $settled++;
+
+                continue;
+            }
+
             try {
                 $cancel->handle($transaction, 'expired');
                 $expired++;
@@ -71,6 +99,31 @@ final class ExpirePendingTransactionsCommand extends Command
             $this->info("Skipped {$skipped} transactions that could not be cancelled.");
         }
 
+        if ($settled > 0) {
+            $this->info("Left {$settled} transactions that SISP settled or could not be asked about.");
+        }
+
         return self::SUCCESS;
+    }
+
+    private function isStillPendingAtSisp(
+        Transaction $transaction,
+        QueryTransactionStatusAction $queryTransactionStatus,
+        ReconcileTransactionStatusAction $reconcile,
+    ): bool {
+        try {
+            $response = $queryTransactionStatus->handle($transaction);
+
+            throw_unless($response->answered, RuntimeException::class, $response->message);
+
+            return $reconcile->applyResponse($transaction, $response)->status === TransactionStatus::pending;
+        } catch (Throwable $exception) {
+            Log::warning('Skipped expiring a SISP transaction whose status could not be queried.', [
+                'transaction_id' => $transaction->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }
