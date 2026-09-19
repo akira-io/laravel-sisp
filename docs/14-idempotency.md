@@ -151,7 +151,11 @@ Callbacks are resolved by the callback pipeline. `ResolveTransaction` finds the 
 
 - Current attempt: callback writes through to the transaction.
 - Superseded failed attempt: attempt is recorded, transaction is not overwritten.
-- Superseded completed attempt: callback is allowed to promote the transaction to completed.
+- Superseded completed attempt: callback is allowed to promote the transaction to completed, unless the transaction is already `completed` or `refunded`.
+- Replayed callback (the attempt already recorded one with the same fingerprint): nothing is written and no event is dispatched.
+- Transaction already `completed` or `refunded`: the callback is recorded on its attempt, the transaction is left alone and no event is dispatched.
+
+The callback actions lock the transaction and then its attempt, and decide on the rows they read under the lock, so two copies of one callback arriving together apply once.
 
 This prevents a late failed callback from an old attempt from overwriting a newer retry that is still pending.
 

@@ -331,8 +331,8 @@ Cannot be refunded:
 
 ### Refund History
 
-Every refund is recorded in `sisp_refunds` once the `create_sisp_refunds_table`
-migration has run, and is also kept in the transaction payload as in 2.1.
+Every refund is recorded in `sisp_refunds` and also kept in the transaction
+payload.
 
 ```php
 $transaction->refunds;               // Refund models, oldest first
@@ -343,7 +343,8 @@ $transaction->isPartiallyRefunded(); // true while refunds exist and the status 
 
 The helpers read the same ledger as the refund guard: on a `completed`
 transaction a refund of up to `refundableAmount()` is accepted and anything
-above it is refused. Refunds recorded by 2.1 in the payload are counted too.
+above it is refused. Refunds recorded only in the payload, before the refunds
+table existed, are counted too. A balance below one centavo counts as settled.
 Each helper runs one query; load the relation first
 (`Transaction::with('refunds')`) to compute them in memory over a list.
 
