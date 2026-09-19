@@ -62,7 +62,7 @@ it('masks the card number in the stored callback metadata', function (): void {
     $payload['resultFingerPrint'] = resolve(PaymentResponseFingerPrintAction::class)->handle(CallbackPayload::from($payload));
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-PAN-METADATA']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-PAN-METADATA'], absolute: false);
 
     $stored = RequestMetadata::query()->where('transaction_id', $transaction->id)->sole();
     $raw = (string) DB::table($stored->getTable())->where('id', $stored->id)->value('custom_metadata');
