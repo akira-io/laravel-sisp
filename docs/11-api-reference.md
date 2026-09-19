@@ -815,6 +815,17 @@ Handles the SISP callback route.
 //    then redirects to the signed GET /sisp/callback?ref=<merchant_ref>.
 ```
 
+### BuildPaymentResultUrlAction
+
+Builds the temporary signed URL of the payment result page, valid for 30 minutes.
+
+```php
+use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
+
+$url = app(BuildPaymentResultUrlAction::class)->handle($transaction);
+// URL::temporarySignedRoute('sisp.callback', now()->addMinutes(30), ['ref' => $transaction->merchant_ref])
+```
+
 ### RenderPaymentResponseAction
 
 Render payment response in Blade or Inertia format.

@@ -225,6 +225,15 @@ closed without it. What to do:
 - The Inertia `transaction` prop no longer has `merchant_session`. If a
   published page component read it, remove that use; the `TransactionData`
   type in the published `payment-response-data.ts` drops the field too.
+- The signature covers the whole URL. Behind a TLS-terminating proxy,
+  configure trusted proxies so the request is seen as `https`; with
+  `URL::forceScheme('https')` and no trusted proxies every result page
+  redirects to `sisp.redirect_url`. Query parameters added on the way
+  (`utm_*`, `fbclid`) also invalidate it.
+- Reloading the result page more than 30 minutes after the payment redirects
+  to `sisp.redirect_url`. The link stays in browser history and server access
+  logs, and any analytics script on an Inertia layout sends it to its vendor;
+  the 30 minute limit bounds that exposure.
 - Tests that call `GET /sisp/callback?ref=` directly need
   `URL::signedRoute('sisp.callback', ['ref' => ...])`, and tests that assert
   the callback redirect can use

@@ -247,6 +247,10 @@ No manual configuration needed.
 
 Invalid POST callbacks are rejected by `CallbackController` before transaction lookup or duplicate checks. Signed callbacks are then checked for required merchant reference and merchant session values before processing.
 
+### Payment Result Page
+
+The result page at `GET /sisp/callback?ref=<merchant_ref>` renders only for a URL signed by `BuildPaymentResultUrlAction`, which expires after 30 minutes. The POST callback and the signed cancel route redirect the customer to that URL. An unsigned, expired or altered link redirects to `config('sisp.redirect_url', '/')`, so a merchant reference alone does not reveal a payment, its invoice or its retry link. The Inertia props do not include `merchant_session`.
+
 ### Callback Fingerprint Formulas
 
 SISP signs a success callback and an error callback with two different formulas, each concatenating a fixed, ordered list of fields before hashing with SHA-512 and base64-encoding the digest. `ValidatePaymentResponseFingerprintAction` picks the formula from `messageType`: exactly `6` uses the error formula, anything else (including a known `SuccessMessageType` case, an unrecognised value, or a null/empty `messageType`) uses the success formula (see the `messageType` table in [Payment Flow](./04-payment-flow.md#91-fingerprint-validation)).
