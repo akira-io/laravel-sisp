@@ -25,6 +25,7 @@ it('sums the refunds recorded in the table', function (): void {
 
 it('falls back to the legacy payload when the table has no rows', function (): void {
     $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
         'amount' => 1000.0,
         'payload' => [
             'refunds' => [
@@ -53,6 +54,7 @@ it('belongs to the transaction it refunds', function (): void {
 
 it('prefers the table over the legacy payload once a row exists', function (): void {
     $transaction = Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
         'amount' => 1000.0,
         'payload' => [
             'refunds' => [
