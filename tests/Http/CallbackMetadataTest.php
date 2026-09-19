@@ -32,7 +32,7 @@ it('does not capture callback metadata when metadata collection is disabled', fu
     ]));
 
     $this->post(route('sisp.callback'), $payload->toArray())
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-NO-METADATA']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-NO-METADATA']);
 
     expect($transaction->refresh()->status->value)->toBe('completed')
         ->and(RequestMetadata::query()->count())->toBe(0);
@@ -62,7 +62,7 @@ it('masks the card number in the stored callback metadata', function (): void {
     $payload['resultFingerPrint'] = resolve(PaymentResponseFingerPrintAction::class)->handle(CallbackPayload::from($payload));
 
     $this->post(route('sisp.callback'), $payload)
-        ->assertRedirect(route('sisp.callback', ['ref' => 'MR-PAN-METADATA']));
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-PAN-METADATA']);
 
     $stored = RequestMetadata::query()->where('transaction_id', $transaction->id)->sole();
     $raw = (string) DB::table($stored->getTable())->where('id', $stored->id)->value('custom_metadata');

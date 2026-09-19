@@ -32,3 +32,14 @@ it('renderInertia includes invoice data when present', function (): void {
         ])
         ->and($data['props']['invoice']['pdf_url'])->toContain('invoices/test.pdf');
 });
+
+it('renderInertia does not expose the merchant session', function (): void {
+    $transaction = Transaction::factory()->create(['merchant_session' => 'MS-SECRET']);
+
+    $request = request();
+    $request->headers->set(Header::INERTIA, 'true');
+    $data = resolve(RenderPaymentResponseAction::class)->renderInertia($transaction, [])->toResponse($request)->getData(true);
+
+    expect($data['props']['transaction'])->not->toHaveKey('merchant_session')
+        ->and($data['props']['transaction']['merchant_ref'])->toBe($transaction->merchant_ref);
+});

@@ -800,8 +800,9 @@ $isValid = app(ValidatePaymentResponseFingerprintAction::class)->handle(
 Handles the SISP callback route.
 
 ```php
-// GET /sisp/callback?ref=<merchant_ref>
-// Renders the payment response for a known merchant reference.
+// GET /sisp/callback?ref=<merchant_ref>&expires=...&signature=...
+// Renders the payment response for a known merchant reference
+// when the URL carries a valid signature (see BuildPaymentResultUrlAction).
 
 // POST /sisp/callback
 // 1. Logs a user cancellation, which SISP posts as
@@ -811,7 +812,7 @@ Handles the SISP callback route.
 // 3. Requires merchant reference and merchant session.
 // 4. Redirects duplicate callbacks when transaction_id is already set.
 // 5. Handles the callback, stores metadata, updates invoice status,
-//    then redirects to GET /sisp/callback?ref=<merchant_ref>.
+//    then redirects to the signed GET /sisp/callback?ref=<merchant_ref>.
 ```
 
 ### RenderPaymentResponseAction

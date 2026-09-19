@@ -184,10 +184,53 @@ For the full v2 design, see [docs/12-architecture.md](docs/12-architecture.md).
 ## Upgrading from 2.1 to 2.2
 
 `composer update` is enough for the application to keep taking payments.
-Public constructors and controller signatures stay as they were in 2.1, and
-nothing below needs code changes, but section 4 lists behaviour that changed.
+Public constructors and controller signatures stay as they were in 2.1.
+Section 1 is a security fix that breaks unsigned links to the payment result
+page; read it before you upgrade. Section 6 lists other behaviour that changed.
 
-### 1. Publish and run the new migrations (recommended)
+### 1. The payment result page needs a signed link (security fix)
+
+In 2.1, `GET /sisp/callback?ref=<merchant_ref>` rendered the result page for
+any existing transaction. The default merchant reference is a timestamp, so
+anyone could enumerate them and read the status, amount and currency of other
+customers' payments. With Inertia the page also carried the merchant session,
+the invoice number and the invoice PDF URL, and for a `failed` transaction
+with `sisp.allow_retry` enabled it carried a freshly signed retry link that
+opens the retry form prefilled with the customer's email, phone and address.
+
+In 2.2 the POST callback and the signed `/sisp/cancel` route redirect to a
+temporary signed URL, valid for 30 minutes, built by
+`BuildPaymentResultUrlAction`. The GET route renders the page only when that
+signature is valid; an unsigned, expired, tampered or unknown link redirects
+to `sisp.redirect_url`.
+
+This breaks every stored or hand-built `/sisp/callback?ref=...` link: emails,
+order pages, bookmarks and customer support tools that pointed at it now land
+on `sisp.redirect_url`. It ships in a 2.x release as an exception to the
+no-breaking-changes rule for the previous major, because the leak cannot be
+closed without it. What to do:
+
+- To send a customer back to the result page, build the link with
+  `BuildPaymentResultUrlAction`, at the moment you send them:
+
+  ```php
+  use Akira\Sisp\Actions\BuildPaymentResultUrlAction;
+
+  return redirect(app(BuildPaymentResultUrlAction::class)->handle($transaction));
+  ```
+
+  The link expires after 30 minutes, so do not store it or put it in an email.
+  For a lasting link, point at a page of your own that checks the customer
+  owns the transaction.
+- The Inertia `transaction` prop no longer has `merchant_session`. If a
+  published page component read it, remove that use; the `TransactionData`
+  type in the published `payment-response-data.ts` drops the field too.
+- Tests that call `GET /sisp/callback?ref=` directly need
+  `URL::signedRoute('sisp.callback', ['ref' => ...])`, and tests that assert
+  the callback redirect can use
+  `assertRedirectToSignedRoute('sisp.callback', ['ref' => ...])`.
+
+### 2. Publish and run the new migrations (recommended)
 
 2.2 ships four migrations:
 
@@ -211,7 +254,7 @@ are recorded in `sisp_refunds`. Rolling back
 `update_laravel_sisp_transactions_add_callback_error_fields` drops the stored
 refusal reasons and raw callbacks.
 
-### 2. New maintenance commands (opt-in)
+### 3. New maintenance commands (opt-in)
 
 Neither command is scheduled by the package. Add them to `routes/console.php`
 if you want them:
@@ -231,7 +274,7 @@ Schedule::command('sisp:prune-request-payloads')->monthly();
   from terminal transactions older than `sisp.prune_request_payloads_after_days`
   (90 by default).
 
-### 3. Customer cancellation callback
+### 4. Customer cancellation callback
 
 SISP posts `{ merchantRef, merchantSession, UserCancelled }` when the customer
 cancels on the payment page. That request carries no fingerprint. On 2.2 the
@@ -244,7 +287,7 @@ redirected; it does not change the transaction, cancel the invoice or dispatch
 The cancellation branch of the callback route is rate limited per merchant
 reference through the `sisp-callback` limiter.
 
-### 4. Refund history on the model
+### 5. Refund history on the model
 
 `Transaction` gains `refundedAmount()`, `refundableAmount()` and
 `isPartiallyRefunded()`, next to the `refunds()` relation. They read the same
@@ -252,7 +295,7 @@ ledger as `RefundTransactionAction`. `TransactionRefunded` gains two optional
 properties, `$refund` and `$remainingAmount`; building the event with the 2.1
 arguments still works.
 
-### 5. Other behaviour changes
+### 6. Other behaviour changes
 
 - A callback whose fingerprint does not match is logged and redirected to
   `sisp.redirect_url` without touching the transaction. In 2.1 it moved the
@@ -282,7 +325,7 @@ arguments still works.
 - Refused callbacks are validated with the SISP error fingerprint formula, and
   sandbox error payloads are signed with it.
 
-### 6. Unpredictable merchant references (3.0, available now)
+### 7. Unpredictable merchant references (3.0, available now)
 
 In 2.x the default merchant reference and session are `R`/`S` followed by a
 timestamp, which can be guessed. 3.0 appends ten random characters. You can
