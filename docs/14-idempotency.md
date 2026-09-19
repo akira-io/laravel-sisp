@@ -111,6 +111,11 @@ A second request with the same key receives:
 - JSON request: HTTP `409` with `Payment is already being processed.`
 - Browser form request: redirect back with a validation error
 
+A request that died mid-flight leaves the row in `processing`. Once it has not
+changed for `sisp.idempotency.processing_timeout_seconds` (600 by default), the
+next request with the same key reclaims it. Set the timeout to `0` to never
+reclaim a `processing` row.
+
 ### `submitted`
 
 The key is linked to a transaction.
@@ -123,7 +128,9 @@ When the same key is posted again:
 
 ### `failed`
 
-The package failed before linking a transaction. Failed reservations with `transaction_id = null` are reclaimable. A later request with the same key moves the row back to `processing` and tries again, which prevents transient server errors from permanently blocking the checkout key.
+The package failed. Failed reservations with `transaction_id = null` are reclaimable. A later request with the same key moves the row back to `processing` and tries again, which prevents transient server errors from permanently blocking the checkout key.
+
+When the failure happens after the transaction was stored, the row keeps that `transaction_id`, so a later request reuses the transaction instead of creating a second one.
 
 ## Retry Behavior
 
@@ -183,6 +190,7 @@ The default config enables idempotency:
 'idempotency' => [
     'enabled' => env('SISP_IDEMPOTENCY_ENABLED', true),
     'request_keys' => ['idempotency_key', 'checkout_intent_id'],
+    'processing_timeout_seconds' => env('SISP_IDEMPOTENCY_PROCESSING_TIMEOUT', 600),
 ],
 ```
 
@@ -281,7 +289,7 @@ In v2, pipeline order matters. `ApplyPaymentIntent` must run before transaction 
 If a checkout is stuck:
 
 1. Look up the row in `sisp_payment_intents` by `idempotency_key`.
-2. If `status = processing` and no request is active, inspect application errors around `updated_at`.
+2. If `status = processing` and no request is active, inspect application errors around `updated_at`. The row is reclaimed automatically once it is older than `processing_timeout_seconds`.
 3. If `status = failed` and `transaction_id` is null, the next request with the same key can reclaim it.
 4. If `status = submitted`, inspect the linked transaction and its attempts.
 5. If the transaction is pending and SISP has a final status, run status reconciliation.
