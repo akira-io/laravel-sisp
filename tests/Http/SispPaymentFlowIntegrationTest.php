@@ -103,7 +103,7 @@ it('runs a successful payment from payment request through signed callback and i
 
     $payload = real_sisp_flow_callback_payload($transaction, 'success');
 
-    $this->post(route('sisp.callback'), $payload->toArray())
+    $callback = $this->post(route('sisp.callback'), $payload->toArray())
         ->assertRedirectToSignedRoute('sisp.callback', ['ref' => $transaction->merchant_ref]);
 
     $transaction->refresh();
@@ -116,9 +116,10 @@ it('runs a successful payment from payment request through signed callback and i
 
     Storage::disk('public')->assertExists($invoice->pdf_path);
 
-    $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref]))
+    $this->get((string) $callback->headers->get('Location'))
         ->assertOk()
-        ->assertSee($transaction->merchant_ref);
+        ->assertSee($transaction->merchant_ref)
+        ->assertDontSee($transaction->merchant_session);
 });
 
 it('runs a failed payment flow and exposes signed retry without paying the invoice', function (): void {
@@ -129,7 +130,7 @@ it('runs a failed payment flow and exposes signed retry without paying the invoi
 
     $transaction = Transaction::query()->with('invoice')->sole();
 
-    $this->post(route('sisp.callback'), real_sisp_flow_callback_payload($transaction, 'failed')->toArray())
+    $callback = $this->post(route('sisp.callback'), real_sisp_flow_callback_payload($transaction, 'failed')->toArray())
         ->assertRedirectToSignedRoute('sisp.callback', ['ref' => $transaction->merchant_ref]);
 
     $transaction->refresh();
@@ -139,9 +140,15 @@ it('runs a failed payment flow and exposes signed retry without paying the invoi
         ->and($invoice->status)->toBe(InvoiceStatus::cancelled)
         ->and($invoice->pdf_path)->toBeNull();
 
-    $this->get(URL::signedRoute('sisp.callback', ['ref' => $transaction->merchant_ref]))
+    $this->get((string) $callback->headers->get('Location'))
         ->assertOk()
-        ->assertSee('/sisp/retry-payment', false);
+        ->assertSee('/sisp/retry-payment', false)
+        ->assertDontSee($transaction->merchant_session);
+
+    $this->travel(31)->minutes();
+
+    $this->get((string) $callback->headers->get('Location'))
+        ->assertRedirect(config('sisp.redirect_url', '/'));
 });
 
 it('runs retry through the signed public route with the same SISP identifiers', function (): void {

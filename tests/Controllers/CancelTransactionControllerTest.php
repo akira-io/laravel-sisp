@@ -129,3 +129,15 @@ it('cancels a failed transaction from the signed route as in 2.1', function (): 
         ->status->value->toBe('cancelled')
         ->cancelled_at->not->toBeNull();
 });
+
+it('redirects a signed cancellation to a result page link that expires', function (): void {
+    Transaction::factory()->create(['status' => 'pending', 'merchant_ref' => 'MR-C-EXPIRES']);
+
+    $response = $this->get(URL::signedRoute('sisp.cancel', ['merchantRef' => 'MR-C-EXPIRES']))
+        ->assertRedirectToSignedRoute('sisp.callback', ['ref' => 'MR-C-EXPIRES']);
+
+    $this->travel(31)->minutes();
+
+    $this->get((string) $response->headers->get('Location'))
+        ->assertRedirect(config('sisp.redirect_url', '/'));
+});
