@@ -154,7 +154,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 
 ## Database migrations (action required)
 
-3.0 ships five new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+3.0 ships six new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
 
 | Migration | What it does |
 | --- | --- |
@@ -163,6 +163,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 | `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
 | `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
 | `update_sisp_refunds_add_idempotency_key` | Adds a nullable `idempotency_key` column to the refunds table and a unique index on `transaction_id` and `idempotency_key`. It also gives `transaction_id` an index of its own, so the foreign key does not depend on the unique index. It must run after `create_sisp_refunds_table` and before 3.0 takes refunds: 3.0 writes the column on every refund, keyed or not. |
+| `update_laravel_sisp_transactions_narrow_lookup_index` | Replaces the index on `merchant_ref`, `merchant_session`, `status` and `message_type` with one on `merchant_session` alone. The four-column index needed 4080 bytes in utf8mb4, above the 3072-byte key limit InnoDB enforces, so a fresh install could never complete on MySQL or MariaDB. Lookups by `merchant_ref` are served by its unique index. |
 
 ```bash
 php artisan vendor:publish --tag=sisp-migrations
