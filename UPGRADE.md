@@ -154,7 +154,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 
 ## Database migrations (action required)
 
-3.0 ships five new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+3.0 ships six new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
 
 | Migration | What it does |
 | --- | --- |
@@ -163,6 +163,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 | `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
 | `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
 | `update_sisp_refunds_add_idempotency_key` | Adds a nullable `idempotency_key` column to the refunds table and a unique index on `transaction_id` and `idempotency_key`. It also gives `transaction_id` an index of its own, so the foreign key does not depend on the unique index. It must run after `create_sisp_refunds_table` and before 3.0 takes refunds: 3.0 writes the column on every refund, keyed or not. |
+| `update_laravel_sisp_transactions_narrow_lookup_index` | Replaces the index on `merchant_ref`, `merchant_session`, `status` and `message_type` with one on `merchant_session` alone. The four-column index needed 4080 bytes in utf8mb4, above the 3072-byte key limit InnoDB enforces, so a fresh install could never complete on MySQL or MariaDB. Lookups by `merchant_ref` are served by its unique index; the migration keeps the wide index if that unique index is gone. It does nothing on MySQL and MariaDB, where the wide index could never be created, and its rollback only puts the wide index back on an install it actually took it from. |
 
 ```bash
 php artisan vendor:publish --tag=sisp-migrations
@@ -175,6 +176,7 @@ Plan the deploy around these points:
 
 - **Run `migrate` before 3.0 serves requests.** 3.0 writes the new columns on every callback and the refunds table on every refund, and fails until they exist. A refund that a still-running 2.x release records while the copy runs lands only in `payload['refunds']`; 3.0 counts the larger of the refunds table and the payload, so that refund is still counted and cannot be refunded twice.
 - **Large transactions tables take time and locks.** The refunds copy reads every transaction, payload included, and writes one row per refund; on PostgreSQL and SQLite the whole migration runs in one database transaction, so an interrupted run starts over. The index on `status` and `created_at` is created without `CONCURRENTLY`, which blocks writes to the transactions table on PostgreSQL while it builds, and on MySQL before 8.0.29 the new columns rebuild the table. Run it in a low-traffic window, or create the `status`/`created_at` index yourself beforehand: the migration skips an index that already exists.
+- **The lookup index swap locks the transactions table on PostgreSQL.** `update_laravel_sisp_transactions_narrow_lookup_index` creates the new index and drops the old one in the same database transaction, without `CONCURRENTLY`, so writes block while the index builds and reads block while the old one is dropped. Create the `merchant_session` index yourself with `CREATE INDEX CONCURRENTLY` before the deploy if the table is large: the migration skips an index that already exists.
 - **Back up before rolling back.** Rolling back `update_laravel_sisp_transactions_add_callback_error_fields` drops `error_code`, `error_message` and `callback_raw_payload` for good. Rolling back the refunds table loses nothing, because every refund is still mirrored in `payload['refunds']`. Rolling back `update_sisp_refunds_add_idempotency_key` drops the stored keys, so a retry sent after the rollback with a key used before it is refunded again.
 
 The refund history is still appended to `payload['refunds']` as well, so code reading it keeps working. New code should read `$transaction->refunds()` (`Akira\Sisp\Models\Refund`).

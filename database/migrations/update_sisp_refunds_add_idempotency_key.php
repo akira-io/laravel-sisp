@@ -22,13 +22,7 @@ return new class extends Migration
             });
         }
 
-        if ($this->indexNamed($refundsTable, ['transaction_id']) === null) {
-            $transactionIndex = $this->indexName($refundsTable, 'transaction_id_index');
-
-            Schema::table($refundsTable, function (Blueprint $table) use ($transactionIndex): void {
-                $table->index(['transaction_id'], $transactionIndex);
-            });
-        }
+        $this->addTransactionIndex($refundsTable);
 
         if ($this->uniqueKeyIndex($refundsTable) !== null) {
             return;
@@ -52,6 +46,8 @@ return new class extends Migration
         $uniqueIndex = $this->uniqueKeyIndex($refundsTable);
 
         if ($uniqueIndex !== null) {
+            $this->addTransactionIndex($refundsTable);
+
             Schema::table($refundsTable, function (Blueprint $table) use ($uniqueIndex): void {
                 $table->dropUnique($uniqueIndex);
             });
@@ -64,6 +60,30 @@ return new class extends Migration
         Schema::table($refundsTable, function (Blueprint $table): void {
             $table->dropColumn('idempotency_key');
         });
+    }
+
+    private function addTransactionIndex(string $table): void
+    {
+        $transactionIndex = $this->indexName($table, 'transaction_id_index');
+
+        if (in_array($transactionIndex, $this->indexNames($table), true)) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $blueprint) use ($transactionIndex): void {
+            $blueprint->index(['transaction_id'], $transactionIndex);
+        });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function indexNames(string $table): array
+    {
+        return array_map(
+            fn (array $index): string => mb_strtolower((string) $index['name']),
+            Schema::getIndexes($table),
+        );
     }
 
     private function indexName(string $table, string $suffix): string

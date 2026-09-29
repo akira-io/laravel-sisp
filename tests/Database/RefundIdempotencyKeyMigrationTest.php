@@ -73,10 +73,14 @@ it('drops a unique index created under another name on rollback', function (): v
 });
 
 it('does nothing when the refunds table does not exist', function (): void {
+    $configured = config('sisp.tables.refunds', 'sisp_refunds');
+
     config()->set('sisp.tables.refunds', 'missing_refunds');
 
     refundIdempotencyMigration()->up();
     refundIdempotencyMigration()->down();
+
+    config()->set('sisp.tables.refunds', $configured);
 
     expect(Schema::hasTable('missing_refunds'))->toBeFalse();
 });
