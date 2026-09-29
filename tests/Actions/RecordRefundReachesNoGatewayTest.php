@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+use Akira\Sisp\Actions\RecordRefundAction;
+use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Sisp;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
+
+function recordableTransaction(): Transaction
+{
+    return Transaction::factory()->create([
+        'status' => TransactionStatus::completed->value,
+        'amount' => 100.0,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+}
+
+it('sends nothing to the gateway when a refund is recorded', function (): void {
+    Http::preventStrayRequests();
+    Http::fake();
+
+    resolve(RecordRefundAction::class)->handle(recordableTransaction(), 100.0, 'customer_request');
+
+    Http::assertNothingSent();
+});
+
+it('sends nothing to the gateway through the fluent builder', function (): void {
+    Http::preventStrayRequests();
+    Http::fake();
+
+    resolve(Sisp::class)->refund(recordableTransaction())->full()->record();
+
+    Http::assertNothingSent();
+});
+
+it('keeps the signed refund request on the recorded refund', function (): void {
+    $transaction = recordableTransaction();
+
+    resolve(RecordRefundAction::class)->handle($transaction, 100.0, 'customer_request');
+
+    $request = $transaction->refunds()->sole()->request;
+
+    expect($request)->toHaveKeys(['posID', 'merchantRef', 'amount', 'transactionCode', 'fingerprint']);
+});
+
+it('answers without claiming the money moved', function (): void {
+    Http::preventStrayRequests();
+    Http::fake();
+
+    Gate::before(fn (): bool => true);
+
+    $response = $this->actingAs(new User)
+        ->postJson(route('sisp.refund', recordableTransaction()), ['amount' => 100.0]);
+
+    $response->assertOk();
+
+    expect($response->json('message'))->not->toContain('refunded successfully');
+
+    Http::assertNothingSent();
+});

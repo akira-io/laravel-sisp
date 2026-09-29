@@ -10,7 +10,7 @@ use Akira\Sisp\Actions\CreateTransactionAction;
 use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\QueryTransactionStatusAction;
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
 use Akira\Sisp\Builders\PaymentBuilder;
 use Akira\Sisp\Builders\RefundBuilder;
@@ -57,7 +57,7 @@ final readonly class Sisp
 
     public function refund(Transaction $transaction): RefundBuilder
     {
-        return new RefundBuilder(resolve(RefundTransactionAction::class), $transaction);
+        return new RefundBuilder(resolve(RecordRefundAction::class), $transaction);
     }
 
     public function driver(?string $driver = null): SispDriver

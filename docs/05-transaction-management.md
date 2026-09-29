@@ -258,7 +258,16 @@ The command reconciles only old indeterminate transactions:
 
 ## Refund Transaction
 
-Refund a completed transaction with the fluent builder (v2):
+The package records refunds. It does not send them to SISP.
+
+`RecordRefundAction` builds the signed refund request, stores it on the refund
+row, updates the local balance and status, and dispatches `RefundRecorded`. No
+outbound request is made: the only HTTP client in the package is the transaction
+status client. Issue the refund in the SISP back office, then record it here so
+the local ledger and the daily VBVT reconciliation file agree. Recording a refund
+the back office never issued leaves the two apart.
+
+Record a refund against a completed transaction with the fluent builder:
 
 ```php
 use Akira\Sisp\Facades\Sisp;
@@ -268,13 +277,13 @@ try {
     $transaction = Sisp::refund($transaction)
         ->full()
         ->reason('customer_request')
-        ->process();
+        ->record();
 
     // Partial refund
     $transaction = Sisp::refund($transaction)
         ->amount(500.00)
         ->reason('partial_return')
-        ->process();
+        ->record();
 
     echo "Refunded " . $transaction->formatted_amount;
 } catch (LogicException $e) {
@@ -285,9 +294,9 @@ try {
 The underlying action remains available when you prefer direct invocation:
 
 ```php
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 
-$transaction = app(RefundTransactionAction::class)->handle(
+$transaction = app(RecordRefundAction::class)->handle(
     transaction: $transaction,
     refundAmount: 500.00,
     reason: 'customer_request'
@@ -296,15 +305,15 @@ $transaction = app(RefundTransactionAction::class)->handle(
 
 ### Idempotent Refunds
 
-A refund that times out on the client can be retried safely by sending the same idempotency key with each attempt. The first call refunds; a later call with the same key and the same amount returns the transaction as it stands, without a second refund and without a second `TransactionRefunded` event:
+A refund that times out on the client can be retried safely by sending the same idempotency key with each attempt. The first call refunds; a later call with the same key and the same amount returns the transaction as it stands, without a second refund and without a second `RefundRecorded` event:
 
 ```php
 $transaction = Sisp::refund($transaction)
     ->amount(40.00)
     ->idempotencyKey($orderReturn->uuid)
-    ->process();
+    ->record();
 
-$transaction = app(RefundTransactionAction::class)->handle(
+$transaction = app(RecordRefundAction::class)->handle(
     transaction: $transaction,
     refundAmount: 40.00,
     reason: 'partial_return',
@@ -337,7 +346,7 @@ payload.
 ```php
 $transaction->refunds;               // Refund models, oldest first
 $transaction->refundedAmount();      // 55.5
-$transaction->refundableAmount();    // 44.5, the balance RefundTransactionAction still accepts; 0 unless completed
+$transaction->refundableAmount();    // 44.5, the balance RecordRefundAction still accepts; 0 unless completed
 $transaction->isPartiallyRefunded(); // true while refunds exist and the status is not refunded
 ```
 
@@ -348,7 +357,7 @@ table existed, are counted too. A balance below one centavo counts as settled.
 Each helper runs one query; load the relation first
 (`Transaction::with('refunds')`) to compute them in memory over a list.
 
-`TransactionRefunded` carries the recorded `Refund` and the balance left after
+`RefundRecorded` carries the recorded `Refund` and the balance left after
 it in `$event->refund` and `$event->remainingAmount`.
 
 ### Refund Amount Rules
@@ -396,12 +405,12 @@ POST /sisp/refund/{transaction}
 
 Responses:
 
-- `200` the refund succeeded, with the updated transaction in the body
+- `200` the refund was recorded, with the updated transaction in the body. The money is not returned by this call
 - `400` the transaction cannot be refunded, the amount exceeds the refundable balance, or the idempotency key was already used with a different amount
 - `403` the authenticated user is not allowed to refund this transaction
 - `422` the payload failed validation, with the messages under `errors`
 
-Dispatches `TransactionRefunded` event.
+Dispatches the `RefundRecorded` event. Nothing is sent to SISP.
 
 The refund route middleware is configurable via `config/sisp.php`:
 
@@ -480,7 +489,7 @@ Listen to transaction events:
 
 ```php
 use Akira\Sisp\Events\TransactionCancelled;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Illuminate\Support\Facades\Event;
 
 Event::listen(TransactionCancelled::class, function (TransactionCancelled $event) {
@@ -489,7 +498,7 @@ Event::listen(TransactionCancelled::class, function (TransactionCancelled $event
     $reason = $event->reason;
 });
 
-Event::listen(TransactionRefunded::class, function (TransactionRefunded $event) {
+Event::listen(RefundRecorded::class, function (RefundRecorded $event) {
     // Handle refund
     $transaction = $event->transaction;
     $refundAmount = $event->refundAmount;

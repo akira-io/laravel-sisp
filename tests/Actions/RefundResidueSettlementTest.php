@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\GenerateInvoiceAction;
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Enums\InvoiceStatus;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
@@ -17,7 +17,7 @@ it('refunds the invoice when a residue below a centavo settles the refund', func
     ]);
     $invoice = resolve(GenerateInvoiceAction::class)->handle($transaction);
     $invoice->update(['status' => InvoiceStatus::paid->value]);
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $transaction = $action->handle($transaction, 33.333333);
     $transaction = $action->handle($transaction, 33.333333);
@@ -37,5 +37,5 @@ it('offers nothing to refund on a transaction already left with a residue below 
     ]);
 
     expect($transaction->refundableAmount())->toBe(0.0)
-        ->and(resolve(RefundTransactionAction::class)->refundableAmount($transaction))->toBe(0.0);
+        ->and(resolve(RecordRefundAction::class)->refundableAmount($transaction))->toBe(0.0);
 });

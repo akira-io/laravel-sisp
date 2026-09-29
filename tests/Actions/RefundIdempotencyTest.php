@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -21,9 +21,9 @@ function idempotentRefundTransaction(float $amount = 100.0): Transaction
 }
 
 it('refunds a replayed partial refund only once', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = idempotentRefundTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction, 40.0, 'timeout_retry', 'refund-key-1');
     $replayed = $action->handle($transaction, 40.0, 'timeout_retry', 'refund-key-1');
@@ -34,13 +34,13 @@ it('refunds a replayed partial refund only once', function (): void {
         ->and($replayed->payload['refunds'])->toHaveCount(1)
         ->and($action->refundableAmount($replayed))->toBe(60.0);
 
-    Event::assertDispatchedTimes(TransactionRefunded::class, 1);
+    Event::assertDispatchedTimes(RefundRecorded::class, 1);
 });
 
 it('answers a replayed full refund without refusing the refunded transaction', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = idempotentRefundTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction, 100.0, 'customer_request', 'refund-key-full');
     $replayed = $action->handle($transaction, 100.0, 'customer_request', 'refund-key-full');
@@ -48,13 +48,13 @@ it('answers a replayed full refund without refusing the refunded transaction', f
     expect($replayed->status)->toBe(TransactionStatus::refunded)
         ->and($transaction->refunds()->count())->toBe(1);
 
-    Event::assertDispatchedTimes(TransactionRefunded::class, 1);
+    Event::assertDispatchedTimes(RefundRecorded::class, 1);
 });
 
 it('refuses an idempotency key reused with a different amount', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = idempotentRefundTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction, 40.0, 'first', 'refund-key-2');
 
@@ -63,21 +63,21 @@ it('refuses an idempotency key reused with a different amount', function (): voi
         ->and($transaction->refunds()->count())->toBe(1)
         ->and((int) $transaction->refunds()->sum('amount_thousandths'))->toBe(40_000);
 
-    Event::assertDispatchedTimes(TransactionRefunded::class, 1);
+    Event::assertDispatchedTimes(RefundRecorded::class, 1);
 });
 
 it('stores the idempotency key on the refund row', function (): void {
     $transaction = idempotentRefundTransaction();
 
-    resolve(RefundTransactionAction::class)->handle($transaction, 40.0, 'first', 'refund-key-3');
+    resolve(RecordRefundAction::class)->handle($transaction, 40.0, 'first', 'refund-key-3');
 
     expect($transaction->refunds()->sole()->idempotency_key)->toBe('refund-key-3');
 });
 
 it('keeps refunding every call made without an idempotency key', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = idempotentRefundTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction, 40.0, 'first');
     $action->handle($transaction, 40.0, 'second');
@@ -86,13 +86,13 @@ it('keeps refunding every call made without an idempotency key', function (): vo
         ->and($transaction->refunds()->whereNull('idempotency_key')->count())->toBe(2)
         ->and($action->refundableAmount($transaction->refresh()))->toBe(20.0);
 
-    Event::assertDispatchedTimes(TransactionRefunded::class, 2);
+    Event::assertDispatchedTimes(RefundRecorded::class, 2);
 });
 
 it('scopes an idempotency key to its transaction', function (): void {
     $first = idempotentRefundTransaction();
     $second = idempotentRefundTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($first, 40.0, 'first', 'shared-key');
     $action->handle($second, 40.0, 'second', 'shared-key');
@@ -113,7 +113,7 @@ it('rejects a second refund row with the same idempotency key at the database', 
 
 it('mirrors the idempotency key into the payload refund history', function (): void {
     $transaction = idempotentRefundTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction, 40.0, 'keyed', 'refund-key-payload');
     $refunded = $action->handle($transaction, 10.0, 'unkeyed');
@@ -123,14 +123,14 @@ it('mirrors the idempotency key into the payload refund history', function (): v
 });
 
 it('refuses a blank or oversized idempotency key before refunding', function (string $key): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = idempotentRefundTransaction();
 
-    expect(fn (): Transaction => resolve(RefundTransactionAction::class)->handle($transaction, 40.0, 'first', $key))
+    expect(fn (): Transaction => resolve(RecordRefundAction::class)->handle($transaction, 40.0, 'first', $key))
         ->toThrow(LogicException::class, 'Idempotency key must be a non-blank string of at most 255 characters.')
         ->and($transaction->refunds()->count())->toBe(0);
 
-    Event::assertNotDispatched(TransactionRefunded::class);
+    Event::assertNotDispatched(RefundRecorded::class);
 })->with([
     'empty' => [''],
     'whitespace' => ['   '],
@@ -141,7 +141,7 @@ it('accepts an idempotency key of exactly 255 characters', function (): void {
     $transaction = idempotentRefundTransaction();
     $key = str_repeat('k', 255);
 
-    resolve(RefundTransactionAction::class)->handle($transaction, 40.0, 'first', $key);
+    resolve(RecordRefundAction::class)->handle($transaction, 40.0, 'first', $key);
 
     expect($transaction->refunds()->sole()->idempotency_key)->toBe($key);
 });

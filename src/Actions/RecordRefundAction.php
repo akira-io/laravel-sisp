@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\LegacyPayload;
@@ -16,7 +16,7 @@ use Akira\Sisp\ValueObjects\RefundRequest;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
-final readonly class RefundTransactionAction
+final readonly class RecordRefundAction
 {
     public function __construct(
         private BuildRefundRequestAction $buildRefundRequest,
@@ -88,7 +88,7 @@ final readonly class RefundTransactionAction
         });
 
         if ($refund instanceof Refund && $remainingThousandths !== null) {
-            event(new TransactionRefunded(
+            event(new RefundRecorded(
                 $refunded,
                 $refundAmount,
                 $reason,

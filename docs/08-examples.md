@@ -81,9 +81,9 @@ Event::listen(TransactionCancelled::class, function (TransactionCancelled $event
 ### Transaction Refunded
 
 ```php
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 
-Event::listen(TransactionRefunded::class, function (TransactionRefunded $event) {
+Event::listen(RefundRecorded::class, function (RefundRecorded $event) {
     $transaction = $event->transaction;
     $refundAmount = $event->refundAmount;
     $reason = $event->reason;
@@ -502,7 +502,7 @@ try {
     Sisp::refund($transaction)
         ->full()
         ->reason('customer_request')
-        ->process();
+        ->record();
 
     return response()->json([
         'success' => true,
