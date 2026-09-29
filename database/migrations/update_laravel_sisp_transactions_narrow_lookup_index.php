@@ -20,6 +20,10 @@ return new class extends Migration
             return;
         }
 
+        if ($this->findIndex($transactionsTable, self::WIDE_COLUMNS) === null) {
+            return;
+        }
+
         $this->addNarrowIndex($transactionsTable);
         $this->dropWideIndex($transactionsTable);
     }
@@ -32,14 +36,15 @@ return new class extends Migration
             return;
         }
 
-        $narrowIndex = $this->findIndex($transactionsTable, self::NARROW_COLUMNS);
+        $narrowIndex = $this->narrowIndexName($transactionsTable);
 
-        if ($narrowIndex === null) {
+        if (! in_array($narrowIndex, $this->indexNames($transactionsTable), true)) {
             return;
         }
 
         Schema::table($transactionsTable, function (Blueprint $table) use ($narrowIndex): void {
             $table->dropIndex($narrowIndex);
+            $table->index(self::WIDE_COLUMNS);
         });
     }
 
@@ -49,8 +54,10 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($table, function (Blueprint $blueprint): void {
-            $blueprint->index(self::NARROW_COLUMNS);
+        $narrowIndex = $this->narrowIndexName($table);
+
+        Schema::table($table, function (Blueprint $blueprint) use ($narrowIndex): void {
+            $blueprint->index(self::NARROW_COLUMNS, $narrowIndex);
         });
     }
 
@@ -58,13 +65,44 @@ return new class extends Migration
     {
         $wideIndex = $this->findIndex($table, self::WIDE_COLUMNS);
 
-        if ($wideIndex === null) {
+        if ($wideIndex === null || ! $this->hasMerchantReferenceIndex($table, $wideIndex)) {
             return;
         }
 
         Schema::table($table, function (Blueprint $blueprint) use ($wideIndex): void {
             $blueprint->dropIndex($wideIndex);
         });
+    }
+
+    private function hasMerchantReferenceIndex(string $table, string $excluding): bool
+    {
+        foreach (Schema::getIndexes($table) as $index) {
+            if ((string) $index['name'] === $excluding) {
+                continue;
+            }
+
+            if (($index['columns'][0] ?? null) === 'merchant_ref') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function narrowIndexName(string $table): string
+    {
+        return str_replace(['-', '.'], '_', mb_strtolower($table.'_merchant_session_lookup_index'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function indexNames(string $table): array
+    {
+        return array_map(
+            fn (array $index): string => mb_strtolower((string) $index['name']),
+            Schema::getIndexes($table),
+        );
     }
 
     /**

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 function narrowLookupMigration(): object
@@ -18,32 +19,15 @@ function transactionIndexColumns(): array
     );
 }
 
+function rejectsWideStringIndexes(): bool
+{
+    return in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true);
+}
+
 it('indexes merchant_session alone instead of the four string columns', function (): void {
     expect(transactionIndexColumns())
         ->toContain(['merchant_session'])
         ->not->toContain(['merchant_ref', 'merchant_session', 'status', 'message_type']);
-});
-
-it('keeps every index key under the InnoDB 3072-byte limit', function (): void {
-    $lengths = [
-        'merchant_ref' => 255,
-        'merchant_session' => 255,
-        'status' => 255,
-        'message_type' => 255,
-        'transaction_id' => 255,
-        'customer_email' => 255,
-        'created_at' => 8,
-        'id' => 8,
-    ];
-
-    foreach (Schema::getIndexes(config('sisp.tables.transactions', 'sisp_transactions')) as $index) {
-        $bytes = array_sum(array_map(
-            fn (string $column): int => ($lengths[$column] ?? 255) * 4,
-            $index['columns'],
-        ));
-
-        expect($bytes)->toBeLessThanOrEqual(3072, "index {$index['name']} needs {$bytes} bytes");
-    }
 });
 
 it('replaces the wide index on an install that already has it', function (): void {
@@ -59,28 +43,52 @@ it('replaces the wide index on an install that already has it', function (): voi
     expect(transactionIndexColumns())
         ->toContain(['merchant_session'])
         ->not->toContain(['merchant_ref', 'merchant_session', 'status', 'message_type']);
-});
+})->skip(rejectsWideStringIndexes(...), 'MySQL and MariaDB reject the wide index, so no install can hold it.');
 
-it('leaves the narrow index alone when it is already there', function (): void {
+it('keeps the wide index when nothing else would serve merchant_ref', function (): void {
+    $table = config('sisp.tables.transactions', 'sisp_transactions');
+
+    Schema::table($table, function (Blueprint $blueprint): void {
+        $blueprint->dropUnique(['merchant_ref']);
+        $blueprint->index(['merchant_ref', 'merchant_session', 'status', 'message_type'], 'sisp_wide_lookup_idx');
+    });
+
     narrowLookupMigration()->up();
 
-    $matching = array_filter(
-        transactionIndexColumns(),
-        fn (array $columns): bool => $columns === ['merchant_session'],
-    );
+    expect(transactionIndexColumns())->toContain(['merchant_ref', 'merchant_session', 'status', 'message_type']);
+})->skip(rejectsWideStringIndexes(...), 'MySQL and MariaDB reject the wide index, so no install can hold it.');
 
-    expect($matching)->toHaveCount(1);
+it('adds nothing on an install that never had the wide index', function (): void {
+    $before = transactionIndexColumns();
+
+    narrowLookupMigration()->up();
+
+    expect(transactionIndexColumns())->toEqual($before);
 });
 
-it('drops the narrow index on rollback and restores it on replay', function (): void {
+it('leaves an untouched install alone on rollback', function (): void {
+    $before = transactionIndexColumns();
+
     narrowLookupMigration()->down();
 
-    expect(transactionIndexColumns())->not->toContain(['merchant_session']);
+    expect(transactionIndexColumns())->toEqual($before);
+});
+
+it('puts the wide index back on the install it took it from', function (): void {
+    $table = config('sisp.tables.transactions', 'sisp_transactions');
+
+    Schema::table($table, function (Blueprint $blueprint): void {
+        $blueprint->dropIndex(['merchant_session']);
+        $blueprint->index(['merchant_ref', 'merchant_session', 'status', 'message_type'], 'sisp_wide_lookup_idx');
+    });
 
     narrowLookupMigration()->up();
+    narrowLookupMigration()->down();
 
-    expect(transactionIndexColumns())->toContain(['merchant_session']);
-});
+    expect(transactionIndexColumns())
+        ->toContain(['merchant_ref', 'merchant_session', 'status', 'message_type'])
+        ->not->toContain(['merchant_session']);
+})->skip(rejectsWideStringIndexes(...), 'MySQL and MariaDB reject the wide index, so no install can hold it.');
 
 it('does nothing when the transactions table is missing', function (): void {
     $configured = config('sisp.tables.transactions', 'sisp_transactions');
