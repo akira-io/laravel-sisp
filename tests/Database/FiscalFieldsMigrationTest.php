@@ -50,12 +50,16 @@ it('rolls back twice without failing on already dropped columns', function (): v
 });
 
 it('skips tables that do not exist yet', function (): void {
+    $configured = config('sisp.tables.transactions', 'sisp_transactions');
+
     config()->set('sisp.tables.transactions', 'sisp_transactions_absent');
 
     $migration = fiscalFieldsMigration();
 
     $migration->up();
     $migration->down();
+
+    config()->set('sisp.tables.transactions', $configured);
 
     expect(Schema::hasTable('sisp_transactions_absent'))->toBeFalse();
 });
