@@ -26,10 +26,7 @@ abstract class TestCase extends Orchestra
     final public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
-        config()->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-        ]);
+        config()->set('database.connections.testing', $this->testing_connection());
         config()->set('cache.default', 'array');
         config()->set('sisp.url', 'https://test.sisp.example.com');
         config()->set('sisp.posID', 'TEST_POS_001');
@@ -42,11 +39,46 @@ abstract class TestCase extends Orchestra
         config()->set('sisp.transaction_code', '1');
         config()->set('sisp.url_merchant_response', 'https://localhost/sisp/callback');
 
-        // App key for encryption
         $app->make(Repository::class)->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
 
-        // Set application namespace for Blade component compilation
         $app->singleton('namespace', fn (): string => 'App\\');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function testing_connection(): array
+    {
+        $driver = env('SISP_TEST_DB_DRIVER', 'sqlite');
+
+        return match ($driver) {
+            'mysql', 'mariadb' => [
+                'driver' => $driver,
+                'host' => env('SISP_TEST_DB_HOST', '127.0.0.1'),
+                'port' => env('SISP_TEST_DB_PORT', '3306'),
+                'database' => env('SISP_TEST_DB_DATABASE', 'sisp_testing'),
+                'username' => env('SISP_TEST_DB_USERNAME', 'root'),
+                'password' => env('SISP_TEST_DB_PASSWORD', ''),
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+            ],
+            'pgsql' => [
+                'driver' => 'pgsql',
+                'host' => env('SISP_TEST_DB_HOST', '127.0.0.1'),
+                'port' => env('SISP_TEST_DB_PORT', '5432'),
+                'database' => env('SISP_TEST_DB_DATABASE', 'sisp_testing'),
+                'username' => env('SISP_TEST_DB_USERNAME', 'postgres'),
+                'password' => env('SISP_TEST_DB_PASSWORD', ''),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'search_path' => 'public',
+            ],
+            default => [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+            ],
+        };
     }
 
     protected function defineDatabaseMigrations()

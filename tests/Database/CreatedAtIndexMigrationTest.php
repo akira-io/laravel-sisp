@@ -62,6 +62,7 @@ it('drops the index it created on rollback', function (): void {
 });
 
 it('rolls back the index on a table name laravel normalizes', function (): void {
+    $configured = config('sisp.tables.transactions', 'sisp_transactions');
     $table = 'sisp-legacy-transactions';
     config()->set('sisp.tables.transactions', $table);
 
@@ -79,4 +80,7 @@ it('rolls back the index on a table name laravel normalizes', function (): void 
     $migration->down();
 
     expect(array_column(Schema::getIndexes($table), 'columns'))->not->toContain(['created_at']);
+
+    Schema::drop($table);
+    config()->set('sisp.tables.transactions', $configured);
 });
