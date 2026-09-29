@@ -74,7 +74,7 @@ return new class extends Migration
                     $payload = LegacyPayload::decode($stored);
 
                     if ($payload === null) {
-                        if (str_contains((string) $transaction->getRawOriginal('payload'), 'refunds')) {
+                        if (is_string($stored) && LegacyPayload::mayHoldRefunds($stored)) {
                             $leftBehind[] = $id;
                         } else {
                             $undecodable[] = $id;
@@ -117,7 +117,7 @@ return new class extends Migration
         Log::info('SISP refund history copied into the refunds table.', $context);
 
         if ($leftBehind !== []) {
-            Log::error('SISP refund history exists but could not be copied for some transactions.', $context);
+            Log::error('SISP refund history may exist but could not be copied for some transactions.', $context);
         }
 
         if ($undecodable !== [] || $malformed !== []) {
