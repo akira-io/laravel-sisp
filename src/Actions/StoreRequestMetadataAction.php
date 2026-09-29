@@ -164,7 +164,7 @@ final readonly class StoreRequestMetadataAction
         if (str_contains($userAgent, 'Firefox')) {
             return 'Firefox';
         }
-        if (str_contains($userAgent, 'Safari') && ! str_contains($userAgent, 'Chrome')) {
+        if (str_contains($userAgent, 'Safari')) {
             return 'Safari';
         }
         if (str_contains($userAgent, 'MSIE') || str_contains($userAgent, 'Trident')) {
