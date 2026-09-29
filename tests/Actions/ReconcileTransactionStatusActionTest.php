@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -70,4 +71,27 @@ it('keeps pending transactions unchanged when the status API query fails', funct
 
     expect($updated->status->value)->toBe('pending')
         ->and($updated->merchant_response)->toBeNull();
+});
+
+it('keeps the rest of a payload stored as a plain JSON string', function (): void {
+    Http::fake([
+        '*' => Http::response([
+            'result' => true,
+            'transactionSuccess' => true,
+            'transactionStatusDescription' => 'C-SUCESSO',
+            'msg' => 'Approved',
+        ]),
+    ]);
+
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update([
+        'payload' => json_encode(['posID' => '90001', 'refunds' => [['amount' => 12.5]]]),
+    ]);
+
+    $updated = resolve(ReconcileTransactionStatusAction::class)->handle($transaction->refresh());
+
+    expect($updated->payload['posID'])->toBe('90001')
+        ->and($updated->payload['refunds'])->toBe([['amount' => 12.5]])
+        ->and($updated->payload['transaction_status_response']['transactionSuccess'])->toBeTrue();
 });
