@@ -173,7 +173,9 @@ composer test:lint
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for release history. Releases are generated with `git-cliff`.
+See [CHANGELOG.md](CHANGELOG.md) for release history. Releases are generated with `git-cliff` and driven by the tag.
+
+A release is cut on its own branch. `release/vX.Y.Z` forks from the line it belongs to and takes only the fixes for that version, while that line keeps receiving work for the next one. The tag goes on the release branch, which publishes the GitHub Release and commits the changelog back to it, and the branch is then merged into its line, carrying both.
 
 ## Contributing
 
