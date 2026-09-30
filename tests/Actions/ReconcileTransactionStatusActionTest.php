@@ -173,13 +173,11 @@ it('dispatches PaymentCompleted when reconciliation settles a payment as complet
 
     resolve(ReconcileTransactionStatusAction::class)->handle($transaction);
 
-    Event::assertDispatched(PaymentCompleted::class, function (PaymentCompleted $event): bool {
-        return $event->transaction->status->value === 'completed'
-            && $event->payload->merchantRef === 'MR-RECONCILED'
-            && (string) $event->payload->transactionID === 'TID-9'
-            && $event->payload->merchantResponse === 'C-SUCESSO'
-            && $event->payload->raw['transactionSuccess'] === true;
-    });
+    Event::assertDispatched(PaymentCompleted::class, fn (PaymentCompleted $event): bool => $event->transaction->status->value === 'completed'
+        && $event->payload->merchantRef === 'MR-RECONCILED'
+        && (string) $event->payload->transactionID === 'TID-9'
+        && $event->payload->merchantResponse === 'C-SUCESSO'
+        && $event->payload->raw['transactionSuccess'] === true);
     Event::assertNotDispatched(PaymentFailed::class);
 });
 
