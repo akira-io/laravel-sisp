@@ -96,6 +96,34 @@ User submits payment form with:
 - `amount` must be numeric, minimum 0.01
 - `items` must be array with at least 1 item
 - Each item must have: `product_name`, `quantity`, `unit_price`, `total_price`
+- The item totals must add up to `amount`
+
+### The expected amount
+
+Everything above comes from the browser, so a buyer can submit `amount=1` for a checkout worth more, pay 1 CVE, and still trigger `PaymentCompleted` for that checkout. The package cannot tell: it has no order or cart. Bind `Akira\Sisp\Contracts\PaymentAmountResolver` to give it one:
+
+```php
+use Akira\Sisp\Contracts\PaymentAmountResolver;
+use App\Models\Order;
+use Illuminate\Http\Request;
+
+final class OrderAmountResolver implements PaymentAmountResolver
+{
+    public function expectedAmount(Request $request): ?float
+    {
+        $order = Order::query()->find($request->input('checkout_intent_id'));
+
+        return $order?->total;
+    }
+}
+```
+
+```php
+// AppServiceProvider::register()
+$this->app->bind(PaymentAmountResolver::class, OrderAmountResolver::class);
+```
+
+When the resolver returns an amount, the request is refused with a validation error on `amount` unless the submitted amount matches it to the thousandth. Returning `null` accepts the submitted amount, which is also what the default binding does. Whichever you choose, compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before you fulfil: the listener is the last place that can stop an underpaid order.
 
 ## Step 3: Security Checks
 

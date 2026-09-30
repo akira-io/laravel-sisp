@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Requests;
 
+use Akira\Sisp\Contracts\PaymentAmountResolver;
+use Akira\Sisp\Support\SispAmount;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -73,6 +75,16 @@ final class StorePaymentRequest extends FormRequest
 
             if ($this->amountInMinorUnits($this->input('amount')) !== $submittedTotal) {
                 $validator->errors()->add('amount', 'Payment amount must equal the sum of item totals.');
+
+                return;
+            }
+
+            // The browser fills in amount and items, so the application gets the last
+            // word: when it knows what this checkout should cost, the two must agree.
+            $expected = resolve(PaymentAmountResolver::class)->expectedAmount($this);
+
+            if ($expected !== null && SispAmount::toThousandths($expected) !== SispAmount::toThousandths($this->input('amount'))) {
+                $validator->errors()->add('amount', 'Payment amount does not match the amount expected for this checkout.');
             }
         });
     }
