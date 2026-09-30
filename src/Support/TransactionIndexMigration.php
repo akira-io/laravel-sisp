@@ -40,7 +40,7 @@ abstract class TransactionIndexMigration extends Migration
         }
 
         if ($this->isPostgres()) {
-            $this->dropInvalidIndex($this->indexName($table));
+            $this->dropInvalidIndex($table, $this->indexName($table));
         }
 
         if ($this->hasIndex($table)) {
@@ -81,7 +81,7 @@ abstract class TransactionIndexMigration extends Migration
         }
 
         if ($this->isPostgres()) {
-            DB::statement(sprintf('DROP INDEX%s IF EXISTS %s', $this->concurrently(), $this->wrap($indexName)));
+            DB::statement(sprintf('DROP INDEX%s IF EXISTS %s', $this->concurrently(), $this->wrap($this->qualify($table, $indexName))));
 
             return;
         }
@@ -124,20 +124,35 @@ abstract class TransactionIndexMigration extends Migration
     /**
      * A CONCURRENTLY build that was interrupted leaves the index in place but
      * marked invalid: the planner ignores it and a second CREATE ... IF NOT
-     * EXISTS would keep it. Drop it so the build below starts over.
+     * EXISTS would keep it. Drop it so the build below starts over. The lookup
+     * names both the index and the table, in the table's schema, so an index
+     * of the same name on another table is never touched.
      */
-    private function dropInvalidIndex(string $indexName): void
+    private function dropInvalidIndex(string $table, string $indexName): void
     {
+        $qualifiedIndex = $this->qualify($table, $indexName);
+
         $invalid = DB::selectOne(
-            'SELECT 1 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid WHERE c.relname = ? AND NOT i.indisvalid',
-            [$indexName],
+            'SELECT 1 FROM pg_index WHERE indexrelid = to_regclass(?) AND indrelid = to_regclass(?) AND NOT indisvalid',
+            [$this->wrap($qualifiedIndex), $this->wrapTable($table)],
         );
 
         if ($invalid === null) {
             return;
         }
 
-        DB::statement(sprintf('DROP INDEX%s IF EXISTS %s', $this->concurrently(), $this->wrap($indexName)));
+        DB::statement(sprintf('DROP INDEX%s IF EXISTS %s', $this->concurrently(), $this->wrap($qualifiedIndex)));
+    }
+
+    /**
+     * An index lives in its table's schema, so a table configured as
+     * "schema.table" needs its index named the same way to be found again.
+     */
+    private function qualify(string $table, string $indexName): string
+    {
+        return str_contains($table, '.')
+            ? mb_strstr($table, '.', true).'.'.$indexName
+            : $indexName;
     }
 
     private function concurrently(): string
