@@ -162,10 +162,12 @@ GET `/sisp/cancel` only accepts a signed URL. Generate one in your application a
 use Illuminate\Support\Facades\URL;
 
 $url = URL::temporarySignedRoute('sisp.cancel', now()->addMinutes(30), [
-    'transaction_id' => $transaction->id,
+    'merchantRef' => $transaction->merchant_ref,
     'reason' => 'user_cancelled',
 ]);
 ```
+
+The route looks the transaction up by `merchantRef`, or by `transaction_id` (the identifier SISP assigned, `$transaction->transaction_id`, not the primary key). Only the signed query string is read: a value sent in the request body is ignored, so a link can only cancel the transaction it was signed for.
 
 An unsigned or expired URL is rejected with 403. A successful cancellation dispatches the `TransactionCancelled` event.
 

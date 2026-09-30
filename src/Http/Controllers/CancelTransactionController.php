@@ -37,16 +37,20 @@ final readonly class CancelTransactionController
         }
     }
 
+    /**
+     * The signature covers the query string only, so the identifiers are read from
+     * there: a request body could otherwise name a transaction the link never signed.
+     */
     private function resolveTransaction(Request $request): ?Transaction
     {
-        $merchantRef = $request->input('merchantRef');
+        $merchantRef = $request->query('merchantRef');
         if (is_string($merchantRef) && $merchantRef !== '') {
             return Transaction::query()
                 ->where('merchant_ref', $merchantRef)
                 ->first();
         }
 
-        $transactionId = $request->input('transaction_id');
+        $transactionId = $request->query('transaction_id');
         if (! is_string($transactionId) || $transactionId === '') {
             return null;
         }
