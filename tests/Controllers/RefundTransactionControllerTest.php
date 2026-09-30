@@ -239,3 +239,28 @@ it('treats a null or empty idempotency key as no key', function (mixed $key): vo
     'null' => [null],
     'empty' => [''],
 ]);
+
+it('answers with a summary of the transaction, not its customer details or payload', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+    $transaction->update(['customer_phone' => '+2389912345', 'payload' => ['purchaseRequest' => 'secret']]);
+
+    $response = $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 40.0])
+        ->assertOk()
+        ->assertJsonPath('transaction.id', $transaction->id)
+        ->assertJsonPath('transaction.status', TransactionStatus::completed->value)
+        ->assertJsonPath('transaction.refunded_amount', fn (int|float $amount): bool => (float) $amount === 40.0)
+        ->assertJsonPath('transaction.refundable_amount', fn (int|float $amount): bool => (float) $amount === 60.0)
+        ->assertJsonMissingPath('transaction.payload')
+        ->assertJsonMissingPath('transaction.customer_email')
+        ->assertJsonMissingPath('transaction.customer_phone');
+
+    expect(array_keys($response->json('transaction')))->toBe([
+        'id', 'merchant_ref', 'transaction_id', 'status', 'merchant_response',
+        'amount', 'refunded_amount', 'refundable_amount', 'refunded_at',
+    ])
+        ->and($response->getContent())->not->toContain('buyer@example.com')
+        ->not->toContain('+2389912345')
+        ->not->toContain('secret');
+});

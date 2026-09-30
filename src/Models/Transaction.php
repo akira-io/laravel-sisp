@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
  * @property-read  \Illuminate\Support\Carbon|null $request_payload_pruned_at
+ * @property-read  \Illuminate\Support\Carbon|null $refunded_at
+ * @property-read  \Illuminate\Support\Carbon|null $cancelled_at
  * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
  * @property-read  string $merchant_session
