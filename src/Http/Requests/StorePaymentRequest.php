@@ -4,11 +4,20 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Http\Requests;
 
+use Akira\Sisp\Contracts\PaymentAmountResolver;
+use Akira\Sisp\Support\SispAmount;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use InvalidArgumentException;
 
 final class StorePaymentRequest extends FormRequest
 {
+    /**
+     * The largest amount SISP thousandths can carry; anything above it cannot
+     * be expressed and is refused before the arithmetic below runs on it.
+     */
+    private const string MAX_AMOUNT = '9000000000000000';
+
     public function authorize(): bool
     {
         return true;
@@ -17,13 +26,13 @@ final class StorePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.self::MAX_AMOUNT],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['sometimes', 'string', 'max:255'],
             'items.*.product_name' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'items.*.total_price' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0', 'max:'.self::MAX_AMOUNT],
+            'items.*.total_price' => ['required', 'numeric', 'min:0', 'max:'.self::MAX_AMOUNT],
             'items.*.description' => ['sometimes', 'string'],
             'items.*.metadata' => ['sometimes', 'array'],
             'customer_name' => ['sometimes', 'string', 'max:255'],
@@ -73,6 +82,28 @@ final class StorePaymentRequest extends FormRequest
 
             if ($this->amountInMinorUnits($this->input('amount')) !== $submittedTotal) {
                 $validator->errors()->add('amount', 'Payment amount must equal the sum of item totals.');
+
+                return;
+            }
+
+            // The browser fills in amount and items, so the application gets the last
+            // word: when it knows what this checkout should cost, the two must agree.
+            $expected = resolve(PaymentAmountResolver::class)->expectedAmount($this);
+
+            if ($expected === null) {
+                return;
+            }
+
+            try {
+                $matches = SispAmount::toThousandths($expected) === SispAmount::toThousandths($this->input('amount'));
+            } catch (InvalidArgumentException) {
+                $validator->errors()->add('amount', 'Payment amount is too large.');
+
+                return;
+            }
+
+            if (! $matches) {
+                $validator->errors()->add('amount', 'Payment amount does not match the amount expected for this checkout.');
             }
         });
     }

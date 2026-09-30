@@ -607,6 +607,7 @@ Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`
 | `TransactionCredentialsResolver` | `PosIdTransactionCredentialsResolver` | Resolves the credentials a stored transaction was built with, for its callback, status query and refund request |
 | `SispDriver` | Active driver via `SispManager` | Gateway interactions |
 | `CallbackFingerprintValidator` | `ValidatePaymentResponseFingerprintAction` | Callback fingerprint verification |
+| `PaymentAmountResolver` | `TrustSubmittedPaymentAmount` | The amount the application expects for a `POST /sisp/payment` checkout; `null` accepts the submitted one |
 | `PaymentPipe` / `CallbackPipe` | — | Pipeline stage contracts |
 
 Bindings are declared with Laravel 13 container attributes (`#[Bind]` on the contracts, `#[Singleton]` on services), so swapping an implementation is a standard container binding in your application.

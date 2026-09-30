@@ -151,16 +151,30 @@ Restrict CORS if using API endpoints:
 
 **Amount Validation**
 
-Validate amounts server-side before processing:
+`POST /sisp/payment` takes `amount` and `items` from the browser and only checks that they add up. Bind `Akira\Sisp\Contracts\PaymentAmountResolver` to the amount your application expects for the checkout, so a lowered amount is refused before a transaction exists:
 
 ```php
-public function rules(): array
+use Akira\Sisp\Contracts\PaymentAmountResolver;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+final class OrderAmountResolver implements PaymentAmountResolver
 {
-    return [
-        'amount' => ['required', 'numeric', 'min:1', 'max:1000000'],
-    ];
+    public function expectedAmount(Request $request): ?float
+    {
+        $order = Order::query()->find($request->input('checkout_intent_id'));
+
+        if ($order === null) {
+            throw ValidationException::withMessages(['checkout_intent_id' => 'This checkout is unknown.']);
+        }
+
+        return $order->total;
+    }
 }
 ```
+
+Refuse a missing or unknown checkout rather than answering `null`: `null` accepts whatever amount was submitted, and `checkout_intent_id` is the buyer's to choose. Then compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before fulfilling. See [Payment Flow](docs/04-payment-flow.md#the-expected-amount).
 
 **Transaction Limits**
 
