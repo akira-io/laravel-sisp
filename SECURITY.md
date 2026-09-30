@@ -204,6 +204,7 @@ The refund route runs behind `sisp.middleware.refund` (`web`, `auth` by default)
 
 ```php
 use Akira\Sisp\Models\Transaction;
+use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
 Gate::define('refund', fn (User $user, Transaction $transaction): bool => $user->isFinanceStaff());

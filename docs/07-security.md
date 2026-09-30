@@ -305,12 +305,13 @@ URL::temporarySignedRoute('sisp.cancel', now()->addMinutes(30), [
 ]);
 ```
 
-The retry route carries no middleware by default (`'retry' => []`), because the signature is checked before the transaction is resolved and a guest who just paid must be able to retry. If only signed-in customers check out, add `auth` to `sisp.middleware.retry` and, in a route middleware of your own, compare the transaction's `customer_email` with the user's.
+The retry route carries no middleware by default (`'retry' => []`), because the signature is checked before the transaction is resolved and a guest who just paid must be able to retry. If only signed-in customers check out, add `auth` to `sisp.middleware.retry` and, in a route middleware of your own, check that the transaction belongs to the user: compare it with an account identifier your application recorded at checkout (the order the `checkout_intent_id` names, or the user id you stored alongside the transaction). `customer_email` is optional in the payment request and nullable on the transaction, so comparing it with the user's email only works when your checkout always collects the account's email.
 
 **Refunds need a policy.** `RefundTransactionRequest` calls `$user->can('refund', $transaction)`. The package registers no ability of that name, and Laravel denies an ability nobody defined, so the route answers `403` for every user until your application decides who may refund. Define it on a policy for `Akira\Sisp\Models\Transaction`, or as a gate:
 
 ```php
 use Akira\Sisp\Models\Transaction;
+use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
 Gate::define('refund', fn (User $user, Transaction $transaction): bool => $user->isFinanceStaff());
