@@ -18,13 +18,19 @@ final readonly class QueryTransactionStatusAction
 
     public function handle(Transaction|string $transaction): TransactionStatusResponse
     {
-        if ($transaction instanceof Transaction) {
-            return $this->credentialScope->forTransaction(
-                $transaction,
-                fn (): TransactionStatusResponse => $this->manager->driver()->queryTransactionStatus($transaction),
-            );
+        // A reference names a stored payment just as well as the model does,
+        // so it is queried under the credentials that payment was built for.
+        $stored = $transaction instanceof Transaction
+            ? $transaction
+            : Transaction::query()->where('merchant_ref', $transaction)->first();
+
+        if (! $stored instanceof Transaction) {
+            return $this->manager->driver()->queryTransactionStatus($transaction);
         }
 
-        return $this->manager->driver()->queryTransactionStatus($transaction);
+        return $this->credentialScope->forTransaction(
+            $stored,
+            fn (): TransactionStatusResponse => $this->manager->driver()->queryTransactionStatus($transaction),
+        );
     }
 }

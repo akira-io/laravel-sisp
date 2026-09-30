@@ -200,3 +200,37 @@ it('rejects a callback signed by another merchant when no resolver knows it', fu
 
     expect($transaction->refresh()->status->value)->toBe('pending');
 });
+
+it('queries the status by merchant reference with the credentials the stored payment was built for', function (): void {
+    bindTenantCredentialsResolver();
+    config()->set('sisp.transaction_status.portal_id', 'portal');
+    config()->set('sisp.transaction_status.portal_password', 'secret');
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => true, 'transactionStatusDescription' => 'C', 'msg' => 'ok'])]);
+
+    tenantTransaction('MR-TENANT-BY-REF');
+
+    Sisp::queryTransactionStatus('MR-TENANT-BY-REF');
+    Sisp::queryTransactionStatus('MR-UNKNOWN-REF');
+
+    Http::assertSent(fn (Request $request): bool => $request['merchantRef'] === 'MR-TENANT-BY-REF' && $request['posID'] === 'TENANT_POS' && $request['posAuthCode'] === 'TENANT_SECRET');
+    Http::assertSent(fn (Request $request): bool => $request['merchantRef'] === 'MR-UNKNOWN-REF' && $request['posID'] === 'TEST_POS_001');
+});
+
+it('builds a retry under the credentials the payment was built for', function (): void {
+    bindTenantCredentialsResolver();
+    $transaction = tenantTransaction('MR-TENANT-RETRY');
+    $transaction->update(['status' => 'failed']);
+
+    $retry = resolve(Akira\Sisp\Actions\RetryPaymentAction::class)->handle($transaction->refresh());
+
+    expect($retry->posID)->toBe('TENANT_POS')
+        ->and($retry->fingerprint)->toBe(Sisp::forCredentials(tenantCredentials())->buildRequestPayload(PaymentRequestData::from([
+            'amount' => 50.0,
+            'merchantRef' => 'MR-TENANT-RETRY',
+            'merchantSession' => 'S-MR-TENANT-RETRY',
+            'timeStamp' => $retry->timeStamp,
+            'currency' => '132',
+            'transactionCode' => '1',
+            'locale' => 'pt',
+        ]))->fingerprint);
+});
