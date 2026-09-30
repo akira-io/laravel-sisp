@@ -411,7 +411,7 @@ Responses:
 
 - `200` the refund was recorded. The body carries a summary of the transaction under `transaction`: `id`, `merchant_ref`, `transaction_id`, `status`, `merchant_response`, `amount`, `refunded_amount`, `refundable_amount` and `refunded_at`. Customer details and the stored payload are not included. The money is not returned by this call
 - `400` the transaction cannot be refunded, the amount exceeds the refundable balance, or the idempotency key was already used with a different amount
-- `403` the authenticated user is not allowed to refund this transaction
+- `403` the authenticated user is not allowed to refund this transaction, or no `refund` ability has been defined yet (see [Who May Act on a Transaction](07-security.md#who-may-act-on-a-transaction))
 - `422` the payload failed validation, with the messages under `errors`
 
 Dispatches the `RefundRecorded` event. Nothing is sent to SISP.

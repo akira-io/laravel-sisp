@@ -66,6 +66,16 @@ it('returns 400 when refund amount exceeds transaction', function (): void {
     expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
 
+it('denies the refund when the application has defined no refund ability', function (): void {
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 10.0])
+        ->assertForbidden();
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+});
+
 it('returns 403 when the gate denies the refund', function (): void {
     allowRefunds(false);
     $transaction = refundableTransaction();

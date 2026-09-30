@@ -287,6 +287,38 @@ The error formula puts error detail before error description; a transcription sl
 
 Both formulas need the plaintext `posAutCode` (the encoded value comes from `PostAutCode`, which hashes it), a merchant-specific secret this package never logs or exposes. A fingerprint captured from production traffic cannot be reproduced or verified without that secret.
 
+## Who May Act on a Transaction
+
+Three routes change a transaction after the checkout, and each has its own gate:
+
+| Route | Gate | Who holds it |
+| --- | --- | --- |
+| `GET`/`POST /sisp/retry-payment` | Temporary signed URL (30 minutes), checked in `RetryPaymentRequest::authorize()` | Whoever holds the link the payment result page rendered |
+| `GET /sisp/cancel` | Signed URL (`ValidateSignature`), with the expiry you give it | Whoever holds the link your application generated |
+| `POST /sisp/refund/{transaction}` | `sisp.middleware.refund` (`web`, `auth` by default) and the `refund` ability on the transaction | An authenticated user your policy allows |
+
+**Retry and cancel links are capabilities.** The signature covers the query string, and both routes read the transaction from the query alone, so a link acts on the transaction it was signed for and no other: a body naming another transaction is ignored. The link itself is the credential. Hand it only to the customer of that payment (the result page, a confirmation email), serve it over HTTPS, and keep it out of logs and analytics. Give cancel links a short expiry:
+
+```php
+URL::temporarySignedRoute('sisp.cancel', now()->addMinutes(30), [
+    'merchantRef' => $transaction->merchant_ref,
+]);
+```
+
+The retry route carries no middleware by default (`'retry' => []`), because the signature is checked before the transaction is resolved and a guest who just paid must be able to retry. If only signed-in customers check out, add `auth` to `sisp.middleware.retry` and, in a route middleware of your own, check that the transaction belongs to the user: compare it with an account identifier your application recorded at checkout (the order the `checkout_intent_id` names, or the user id you stored alongside the transaction). `customer_email` is optional in the payment request and nullable on the transaction, so comparing it with the user's email only works when your checkout always collects the account's email.
+
+**Refunds need a policy.** `RefundTransactionRequest` calls `$user->can('refund', $transaction)`. The package registers no ability of that name, and Laravel denies an ability nobody defined, so the route answers `403` for every user until your application decides who may refund. Define it on a policy for `Akira\Sisp\Models\Transaction`, or as a gate:
+
+```php
+use Akira\Sisp\Models\Transaction;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('refund', fn (User $user, Transaction $transaction): bool => $user->isFinanceStaff());
+```
+
+Scope it as narrowly as the business allows: a per-merchant application checks that the transaction's `pos_id` belongs to the user's merchant. The route only records the refund (see [Refund Transaction](05-transaction-management.md#refund-transaction)); the money moves in the SISP back office, so the policy decides who may put a refund on the books, not who may move money.
+
 ## Data Encryption
 
 Sensitive customer fields are automatically encrypted:

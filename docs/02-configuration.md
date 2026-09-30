@@ -319,6 +319,8 @@ Customize middleware assigned to package routes in `config/sisp.php`:
 
 Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default.
 
+The retry route has no middleware by default because its request already refuses anything but a valid, unexpired signed link for one transaction; the refund route requires an authenticated user and the `refund` ability, which your application defines. See [Who May Act on a Transaction](07-security.md#who-may-act-on-a-transaction).
+
 The callback route never receives the browser `web` group, because SISP must be able to post callbacks without CSRF middleware.
 
 It does carry the `sisp-callback` limiter, registered by the package. That limiter applies only to cancellation callbacks, meaning a truthy `UserCancelled` or `userCancelled`, the same test the controller uses to take the cancellation branch. SISP sends no fingerprint on the cancellation callback, so that branch is identified by nothing but the reference and the session. The limiter allows 10 attempts per minute for one merchant reference and 30 per minute from one IP address, so neither hammering one reference nor spreading attempts across many references gets far. Successful callbacks are exempt, because they carry a fingerprint and because throttling them would drop a payment the gateway has already taken.
