@@ -11,6 +11,7 @@ use Akira\Sisp\Actions\HandleCallbackAction;
 use Akira\Sisp\Actions\QueryTransactionStatusAction;
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Actions\ValidatePaymentResponseFingerprintAction;
+use Akira\Sisp\Configuration\CredentialScope;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Configuration\ScopedSispCredentialsResolver;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
@@ -137,13 +138,6 @@ final readonly class ScopedSisp
 
     private function withResolver(callable $callback): mixed
     {
-        $original = $this->container->make(SispCredentialsResolver::class);
-        $this->container->instance(SispCredentialsResolver::class, $this->resolver);
-
-        try {
-            return $callback();
-        } finally {
-            $this->container->instance(SispCredentialsResolver::class, $original);
-        }
+        return $this->container->make(CredentialScope::class)->run($this->resolver->resolve(), $callback);
     }
 }

@@ -1,6 +1,6 @@
 # Upgrading from 2.x to 3.0
 
-Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and five new migrations must be published and run.
+Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and seven new migrations must be published and run.
 
 **Estimated effort:**
 
@@ -133,7 +133,11 @@ Every `handle()` signature stays backward compatible: `MapTransactionStatusActio
 | `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
 | `BuildSandboxPayloadAction` | `PaymentResponseFingerPrintAction`, `SispCredentialsResolver` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction`, `SispCredentialsResolver` |
 | `CancelTransactionAction` | none | `UpdateInvoiceStatusAction` |
-| `RecordRefundAction` | `BuildRefundRequestAction` | `BuildRefundRequestAction`, `UpdateInvoiceStatusAction`, `RefundLedger` |
+| `RecordRefundAction` | `BuildRefundRequestAction` | `UpdateInvoiceStatusAction`, `RefundLedger`, `CredentialScope`, `Container`; the refund request is built by a `BuildRefundRequestAction` made inside the transaction's credential scope |
+| `QueryTransactionStatusAction` | `SispManager` | `SispManager`, `CredentialScope` |
+| `ProductionDriver` | `SispCredentialsResolver`, `TransactionStatusClient` | `Container`, `TransactionStatusClient`; credentials are resolved per call |
+| `TransactionStatusClient` | `LoadConfig`, `SispCredentialsResolver` | `LoadConfig`, `Container`; credentials are resolved per call |
+| `CallbackController` | ... `CallbackFingerprintValidator`, `BuildPaymentResultUrlAction` | ... `BuildPaymentResultUrlAction`, `CredentialScope`, `Container`; the fingerprint validator is made inside the transaction's credential scope |
 | `RenderPaymentResponseAction` | `GetPaymentErrorResponseAction`, `GetPaymentResponseTranslationsAction`, `CanRetryPaymentAction`, `InertiaAvailability` | `GetPaymentResponseTranslationsAction`, `CanRetryPaymentAction`, `InertiaAvailability` |
 | `Transaction\UpdateTransactionAction` | `MapTransactionStatusAction`, `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
 | `Transaction\FailTransactionAction` | `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
@@ -178,7 +182,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 
 ## Database migrations (action required)
 
-3.0 ships six new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+3.0 ships seven new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
 
 | Migration | What it does |
 | --- | --- |
@@ -187,6 +191,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 | `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
 | `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
 | `update_sisp_refunds_add_idempotency_key` | Adds a nullable `idempotency_key` column to the refunds table and a unique index on `transaction_id` and `idempotency_key`. It also gives `transaction_id` an index of its own, so the foreign key does not depend on the unique index. It must run after `create_sisp_refunds_table` and before 3.0 takes refunds: 3.0 writes the column on every refund, keyed or not. |
+| `update_laravel_sisp_transactions_add_pos_id` | Adds a nullable `pos_id` column to the transactions table, filled with the `posID` each new payment is built for. Rows created before the column keep working: the `posID` is read from their stored request. |
 | `update_laravel_sisp_transactions_narrow_lookup_index` | Replaces the index on `merchant_ref`, `merchant_session`, `status` and `message_type` with one on `merchant_session` alone. The four-column index needed 4080 bytes in utf8mb4, above the 3072-byte key limit InnoDB enforces, so a fresh install could never complete on MySQL or MariaDB. Lookups by `merchant_ref` are served by its unique index; the migration keeps the wide index if that unique index is gone. It does nothing on MySQL and MariaDB, where the wide index could never be created, and its rollback only puts the wide index back on an install it actually took it from. |
 
 ```bash
