@@ -113,19 +113,43 @@ it('does not report a readable payload without refunds', function (): void {
         ->and(loggedAt($logged, 'error'))->toBeNull();
 });
 
-it('reports an envelope that cannot be opened apart from a payload without refunds', function () use ($legacyHistory): void {
+it('logs an error for an envelope that cannot be opened, since it may hold refunds', function () use ($legacyHistory): void {
     $foreignKey = Encrypter::generateKey(config('app.cipher'));
     $sealed = transactionWithRawPayload(new Encrypter($foreignKey, config('app.cipher'))->encryptString(json_encode($legacyHistory)));
     transactionWithRawPayload(json_encode(['posID' => '90001']));
 
     $logged = runRefundsMigration();
 
-    $warning = loggedAt($logged, 'warning');
+    $error = loggedAt($logged, 'error');
 
     expect(Refund::query()->count())->toBe(0)
+        ->and($error)->not->toBeNull()
+        ->and($error->context['refunds_left_behind_transaction_ids'])->toBe([$sealed->id])
+        ->and($error->context['undecodable_transaction_ids'])->toBe([]);
+});
+
+it('logs an error for an encrypted payload that opens but whose history is not valid JSON', function (): void {
+    $broken = transactionWithRawPayload(Crypt::encryptString('{"refunds":[{"amount":12.5,"reason":"legacy"}'));
+
+    $logged = runRefundsMigration();
+
+    $error = loggedAt($logged, 'error');
+
+    expect(Refund::query()->count())->toBe(0)
+        ->and($error)->not->toBeNull()
+        ->and($error->context['refunds_left_behind_transaction_ids'])->toBe([$broken->id]);
+});
+
+it('only warns about a clear-text payload that cannot be decoded and does not mention refunds', function (): void {
+    $garbled = transactionWithRawPayload('{"posID":"90001"');
+
+    $logged = runRefundsMigration();
+
+    $warning = loggedAt($logged, 'warning');
+
+    expect(loggedAt($logged, 'error'))->toBeNull()
         ->and($warning)->not->toBeNull()
-        ->and($warning->context['undecodable_transaction_ids'])->toBe([$sealed->id])
-        ->and($warning->context['refunds_left_behind_transaction_ids'])->toBe([]);
+        ->and($warning->context['undecodable_transaction_ids'])->toBe([$garbled->id]);
 });
 
 it('logs an error for an unreadable payload that mentions refunds', function (): void {
