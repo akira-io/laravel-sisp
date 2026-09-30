@@ -173,8 +173,8 @@ final readonly class RefundTransactionAction
      */
     private function appendRefundPayload(Transaction $transaction, array $request, string $reason, ?string $idempotencyKey): array
     {
-        $payload = LegacyPayload::decode($transaction->getAttribute('payload')) ?? [];
-        $refunds = LegacyPayload::refunds($payload) ?? [];
+        $payload = LegacyPayload::decodeStored($transaction->getAttribute('payload'));
+        $refunds = LegacyPayload::refundHistory($payload);
         $refunds[] = array_filter([
             'amount' => $request['amount'],
             'reason' => $reason,
