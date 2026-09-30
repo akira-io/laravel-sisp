@@ -81,3 +81,29 @@ it('accepts the submitted amount by default', function (): void {
 
     expect(Transaction::query()->count())->toBe(1);
 });
+
+it('refuses an amount too large to express instead of failing the request', function (): void {
+    expectAmountForOrder(250.0);
+
+    $this->postJson(route('sisp.payment'), checkoutPayload(1.0e17))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('amount');
+
+    expect(Transaction::query()->count())->toBe(0);
+});
+
+it('lets the resolver refuse an unknown checkout with a validation error', function (): void {
+    app()->instance(PaymentAmountResolver::class, new class implements PaymentAmountResolver
+    {
+        public function expectedAmount(Request $request): ?float
+        {
+            throw Illuminate\Validation\ValidationException::withMessages(['checkout_intent_id' => 'This checkout is unknown.']);
+        }
+    });
+
+    $this->postJson(route('sisp.payment'), checkoutPayload(1.0, 'unknown-order'))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('checkout_intent_id');
+
+    expect(Transaction::query()->count())->toBe(0);
+});

@@ -157,17 +157,24 @@ Restrict CORS if using API endpoints:
 use Akira\Sisp\Contracts\PaymentAmountResolver;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 final class OrderAmountResolver implements PaymentAmountResolver
 {
     public function expectedAmount(Request $request): ?float
     {
-        return Order::query()->find($request->input('checkout_intent_id'))?->total;
+        $order = Order::query()->find($request->input('checkout_intent_id'));
+
+        if ($order === null) {
+            throw ValidationException::withMessages(['checkout_intent_id' => 'This checkout is unknown.']);
+        }
+
+        return $order->total;
     }
 }
 ```
 
-And compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before fulfilling. See [Payment Flow](docs/04-payment-flow.md#the-expected-amount).
+Refuse a missing or unknown checkout rather than answering `null`: `null` accepts whatever amount was submitted, and `checkout_intent_id` is the buyer's to choose. Then compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before fulfilling. See [Payment Flow](docs/04-payment-flow.md#the-expected-amount).
 
 **Transaction Limits**
 

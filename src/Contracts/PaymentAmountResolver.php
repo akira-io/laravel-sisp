@@ -18,7 +18,9 @@ interface PaymentAmountResolver
     /**
      * The amount the application expects for this request, typically looked up
      * from the order or cart the request names (for example checkout_intent_id),
-     * or null to accept the submitted amount.
+     * or null to accept the submitted amount. Answer null only for a checkout
+     * that has no fixed amount; refuse a missing or unknown checkout, for
+     * example with a ValidationException, since null skips the check.
      */
     public function expectedAmount(Request $request): ?float;
 }

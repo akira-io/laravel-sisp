@@ -106,6 +106,7 @@ Everything above comes from the browser, so a buyer can submit `amount=1` for a 
 use Akira\Sisp\Contracts\PaymentAmountResolver;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 final class OrderAmountResolver implements PaymentAmountResolver
 {
@@ -113,7 +114,13 @@ final class OrderAmountResolver implements PaymentAmountResolver
     {
         $order = Order::query()->find($request->input('checkout_intent_id'));
 
-        return $order?->total;
+        if ($order === null) {
+            throw ValidationException::withMessages([
+                'checkout_intent_id' => 'This checkout is unknown.',
+            ]);
+        }
+
+        return $order->total;
     }
 }
 ```
@@ -123,7 +130,7 @@ final class OrderAmountResolver implements PaymentAmountResolver
 $this->app->bind(PaymentAmountResolver::class, OrderAmountResolver::class);
 ```
 
-When the resolver returns an amount, the request is refused with a validation error on `amount` unless the submitted amount matches it to the thousandth. Returning `null` accepts the submitted amount, which is also what the default binding does. Whichever you choose, compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before you fulfil: the listener is the last place that can stop an underpaid order.
+When the resolver returns an amount, the request is refused with a validation error on `amount` unless the submitted amount matches it to the thousandth. Returning `null` accepts the submitted amount, which is also what the default binding does, so reserve it for checkouts that genuinely have no fixed amount (a donation, a top-up): `checkout_intent_id` is optional and comes from the browser, so a resolver that answers `null` for a missing or unknown checkout lets a buyer skip the check by naming one. Refuse those instead, as the example does. Whichever you choose, compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before you fulfil: the listener is the last place that can stop an underpaid order.
 
 ## Step 3: Security Checks
 

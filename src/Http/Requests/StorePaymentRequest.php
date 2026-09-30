@@ -8,6 +8,7 @@ use Akira\Sisp\Contracts\PaymentAmountResolver;
 use Akira\Sisp\Support\SispAmount;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use InvalidArgumentException;
 
 final class StorePaymentRequest extends FormRequest
 {
@@ -83,7 +84,19 @@ final class StorePaymentRequest extends FormRequest
             // word: when it knows what this checkout should cost, the two must agree.
             $expected = resolve(PaymentAmountResolver::class)->expectedAmount($this);
 
-            if ($expected !== null && SispAmount::toThousandths($expected) !== SispAmount::toThousandths($this->input('amount'))) {
+            if ($expected === null) {
+                return;
+            }
+
+            try {
+                $matches = SispAmount::toThousandths($expected) === SispAmount::toThousandths($this->input('amount'));
+            } catch (InvalidArgumentException) {
+                $validator->errors()->add('amount', 'Payment amount is too large.');
+
+                return;
+            }
+
+            if (! $matches) {
                 $validator->errors()->add('amount', 'Payment amount does not match the amount expected for this checkout.');
             }
         });
