@@ -483,6 +483,46 @@ public function register(): void
 
 With this approach, all Sisp operations automatically use the current user's merchant credentials.
 
+### Callbacks, status queries and refunds of a scoped payment
+
+A payment built with `Sisp::forCredentials()` posts back to the shared `/sisp/callback` route, and its status query and refund request run later, outside any `forCredentials()` call. Each transaction stores the `posID` it was built for (the `pos_id` column, or the `posID` in the stored request for rows created before the column), and the package resolves that transaction's credentials through `Akira\Sisp\Contracts\TransactionCredentialsResolver` before validating the callback fingerprint, querying the status or signing the refund request.
+
+The default implementation answers with the active credentials, so a single-merchant application needs nothing. It logs a warning when the transaction's `posID` differs from the active one, because the fingerprint check then fails and the callback is rejected. A multi-merchant application binds its own resolver:
+
+```php
+use Akira\Sisp\Contracts\TransactionCredentialsResolver;
+use Akira\Sisp\Exceptions\UnknownMerchantCredentialsException;
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use App\Models\Merchant;
+
+class MerchantTransactionCredentials implements TransactionCredentialsResolver
+{
+    public function resolveFor(Transaction $transaction): SispCredentials
+    {
+        $merchant = Merchant::query()->where('sisp_pos_id', $transaction->posId())->first();
+
+        if ($merchant === null) {
+            throw new UnknownMerchantCredentialsException((string) $transaction->posId());
+        }
+
+        return SispCredentials::from([
+            'pos_id' => $merchant->sisp_pos_id,
+            'pos_aut_code' => decrypt($merchant->sisp_pos_aut_code),
+            'currency' => $merchant->currency,
+            'merchant_id' => $merchant->sisp_merchant_id,
+            'url' => $merchant->sisp_url,
+        ]);
+    }
+}
+```
+
+```php
+$this->app->bind(TransactionCredentialsResolver::class, MerchantTransactionCredentials::class);
+```
+
+Throwing `UnknownMerchantCredentialsException` rejects the callback with a log entry naming the `posID`, and makes a status query or a refund for that transaction fail.
+
 ## Environment Variables Reference
 
 ```env

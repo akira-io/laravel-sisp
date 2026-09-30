@@ -604,6 +604,7 @@ Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`
 | Contract | Default binding | Purpose |
 | --- | --- | --- |
 | `SispCredentialsResolver` | `EnvSispCredentialsResolver` (singleton) | Resolves the active merchant credentials |
+| `TransactionCredentialsResolver` | `PosIdTransactionCredentialsResolver` | Resolves the credentials a stored transaction was built with, for its callback, status query and refund request |
 | `SispDriver` | Active driver via `SispManager` | Gateway interactions |
 | `CallbackFingerprintValidator` | `ValidatePaymentResponseFingerprintAction` | Callback fingerprint verification |
 | `PaymentPipe` / `CallbackPipe` | — | Pipeline stage contracts |

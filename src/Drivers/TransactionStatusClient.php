@@ -8,6 +8,7 @@ use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Http;
 use LogicException;
 
@@ -15,7 +16,7 @@ final readonly class TransactionStatusClient
 {
     public function __construct(
         private LoadConfig $config,
-        private SispCredentialsResolver $credentialsResolver,
+        private Container $container,
     ) {}
 
     public function query(Transaction|string $transaction): TransactionStatusResponse
@@ -29,7 +30,9 @@ final readonly class TransactionStatusClient
 
         throw_if($portalId === '' || $portalPassword === '', LogicException::class, 'SISP transaction status portal credentials are not configured.');
 
-        $credentials = $this->credentialsResolver->resolve();
+        // Resolved per call: this client lives inside a cached driver, and the
+        // active credentials change under Sisp::forCredentials().
+        $credentials = $this->container->make(SispCredentialsResolver::class)->resolve();
 
         $response = Http::acceptJson()
             ->asJson()

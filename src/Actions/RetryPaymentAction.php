@@ -4,21 +4,33 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Configuration\CredentialScope;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\PaymentRequest;
 use Akira\Sisp\ValueObjects\PaymentRequestData;
+use Illuminate\Contracts\Container\Container;
 
 final readonly class RetryPaymentAction
 {
     private const string FALLBACK_POSTAL_CODE = '0000';
 
-    public function __construct(private BuildRequestPayloadAction $buildRequestPayload) {}
+    public function __construct(
+        private CredentialScope $credentialScope,
+        private Container $container,
+    ) {}
 
     public function handle(Transaction $transaction): PaymentRequest
     {
         $paymentRequestData = $this->extractFromTransaction($transaction);
 
-        return $this->buildRequestPayload->handle($paymentRequestData);
+        // The new attempt has to carry the posID the payment was built for:
+        // its callback and later status queries are checked under that
+        // merchant. The builder is made inside the scope, as it captures the
+        // credentials resolver it is constructed with.
+        return $this->credentialScope->forTransaction(
+            $transaction,
+            fn (): PaymentRequest => $this->container->make(BuildRequestPayloadAction::class)->handle($paymentRequestData),
+        );
     }
 
     private function extractFromTransaction(Transaction $transaction): PaymentRequestData
