@@ -45,7 +45,10 @@ final readonly class CheckRateLimitAction
             throw new RateLimitExceededException("Rate limit lock timeout for {$limitType}: {$identifier}");
         }
 
-        throw_if($retryAfter !== null, RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}. Limit: {$limit} requests per {$windowSeconds} seconds", retryAfterSeconds: $retryAfter);
+        throw_if($retryAfter !== null, new RateLimitExceededException(
+            "Rate limit exceeded for {$limitType}: {$identifier}. Limit: {$limit} requests per {$windowSeconds} seconds",
+            retryAfterSeconds: $retryAfter,
+        ));
     }
 
     /**
