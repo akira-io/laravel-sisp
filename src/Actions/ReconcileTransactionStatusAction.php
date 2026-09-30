@@ -88,24 +88,33 @@ final readonly class ReconcileTransactionStatusAction
 
         // Outside the transaction: a completed payment renders its invoice PDF
         // here, and that must not hold the row lock a callback may be waiting on.
-        $this->updateInvoiceStatus->handle($transaction, $status);
-
-        $transaction->refresh();
+        // The status is already committed and a later reconciliation will not
+        // revisit the row, so a failing invoice must not swallow the event.
+        try {
+            $this->updateInvoiceStatus->handle($transaction, $status);
+        } catch (Throwable $exception) {
+            Log::error('SISP reconciliation settled a payment but could not update its invoice.', [
+                'transaction_id' => $transaction->getKey(),
+                'status' => $status->value,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         // The callback path announces a settled payment through these events, so
         // the listeners that fulfil an order run for a reconciled one as well.
-        // Only a row this call settled gets here, so a second reconciliation
-        // of the same payment cannot emit twice.
-        $this->dispatchEvent($transaction, $response);
+        // The event follows the status this call wrote, not a re-read of the
+        // row: only this call settled it, so it cannot emit twice, and a
+        // callback that lands after the lock is released announces its own.
+        $this->dispatchEvent($transaction, $status, $response);
 
-        return $transaction;
+        return $transaction->refresh();
     }
 
-    private function dispatchEvent(Transaction $transaction, TransactionStatusResponse $response): void
+    private function dispatchEvent(Transaction $transaction, TransactionStatus $status, TransactionStatusResponse $response): void
     {
         $payload = $this->payloadFor($transaction, $response);
 
-        match ($transaction->status) {
+        match ($status) {
             TransactionStatus::completed => event(new PaymentCompleted($transaction, $payload)),
             TransactionStatus::failed => event(new PaymentFailed($transaction, $payload)),
             default => null,
