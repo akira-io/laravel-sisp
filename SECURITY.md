@@ -198,14 +198,18 @@ Route::post('sisp/payment', PaymentController::class)
     ->middleware(ProtectPaymentRoute::class);
 ```
 
-**Authentication**
+**Authentication and Authorization**
 
-Implement authentication for sensitive operations:
+The refund route runs behind `sisp.middleware.refund` (`web`, `auth` by default) and asks for the `refund` ability on the transaction. The package defines no such ability, and Laravel denies an undefined one, so nobody can refund until your application says who may:
 
 ```php
-Route::post('sisp/refund', RefundTransactionController::class)
-    ->middleware(['auth', 'can:refund-transactions']);
+use Akira\Sisp\Models\Transaction;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('refund', fn (User $user, Transaction $transaction): bool => $user->isFinanceStaff());
 ```
+
+Retry and cancel links are signed, time-limited URLs bound to one transaction; the link is the credential, so give it only to that payment's customer, over HTTPS. See [Who May Act on a Transaction](docs/07-security.md#who-may-act-on-a-transaction).
 
 ### Monitoring and Logging
 
