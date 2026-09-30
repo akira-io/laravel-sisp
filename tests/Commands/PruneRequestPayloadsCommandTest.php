@@ -357,3 +357,18 @@ it('leaves a transaction another run pruned after this batch was loaded', functi
 
     expect($transaction->refresh()->payload)->toHaveKey('purchaseRequest');
 });
+
+it('prunes a payload stored as a plain JSON string', function (): void {
+    $transaction = Transaction::factory()->create([
+        'status' => 'completed',
+        'created_at' => now()->subDays(91),
+    ]);
+
+    DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update([
+        'payload' => json_encode(['posID' => '90', 'purchaseRequest' => 'base64-blob']),
+    ]);
+
+    $this->artisan('sisp:prune-request-payloads')->assertSuccessful();
+
+    expect($transaction->refresh()->payload)->toBe(['posID' => '90']);
+});

@@ -7,6 +7,7 @@ namespace Akira\Sisp\Commands;
 use Akira\Sisp\Commands\Concerns\ValidatesIntegerOptions;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\TransactionLogContext;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -87,15 +88,16 @@ final class PruneRequestPayloadsCommand extends Command
                 return false;
             }
 
-            $payload = $locked->getAttribute('payload');
+            $stored = $locked->getAttribute('payload');
+            $payload = LegacyPayload::decode($stored);
 
-            if ($payload !== null && ! is_array($payload)) {
+            if ($stored !== null && $payload === null) {
                 Log::warning('Marked an undecryptable SISP transaction payload as pruned without changing it.', [
                     'transaction_id' => $locked->id,
                 ]);
             }
 
-            if (! is_array($payload) || ! array_key_exists('purchaseRequest', $payload)) {
+            if ($payload === null || ! array_key_exists('purchaseRequest', $payload)) {
                 TransactionLogContext::run(
                     'prune',
                     fn (): bool => $locked->update(['request_payload_pruned_at' => now()])

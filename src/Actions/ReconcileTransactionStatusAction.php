@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Support\Facades\Log;
@@ -46,17 +47,26 @@ final readonly class ReconcileTransactionStatusAction
         }
 
         $status = $response->paymentStatus();
-        $payload = $transaction->getAttribute('payload');
-        $payload = is_array($payload) ? $payload : [];
-        $payload['transaction_status_response'] = $response->raw;
+        $changes = [
+            'status' => $status->value,
+            'merchant_response' => $response->transactionStatusDescription ?: $response->message,
+        ];
+
+        $stored = $transaction->getAttribute('payload');
+        $payload = $stored === null ? [] : LegacyPayload::decode($stored);
+
+        if ($payload === null) {
+            Log::warning('SISP reconciliation left an undecodable transaction payload untouched.', [
+                'transaction_id' => $transaction->getKey(),
+            ]);
+        } else {
+            $payload['transaction_status_response'] = $response->raw;
+            $changes['payload'] = $payload;
+        }
 
         TransactionLogContext::run(
             'reconciliation',
-            fn (): bool => $transaction->update([
-                'status' => $status->value,
-                'merchant_response' => $response->transactionStatusDescription ?: $response->message,
-                'payload' => $payload,
-            ])
+            fn (): bool => $transaction->update($changes)
         );
 
         $this->updateInvoiceStatus->handle($transaction, $status);
