@@ -285,7 +285,7 @@ try {
         ->reason('partial_return')
         ->record();
 
-    echo "Refunded " . $transaction->formatted_amount;
+    echo "Recorded a refund of " . $transaction->formatted_amount;
 } catch (LogicException $e) {
     echo "Cannot refund: " . $e->getMessage();
 }

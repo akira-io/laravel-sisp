@@ -443,7 +443,7 @@ Finally, run a sandbox payment end to end (`SISP_SANDBOX=true`) and confirm the 
 | Need | v2 API |
 | --- | --- |
 | Compose a payment in code | `Sisp::payment()->amount(...)->customerEmail(...)->build()` |
-| Refund fluently | `Sisp::refund($transaction)->full()->reason(...)->record()` |
+| Refund fluently | `Sisp::refund($transaction)->full()->reason(...)->process()` |
 | Add a step to the payment/callback flow | Implement `PaymentPipe`/`CallbackPipe`, register in `sisp.pipelines` |
 | Point to a different gateway | Implement `SispDriver`, register with `SispManager::extend()`, set `SISP_DRIVER` |
 | Replace fingerprint validation | Bind `CallbackFingerprintValidator` |

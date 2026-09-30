@@ -6,6 +6,7 @@ use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Sisp;
+use Akira\Sisp\Tests\Fixtures\RefundRouteUser;
 use Illuminate\Support\Facades\Http;
 
 function recordableTransaction(): Transaction

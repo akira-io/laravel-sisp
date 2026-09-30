@@ -4,53 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Facades\Gate;
-
-final class RefundRouteUser implements Authenticatable
-{
-    public function __construct(
-        public int $id = 1,
-        public string $email = 'buyer@example.com',
-    ) {}
-
-    public function getAuthIdentifierName(): string
-    {
-        return 'id';
-    }
-
-    public function getAuthIdentifier(): int
-    {
-        return $this->id;
-    }
-
-    public function getAuthPasswordName(): string
-    {
-        return 'password';
-    }
-
-    public function getAuthPassword(): string
-    {
-        return '';
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return null;
-    }
-
-    public function setRememberToken($value): void {}
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-
-    public function can(string $ability, mixed $arguments = []): bool
-    {
-        return Gate::forUser($this)->check($ability, $arguments);
-    }
-}
+use Akira\Sisp\Tests\Fixtures\RefundRouteUser;
 
 function refundableTransaction(float $amount = 100.0): Transaction
 {
@@ -61,11 +15,6 @@ function refundableTransaction(float $amount = 100.0): Transaction
         'transaction_id' => '123',
         'response_code' => '5',
     ]);
-}
-
-function allowRefunds(bool $allowed = true): void
-{
-    Gate::define('refund', fn (RefundRouteUser $user, Transaction $transaction): bool => $allowed);
 }
 
 it('refunds a completed transaction and returns json', function (): void {

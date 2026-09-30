@@ -2,10 +2,18 @@
 
 declare(strict_types=1);
 
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Tests\Fixtures\RefundRouteUser;
 use Akira\Sisp\Tests\TestCase;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Support\Facades\Gate;
 
 uses(TestCase::class)->in(__DIR__);
+
+function allowRefunds(bool $allowed = true): void
+{
+    Gate::define('refund', fn (RefundRouteUser $user, Transaction $transaction): bool => $allowed);
+}
 
 /**
  * @param  array<string, mixed>  $overrides

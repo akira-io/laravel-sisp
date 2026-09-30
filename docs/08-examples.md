@@ -78,7 +78,7 @@ Event::listen(TransactionCancelled::class, function (TransactionCancelled $event
 });
 ```
 
-### Transaction Refunded
+### Refund Recorded
 
 ```php
 use Akira\Sisp\Events\RefundRecorded;
@@ -506,7 +506,7 @@ try {
 
     return response()->json([
         'success' => true,
-        'message' => "Refunded the full {$refundAmount} ECV transaction amount",
+        'message' => "Recorded a refund of the full {$refundAmount} ECV transaction amount",
     ]);
 
 } catch (LogicException $e) {
