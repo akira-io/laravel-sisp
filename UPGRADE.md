@@ -135,6 +135,7 @@ Every `handle()` signature stays backward compatible: `MapTransactionStatusActio
 | `CancelTransactionAction` | none | `UpdateInvoiceStatusAction` |
 | `RecordRefundAction` | `BuildRefundRequestAction` | `UpdateInvoiceStatusAction`, `RefundLedger`, `CredentialScope`, `Container`; the refund request is built by a `BuildRefundRequestAction` made inside the transaction's credential scope |
 | `QueryTransactionStatusAction` | `SispManager` | `SispManager`, `CredentialScope` |
+| `RetryPaymentAction` | `BuildRequestPayloadAction` | `CredentialScope`, `Container`; the request is built by a `BuildRequestPayloadAction` made inside the transaction's credential scope |
 | `ProductionDriver` | `SispCredentialsResolver`, `TransactionStatusClient` | `Container`, `TransactionStatusClient`; credentials are resolved per call |
 | `TransactionStatusClient` | `LoadConfig`, `SispCredentialsResolver` | `LoadConfig`, `Container`; credentials are resolved per call |
 | `CallbackController` | ... `CallbackFingerprintValidator`, `BuildPaymentResultUrlAction` | ... `BuildPaymentResultUrlAction`, `CredentialScope`, `Container`; the fingerprint validator is made inside the transaction's credential scope |
