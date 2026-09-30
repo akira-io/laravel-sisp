@@ -12,12 +12,14 @@ use Override;
 
 /**
  * Adds one index to the transactions table, the one table that grows with
- * every sale. On PostgreSQL a plain CREATE INDEX holds an ACCESS EXCLUSIVE
+ * every sale. On Postgres a plain CREATE INDEX holds an ACCESS EXCLUSIVE
  * lock for the whole build, during which no checkout can create a transaction
  * and no callback can record a payment, so there the index is built
  * CONCURRENTLY. That statement cannot run inside a transaction, hence
  * $withinTransaction, and a build that fails leaves an INVALID index behind,
- * which is dropped and rebuilt rather than taken as present.
+ * which is dropped and rebuilt rather than taken as present. Inside a
+ * transaction someone else opened (a test, a migrate call wrapped by the
+ * application) the plain statement is used, as CONCURRENTLY would fail.
  */
 abstract class TransactionIndexMigration extends Migration
 {
@@ -49,7 +51,8 @@ abstract class TransactionIndexMigration extends Migration
 
         if ($this->isPostgres()) {
             DB::statement(sprintf(
-                'CREATE INDEX CONCURRENTLY IF NOT EXISTS %s ON %s (%s)',
+                'CREATE INDEX%s IF NOT EXISTS %s ON %s (%s)',
+                $this->concurrently(),
                 $this->wrap($indexName),
                 $this->wrapTable($table),
                 implode(', ', array_map($this->wrap(...), $this->columns())),
@@ -78,7 +81,7 @@ abstract class TransactionIndexMigration extends Migration
         }
 
         if ($this->isPostgres()) {
-            DB::statement(sprintf('DROP INDEX CONCURRENTLY IF EXISTS %s', $this->wrap($indexName)));
+            DB::statement(sprintf('DROP INDEX%s IF EXISTS %s', $this->concurrently(), $this->wrap($indexName)));
 
             return;
         }
@@ -134,7 +137,12 @@ abstract class TransactionIndexMigration extends Migration
             return;
         }
 
-        DB::statement(sprintf('DROP INDEX CONCURRENTLY IF EXISTS %s', $this->wrap($indexName)));
+        DB::statement(sprintf('DROP INDEX%s IF EXISTS %s', $this->concurrently(), $this->wrap($indexName)));
+    }
+
+    private function concurrently(): string
+    {
+        return DB::transactionLevel() === 0 ? ' CONCURRENTLY' : '';
     }
 
     private function wrap(string $identifier): string
