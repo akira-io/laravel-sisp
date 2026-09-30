@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -117,4 +118,46 @@ it('reconciles the status but leaves a payload it cannot decode untouched', func
 
     expect($updated->status->value)->toBe('completed')
         ->and(DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->value('payload'))->toBe($sealed);
+});
+
+it('does not overwrite a payment that completed while the gateway was being queried', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending', 'merchant_response' => null]);
+    $invoice = $transaction->invoice()->create([
+        'invoice_number' => 'INV-RACE-1',
+        'invoice_date' => now(),
+        'status' => 'paid',
+    ]);
+
+    // The real callback settles the row after the reconciler loaded it as pending.
+    DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update([
+        'status' => 'completed',
+        'merchant_response' => 'C',
+    ]);
+
+    $stale = TransactionStatusResponse::from([
+        'result' => true,
+        'transactionSuccess' => false,
+        'transactionStatusDescription' => 'NOT SETTLED',
+    ]);
+
+    $result = resolve(ReconcileTransactionStatusAction::class)->applyResponse($transaction, $stale);
+
+    expect($result->refresh()->status->value)->toBe('completed')
+        ->and($result->merchant_response)->toBe('C')
+        ->and($invoice->refresh()->status->value)->toBe('paid');
+});
+
+it('applies the gateway answer when the row is still pending under the lock', function (): void {
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    $answer = TransactionStatusResponse::from([
+        'result' => true,
+        'transactionSuccess' => false,
+        'transactionStatusDescription' => 'DECLINED',
+    ]);
+
+    $result = resolve(ReconcileTransactionStatusAction::class)->applyResponse($transaction, $answer);
+
+    expect($result->status->value)->toBe('failed')
+        ->and($result->merchant_response)->toBe('DECLINED');
 });
