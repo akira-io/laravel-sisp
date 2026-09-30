@@ -63,3 +63,19 @@ function signedRetryLink(Transaction $transaction): string
 {
     return URL::temporarySignedRoute('sisp.retry-payment', now()->addMinutes(30), ['transaction' => $transaction->id]);
 }
+
+it('cancels the transaction signed by transaction_id, not the one named by merchantRef in the body', function (): void {
+    $own = Transaction::factory()->create([
+        'status' => 'pending',
+        'merchant_ref' => 'MR-TXN-OWN',
+        'merchant_session' => 'MS-TXN-OWN',
+        'transaction_id' => 'TXN-SIGNED-001',
+    ]);
+    $victim = Transaction::factory()->create(['status' => 'pending', 'merchant_ref' => 'MR-TXN-VICTIM', 'merchant_session' => 'MS-TXN-VICTIM']);
+
+    $this->json('GET', URL::signedRoute('sisp.cancel', ['transaction_id' => 'TXN-SIGNED-001']), ['merchantRef' => 'MR-TXN-VICTIM'])
+        ->assertRedirect();
+
+    expect($own->refresh()->status->value)->toBe('cancelled')
+        ->and($victim->refresh()->status->value)->toBe('pending');
+});
