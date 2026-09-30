@@ -6,6 +6,7 @@ namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Support\Facades\Log;
@@ -46,8 +47,7 @@ final readonly class ReconcileTransactionStatusAction
         }
 
         $status = $response->paymentStatus();
-        $payload = $transaction->getAttribute('payload');
-        $payload = is_array($payload) ? $payload : [];
+        $payload = LegacyPayload::decode($transaction->getAttribute('payload')) ?? [];
         $payload['transaction_status_response'] = $response->raw;
 
         TransactionLogContext::run(
