@@ -204,6 +204,8 @@ The update rules are:
 - `result=true` and `transactionSuccess=true`: status becomes `completed`
 - `result=true` and `transactionSuccess=false`: status becomes `failed`
 
+Each update dispatches `PaymentCompleted` or `PaymentFailed`, so the listeners that act on a paid order run for a reconciled payment as well.
+
 ### Public Status API
 
 Use the `Sisp` facade to query or reconcile a specific transaction from application code:
@@ -217,7 +219,7 @@ $response = Sisp::queryTransactionStatus($transaction->merchant_ref);
 $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 ```
 
-`queryTransactionStatus()` returns `TransactionStatusResponse` and never writes to the database. `reconcileTransactionStatus()` returns a `Transaction` and only updates pending transactions when the SISP status API returns `result=true`.
+`queryTransactionStatus()` returns `TransactionStatusResponse` and never writes to the database. `reconcileTransactionStatus()` returns a `Transaction` and only updates pending transactions when the SISP status API returns `result=true`. When it settles the payment it dispatches `PaymentCompleted` or `PaymentFailed`, exactly as the callback does, with the status API answer under `$event->payload->raw`.
 
 Since v2 the status query is routed through the active gateway driver. You can also call it on a specific driver directly:
 

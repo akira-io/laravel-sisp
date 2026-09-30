@@ -3,11 +3,16 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Actions\ReconcileTransactionStatusAction;
+use Akira\Sisp\Events\PaymentCompleted;
+use Akira\Sisp\Events\PaymentFailed;
+use Akira\Sisp\Models\Invoice;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 beforeEach(function (): void {
     config()->set('sisp.transaction_status.portal_id', 'portal');
@@ -160,4 +165,102 @@ it('applies the gateway answer when the row is still pending under the lock', fu
 
     expect($result->status->value)->toBe('failed')
         ->and($result->merchant_response)->toBe('DECLINED');
+});
+
+it('dispatches PaymentCompleted when reconciliation settles a payment as completed', function (): void {
+    Event::fake([PaymentCompleted::class, PaymentFailed::class]);
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => true, 'transactionStatusDescription' => 'C-SUCESSO', 'msg' => 'Approved'])]);
+
+    $transaction = Transaction::factory()->create(['status' => 'pending', 'merchant_ref' => 'MR-RECONCILED', 'transaction_id' => 'TID-9']);
+
+    resolve(ReconcileTransactionStatusAction::class)->handle($transaction);
+
+    Event::assertDispatched(PaymentCompleted::class, fn (PaymentCompleted $event): bool => $event->transaction->status->value === 'completed'
+        && $event->payload->merchantRef === 'MR-RECONCILED'
+        && (string) $event->payload->transactionID === 'TID-9'
+        && $event->payload->merchantResponse === 'C-SUCESSO'
+        && $event->payload->raw['transactionSuccess'] === true);
+    Event::assertNotDispatched(PaymentFailed::class);
+});
+
+it('dispatches PaymentFailed when reconciliation settles a payment as failed', function (): void {
+    Event::fake([PaymentCompleted::class, PaymentFailed::class]);
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => false, 'transactionStatusDescription' => 'E-ERRO', 'msg' => 'Declined'])]);
+
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+
+    resolve(ReconcileTransactionStatusAction::class)->handle($transaction);
+
+    Event::assertDispatched(PaymentFailed::class, fn (PaymentFailed $event): bool => $event->transaction->status->value === 'failed' && $event->payload->merchantResponse === 'E-ERRO');
+    Event::assertNotDispatched(PaymentCompleted::class);
+});
+
+it('does not dispatch an event when a payment is reconciled a second time', function (): void {
+    Event::fake([PaymentCompleted::class, PaymentFailed::class]);
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => true, 'transactionStatusDescription' => 'C-SUCESSO', 'msg' => 'Approved'])]);
+
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $action = resolve(ReconcileTransactionStatusAction::class);
+
+    $action->handle($transaction);
+    $action->handle($transaction->refresh());
+
+    Event::assertDispatchedTimes(PaymentCompleted::class, 1);
+});
+
+it('does not dispatch an event for a row the callback settled while the gateway was being queried', function (): void {
+    Event::fake([PaymentCompleted::class, PaymentFailed::class]);
+
+    $settled = Transaction::factory()->create(['status' => 'pending']);
+    DB::table(config('sisp.tables.transactions'))->where('id', $settled->id)->update(['status' => 'completed']);
+
+    resolve(ReconcileTransactionStatusAction::class)->applyResponse($settled, TransactionStatusResponse::from(['result' => true, 'transactionSuccess' => false]));
+
+    Event::assertNothingDispatched();
+});
+
+it('does not dispatch an event when the status query fails', function (): void {
+    Event::fake([PaymentCompleted::class, PaymentFailed::class]);
+    Http::fake(['*' => Http::response(['msg' => 'Forbidden'], 403)]);
+
+    resolve(ReconcileTransactionStatusAction::class)->handle(Transaction::factory()->create(['status' => 'pending']));
+
+    Event::assertNothingDispatched();
+});
+
+it('still dispatches PaymentCompleted when the invoice update fails', function (): void {
+    Event::fake([PaymentCompleted::class]);
+    Http::fake(['*' => Http::response(['result' => true, 'transactionSuccess' => true, 'transactionStatusDescription' => 'C-SUCESSO', 'msg' => 'Approved'])]);
+    Log::spy();
+
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $transaction->invoice()->create(['invoice_number' => 'INV-FAIL-1', 'invoice_date' => now(), 'status' => 'pending']);
+
+    Invoice::updating(function (): void {
+        throw new RuntimeException('invoice storage unavailable');
+    });
+
+    $updated = resolve(ReconcileTransactionStatusAction::class)->handle($transaction);
+
+    expect($updated->status->value)->toBe('completed');
+    Event::assertDispatched(PaymentCompleted::class);
+    Log::shouldHaveReceived('error')->withArgs(fn (string $message): bool => str_contains($message, 'could not update its invoice'))->once();
+});
+
+it('announces the status it wrote even if a callback changed the row before the refresh', function (): void {
+    Event::fake([PaymentCompleted::class, PaymentFailed::class]);
+
+    $transaction = Transaction::factory()->create(['status' => 'pending']);
+    $transaction->invoice()->create(['invoice_number' => 'INV-RACE-2', 'invoice_date' => now(), 'status' => 'pending']);
+
+    // The callback completes the payment right after the lock is released,
+    // while the invoice is being updated.
+    Invoice::updating(function () use ($transaction): void {
+        DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update(['status' => 'completed']);
+    });
+
+    resolve(ReconcileTransactionStatusAction::class)->applyResponse($transaction, TransactionStatusResponse::from(['result' => true, 'transactionSuccess' => false, 'transactionStatusDescription' => 'E-ERRO']));
+
+    Event::assertDispatched(PaymentFailed::class);
+    Event::assertNotDispatched(PaymentCompleted::class);
 });

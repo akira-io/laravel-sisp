@@ -398,7 +398,7 @@ $threeDS = ThreeDSecureData::fromCustomerData(
 
 ### PaymentCompleted
 
-Fired when payment succeeds.
+Fired when a payment succeeds, from the callback or from status reconciliation.
 
 ```php
 PaymentCompleted::class {
@@ -409,7 +409,7 @@ PaymentCompleted::class {
 
 ### PaymentFailed
 
-Fired when payment fails.
+Fired when a payment fails, from the callback or from status reconciliation.
 
 ```php
 PaymentFailed::class {

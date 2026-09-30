@@ -337,16 +337,18 @@ $schedule->command('sisp:reconcile-pending')->everyFiveMinutes();
 
 The scheduled command uses SISP's POS transaction-status API. It does not mark a transaction failed when the API request itself fails. It only updates the local status when SISP returns `result=true`.
 
+A reconciliation that settles a payment dispatches the same `PaymentCompleted` or `PaymentFailed` event the callback would have, so the listeners that fulfil an order run for it too. The event's `payload` names the transaction (`merchantRef`, `merchantSession`, `amount`, `posID`) and carries the status API answer under `raw`; the callback-only fields (`fingerprint`, `messageType`, `responseCode`, `timeStamp`) are empty, and so is `transactionID` when no callback ever reached the package, since SISP assigns that identifier in the callback. Identify the payment by `$event->transaction` or by `merchantRef`, never by `transactionID` alone. The event fires even when the invoice update fails (that failure is logged), because the status is already committed and no later reconciliation revisits the row. A payment reconciled twice, or one the callback settled while the gateway was being queried, dispatches nothing.
+
 ## Events Dispatched
 
 ### PaymentCompleted
-Fired when transaction status becomes `completed`:
+Fired when transaction status becomes `completed`, by the callback or by reconciliation:
 ```php
 PaymentCompleted::dispatch($transaction, $payload);
 ```
 
 ### PaymentFailed
-Fired when transaction status becomes `failed`:
+Fired when transaction status becomes `failed`, by the callback or by reconciliation:
 ```php
 PaymentFailed::dispatch($transaction, $payload);
 ```
