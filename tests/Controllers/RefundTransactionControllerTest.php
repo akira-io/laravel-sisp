@@ -256,7 +256,11 @@ it('answers with a summary of the transaction, not its customer details or paylo
         ->assertJsonMissingPath('transaction.customer_email')
         ->assertJsonMissingPath('transaction.customer_phone');
 
-    expect($response->getContent())->not->toContain('buyer@example.com')
+    expect(array_keys($response->json('transaction')))->toBe([
+        'id', 'merchant_ref', 'transaction_id', 'status', 'merchant_response',
+        'amount', 'refunded_amount', 'refundable_amount', 'refunded_at',
+    ])
+        ->and($response->getContent())->not->toContain('buyer@example.com')
         ->not->toContain('+2389912345')
         ->not->toContain('secret');
 });
