@@ -75,7 +75,8 @@ it('refunds a completed transaction and returns json', function (): void {
     $this->actingAs(new RefundRouteUser())
         ->postJson(route('sisp.refund', $transaction), ['amount' => 100.0, 'reason' => 'test'])
         ->assertOk()
-        ->assertJsonPath('success', true);
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('message', 'Refund recorded. Issue it in the SISP back office if you have not already.');
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::refunded)
         ->and($transaction->merchant_response)->toBe('test::100');

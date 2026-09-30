@@ -695,7 +695,7 @@ app(CancelTransactionAction::class)->handle(
 
 ### RecordRefundAction
 
-Refund a completed transaction. The action supports SISP total reversal and partial refund requests.
+Record a refund against a completed transaction. It builds the signed SISP total reversal or partial refund request and stores it, but sends nothing: issue the refund in the SISP back office.
 
 ```php
 app(RecordRefundAction::class)->handle(

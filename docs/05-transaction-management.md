@@ -386,7 +386,7 @@ $request = app(BuildRefundRequestAction::class)->history($transaction);
 $payload = $request->toArray();
 ```
 
-Sandbox certification should validate SISP test cases 29-31 for total reversal, 32-34 for partial refund, and 35 for refund history. Confirm final accounting in the daily VBVT reconciliation file.
+SISP test cases 29-31 for total reversal, 32-34 for partial refund and 35 for refund history are certified against the back office, not through this package, which never submits the request. What the package can be checked on is the request it stores: `BuildRefundRequestAction` produces the same signed payload those cases expect. Confirm final accounting in the daily VBVT reconciliation file.
 
 ### Refund via Route
 

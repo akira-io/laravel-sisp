@@ -6,8 +6,6 @@ use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Sisp;
-use Illuminate\Foundation\Auth\User;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 
 function recordableTransaction(): Transaction
@@ -48,18 +46,15 @@ it('keeps the signed refund request on the recorded refund', function (): void {
     expect($request)->toHaveKeys(['posID', 'merchantRef', 'amount', 'transactionCode', 'fingerprint']);
 });
 
-it('answers without claiming the money moved', function (): void {
+it('sends nothing to the gateway through the route', function (): void {
     Http::preventStrayRequests();
     Http::fake();
 
-    Gate::before(fn (): bool => true);
+    allowRefunds();
 
-    $response = $this->actingAs(new User)
-        ->postJson(route('sisp.refund', recordableTransaction()), ['amount' => 100.0]);
-
-    $response->assertOk();
-
-    expect($response->json('message'))->not->toContain('refunded successfully');
+    $this->actingAs(new RefundRouteUser)
+        ->postJson(route('sisp.refund', recordableTransaction()), ['amount' => 100.0])
+        ->assertOk();
 
     Http::assertNothingSent();
 });
