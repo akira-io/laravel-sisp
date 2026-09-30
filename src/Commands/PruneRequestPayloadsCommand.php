@@ -6,6 +6,7 @@ namespace Akira\Sisp\Commands;
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\SispSchema;
 use Akira\Sisp\Support\TransactionLogContext;
 use Illuminate\Console\Attributes\Description;
@@ -75,10 +76,9 @@ final class PruneRequestPayloadsCommand extends Command
 
     private function prune(Transaction $transaction): ?bool
     {
-        /** @var array<string, mixed>|string $payload */
-        $payload = $transaction->payload;
+        $payload = LegacyPayload::decode($transaction->getAttribute('payload'));
 
-        if (! is_array($payload)) {
+        if ($payload === null) {
             Log::warning('Skipped pruning an undecryptable SISP transaction payload.', [
                 'transaction_id' => $transaction->id,
             ]);
