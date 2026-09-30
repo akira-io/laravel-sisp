@@ -76,12 +76,18 @@ final readonly class ReconcileTransactionStatusAction
                 fn (): bool => $transaction->update($this->changes($transaction, $response, $status))
             );
 
-            $this->updateInvoiceStatus->handle($transaction, $status);
-
             return true;
         });
 
-        return $applied ? $transaction->refresh() : $transaction;
+        if (! $applied) {
+            return $transaction;
+        }
+
+        // Outside the transaction: a completed payment renders its invoice PDF
+        // here, and that must not hold the row lock a callback may be waiting on.
+        $this->updateInvoiceStatus->handle($transaction, $status);
+
+        return $transaction->refresh();
     }
 
     /**
