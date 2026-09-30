@@ -33,21 +33,25 @@ final readonly class CheckRateLimitAction
 
         throw_if(Cache::has($blockedKey), RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}");
 
-        $exceeded = false;
+        $retryAfter = null;
 
         try {
-            Cache::lock($lockKey, 10)->block(5, function () use (&$exceeded, $limitType, $identifier, $context, $limit, $windowSeconds, $blockedKey): void {
-                $exceeded = DB::transaction(
-                    fn (): bool => $this->recordHit($limitType, $identifier, $context, $limit, $windowSeconds, $blockedKey)
+            Cache::lock($lockKey, 10)->block(5, function () use (&$retryAfter, $limitType, $identifier, $context, $limit, $windowSeconds, $blockedKey): void {
+                $retryAfter = DB::transaction(
+                    fn (): ?int => $this->recordHit($limitType, $identifier, $context, $limit, $windowSeconds, $blockedKey)
                 );
             });
         } catch (LockTimeoutException) {
             throw new RateLimitExceededException("Rate limit lock timeout for {$limitType}: {$identifier}");
         }
 
-        throw_if($exceeded, RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}. Limit: {$limit} requests per {$windowSeconds} seconds");
+        throw_if($retryAfter !== null, RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}. Limit: {$limit} requests per {$windowSeconds} seconds", retryAfterSeconds: $retryAfter);
     }
 
+    /**
+     * Records the hit and returns the seconds until the window resets when the
+     * limit is exceeded, null otherwise.
+     */
     private function recordHit(
         string $limitType,
         string $identifier,
@@ -55,7 +59,7 @@ final readonly class CheckRateLimitAction
         int $limit,
         int $windowSeconds,
         string $blockedKey,
-    ): bool {
+    ): ?int {
         $rateLimit = RateLimit::query()
             ->where([
                 'identifier' => $identifier,
@@ -85,10 +89,10 @@ final readonly class CheckRateLimitAction
             $rateLimit->block($windowSeconds);
             Cache::put($blockedKey, true, $windowSeconds);
 
-            return true;
+            return max(1, (int) now()->diffInSeconds($rateLimit->reset_at, absolute: true));
         }
 
-        return false;
+        return null;
     }
 
     private function getDefaultLimit(string $limitType): int
