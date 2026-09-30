@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -44,40 +45,57 @@ return new class extends Migration
     {
         $refundsTable = config('sisp.tables.refunds', 'sisp_refunds');
         $copied = 0;
-        $unreadable = [];
+        $undecodable = [];
+        $leftBehind = [];
+        $malformed = [];
 
         Transaction::query()
             ->orderBy('id')
-            ->chunkById(100, function (Collection $transactions) use ($refundsTable, &$copied, &$unreadable): void {
+            ->chunkById(100, function (Collection $transactions) use ($refundsTable, &$copied, &$undecodable, &$leftBehind, &$malformed): void {
                 $alreadyMigrated = DB::table($refundsTable)
                     ->whereIn('transaction_id', $transactions->modelKeys())
                     ->pluck('transaction_id')
+                    ->map(fn (mixed $id): int => (int) $id)
                     ->all();
 
                 foreach ($transactions as $transaction) {
-                    if (in_array($transaction->getKey(), $alreadyMigrated, true)) {
+                    $id = (int) $transaction->getKey();
+
+                    if (in_array($id, $alreadyMigrated, true)) {
                         continue;
                     }
 
-                    $payload = $transaction->getAttribute('payload');
+                    $stored = $transaction->getAttribute('payload');
 
-                    if (! is_array($payload)) {
-                        if ($payload !== null) {
-                            $unreadable[] = $transaction->getKey();
+                    if ($stored === null) {
+                        continue;
+                    }
+
+                    $payload = LegacyPayload::decode($stored);
+
+                    if ($payload === null) {
+                        if (str_contains((string) $transaction->getRawOriginal('payload'), 'refunds')) {
+                            $leftBehind[] = $id;
+                        } else {
+                            $undecodable[] = $id;
                         }
 
                         continue;
                     }
 
-                    $refunds = $payload['refunds'] ?? [];
+                    $refunds = LegacyPayload::refunds($payload);
 
-                    if (! is_array($refunds)) {
-                        $unreadable[] = $transaction->getKey();
+                    if ($refunds === null) {
+                        $leftBehind[] = $id;
 
                         continue;
                     }
 
                     $entries = array_values(array_filter($refunds, is_array(...)));
+
+                    if (count($entries) !== count($refunds)) {
+                        $malformed[$id] = count($refunds) - count($entries);
+                    }
 
                     if ($entries === []) {
                         continue;
@@ -89,16 +107,21 @@ return new class extends Migration
                 }
             });
 
-        Log::info('SISP refund history copied into the refunds table.', [
+        $context = [
             'copied' => $copied,
-            'unreadable_transaction_ids' => $unreadable,
-        ]);
+            'undecodable_transaction_ids' => $undecodable,
+            'refunds_left_behind_transaction_ids' => $leftBehind,
+            'malformed_entries' => $malformed,
+        ];
 
-        if ($unreadable !== []) {
-            Log::warning('SISP refund history could not be read for some transactions.', [
-                'transaction_ids' => $unreadable,
-                'copied' => $copied,
-            ]);
+        Log::info('SISP refund history copied into the refunds table.', $context);
+
+        if ($leftBehind !== []) {
+            Log::error('SISP refund history exists but could not be copied for some transactions.', $context);
+        }
+
+        if ($undecodable !== [] || $malformed !== []) {
+            Log::warning('SISP refund history could not be read for some transactions.', $context);
         }
     }
 
