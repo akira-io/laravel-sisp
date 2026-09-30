@@ -49,8 +49,8 @@ final readonly class CheckRateLimitAction
     }
 
     /**
-     * Records the hit and returns the seconds until the window resets when the
-     * limit is exceeded, null otherwise.
+     * Records the hit and returns the seconds the identifier stays blocked when
+     * the limit is exceeded, null otherwise.
      */
     private function recordHit(
         string $limitType,
@@ -89,7 +89,8 @@ final readonly class CheckRateLimitAction
             $rateLimit->block($windowSeconds);
             Cache::put($blockedKey, true, $windowSeconds);
 
-            return max(1, (int) now()->diffInSeconds($rateLimit->reset_at, absolute: true));
+            // The block and its cache entry last a full window from this hit.
+            return $windowSeconds;
         }
 
         return null;

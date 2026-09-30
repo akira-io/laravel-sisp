@@ -35,9 +35,7 @@ it('answers a rate-limited JSON payment request with 429 and Retry-After', funct
     $response->assertStatus(429)
         ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'Rate limit exceeded'));
 
-    $retryAfter = (int) $response->headers->get('Retry-After');
-
-    expect($retryAfter)->toBeGreaterThan(0)->toBeLessThanOrEqual(600)
+    expect($response->headers->get('Retry-After'))->toBe('600')
         ->and(Transaction::query()->count())->toBe(1);
 });
 
