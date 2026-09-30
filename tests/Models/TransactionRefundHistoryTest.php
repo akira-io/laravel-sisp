@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +31,7 @@ it('reports no refunds on a transaction that was never refunded', function (): v
 
 it('aggregates successive partial refunds', function (): void {
     $transaction = refundableHistoryTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction, 30.0, 'first');
     $action->handle($transaction, 25.5, 'second');
@@ -47,7 +47,7 @@ it('aggregates successive partial refunds', function (): void {
 
 it('stops being partially refunded once the refunds cover the amount', function (): void {
     $transaction = refundableHistoryTransaction();
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $transaction = $action->handle($transaction, 60.0);
     $transaction = $action->handle($transaction, 40.0);
@@ -61,7 +61,7 @@ it('stops being partially refunded once the refunds cover the amount', function 
 it('counts a full refund made in one step', function (): void {
     $transaction = refundableHistoryTransaction();
 
-    $transaction = resolve(RefundTransactionAction::class)->handle($transaction, 100.0);
+    $transaction = resolve(RecordRefundAction::class)->handle($transaction, 100.0);
 
     expect($transaction->refundedAmount())->toBe(100.0)
         ->and($transaction->refunds)->toHaveCount(1)
@@ -81,14 +81,14 @@ it('reads refunds recorded only in the payload by 2.1', function (): void {
 });
 
 it('hands the recorded refund and the remaining balance to the event', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = refundableHistoryTransaction();
 
-    resolve(RefundTransactionAction::class)->handle($transaction, 30.0, 'partial');
+    resolve(RecordRefundAction::class)->handle($transaction, 30.0, 'partial');
 
     Event::assertDispatched(
-        TransactionRefunded::class,
-        fn (TransactionRefunded $event): bool => $event->refund instanceof Refund
+        RefundRecorded::class,
+        fn (RefundRecorded $event): bool => $event->refund instanceof Refund
             && $event->refund->exists
             && $event->refund->amount === 30.0
             && $event->refund->reason === 'partial'
@@ -97,7 +97,7 @@ it('hands the recorded refund and the remaining balance to the event', function 
 });
 
 it('still builds the event with the 2.1 arguments', function (): void {
-    $event = new TransactionRefunded(refundableHistoryTransaction(), 10.0);
+    $event = new RefundRecorded(refundableHistoryTransaction(), 10.0);
 
     expect($event->reason)->toBe('user_refund')
         ->and($event->refund)->toBeNull()
@@ -108,12 +108,12 @@ it('offers no refundable balance on a transaction the guard would refuse', funct
     $transaction = Transaction::factory()->create(['status' => $status, 'amount' => 100.0]);
 
     expect($transaction->refundableAmount())->toBe(0.0)
-        ->and(resolve(RefundTransactionAction::class)->refundableAmount($transaction))->toBe(0.0);
+        ->and(resolve(RecordRefundAction::class)->refundableAmount($transaction))->toBe(0.0);
 })->with(['pending', 'failed', 'cancelled', 'refunded']);
 
 it('counts table rows the payload no longer lists', function (): void {
     $transaction = refundableHistoryTransaction();
-    resolve(RefundTransactionAction::class)->handle($transaction, 30.0);
+    resolve(RecordRefundAction::class)->handle($transaction, 30.0);
     $transaction->update(['payload' => []]);
 
     expect($transaction->refresh()->refundedAmount())->toBe(30.0)
@@ -121,7 +121,7 @@ it('counts table rows the payload no longer lists', function (): void {
 });
 
 it('backfills 2.1 payload refunds into the table and reports them', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = Transaction::factory()->create([
         'status' => TransactionStatus::completed->value,
         'amount' => 100.0,
@@ -130,20 +130,20 @@ it('backfills 2.1 payload refunds into the table and reports them', function ():
         'payload' => ['refunds' => [['amount' => 20.0, 'reason' => 'legacy', 'request' => []]]],
     ]);
 
-    resolve(RefundTransactionAction::class)->handle($transaction, 30.0, 'new');
+    resolve(RecordRefundAction::class)->handle($transaction, 30.0, 'new');
 
     expect($transaction->refunds()->pluck('reason')->all())->toBe(['legacy', 'new'])
         ->and($transaction->refundedAmount())->toBe(50.0);
 
     Event::assertDispatched(
-        TransactionRefunded::class,
-        fn (TransactionRefunded $event): bool => $event->refund?->reason === 'new' && $event->remainingAmount === 50.0,
+        RefundRecorded::class,
+        fn (RefundRecorded $event): bool => $event->refund?->reason === 'new' && $event->remainingAmount === 50.0,
     );
 });
 
 it('computes the helpers from eager-loaded refunds without querying', function (): void {
     $transaction = refundableHistoryTransaction();
-    resolve(RefundTransactionAction::class)->handle($transaction, 30.0);
+    resolve(RecordRefundAction::class)->handle($transaction, 30.0);
     $loaded = Transaction::query()->with('refunds')->where('id', $transaction->id)->sole();
     DB::enableQueryLog();
 

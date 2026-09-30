@@ -27,7 +27,7 @@ php artisan laravel-sisp:install
 
 | Area | Included |
 | --- | --- |
-| Payments | Payment request building, SISP form rendering, callbacks, cancellation, retry, and refunds |
+| Payments | Payment request building, SISP form rendering, callbacks, cancellation, retry, and refund bookkeeping |
 | Transactions | Eloquent models, audit logs, reconciliation, and status queries |
 | Invoices | PDF invoice generation after approved payments |
 | Security | Fingerprint validation, signed retry and cancellation requests, rate limits, metadata collection, and blacklist support |
@@ -100,7 +100,7 @@ $paymentRequest = Sisp::payment()
 $transaction = Sisp::refund($transaction)
     ->amount(500.0)
     ->reason('partial_return')
-    ->process();
+    ->record();
 ```
 
 ### Drivers

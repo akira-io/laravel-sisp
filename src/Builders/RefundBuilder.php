@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Builders;
 
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Models\Transaction;
 use LogicException;
 
@@ -17,7 +17,7 @@ final class RefundBuilder
     private ?string $idempotencyKey = null;
 
     public function __construct(
-        private readonly RefundTransactionAction $refundTransaction,
+        private readonly RecordRefundAction $recordRefund,
         private readonly Transaction $transaction,
     ) {}
 
@@ -49,10 +49,10 @@ final class RefundBuilder
         return $this;
     }
 
-    public function process(): Transaction
+    public function record(): Transaction
     {
         throw_if($this->amount === null, LogicException::class, 'A refund amount is required. Call amount() or full() first.');
 
-        return $this->refundTransaction->handle($this->transaction, $this->amount, $this->reason, $this->idempotencyKey);
+        return $this->recordRefund->handle($this->transaction, $this->amount, $this->reason, $this->idempotencyKey);
     }
 }

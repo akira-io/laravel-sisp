@@ -76,7 +76,7 @@ match ($invoice->status) {
     InvoiceStatus::paid => /* Payment confirmed */,
     InvoiceStatus::overdue => /* Past due date */,
     InvoiceStatus::cancelled => /* Cancelled */,
-    InvoiceStatus::refunded => /* Payment refunded in full */,
+    InvoiceStatus::refunded => /* A refund covering the full amount is recorded */,
 };
 ```
 

@@ -44,7 +44,7 @@ No, the package registers all routes automatically:
 - `GET|POST /sisp/callback` - SISP callback
 - `POST /sisp/retry-payment` - Retry payment
 - `GET /sisp/cancel` - Cancel transaction
-- `POST /sisp/refund/{transaction}` - Refund transaction
+- `POST /sisp/refund/{transaction}` - Record a refund issued in the SISP back office
 - `GET /sisp/countries` - Countries list
 
 ### Can I customize the routes?
@@ -128,7 +128,7 @@ you must provide:
 
 ### Can I refund a payment?
 
-Yes. Refund completed transactions with the fluent builder — `Sisp::refund($transaction)->full()->process()` or `->amount(500.0)->process()` — or invoke `RefundTransactionAction` directly. Current SISP specifications support total reversal and partial refund. The package validates that the requested amount does not exceed the refundable balance it knows locally.
+The package records refunds; it does not send them. Issue the refund in the SISP back office, then record it here with the fluent builder — `Sisp::refund($transaction)->full()->record()` or `->amount(500.0)->record()` — or by invoking `RecordRefundAction` directly. Recording builds the signed refund request, stores it, moves the local balance and status, and dispatches `RefundRecorded`. Current SISP specifications support total reversal and partial refund. The package validates that the requested amount does not exceed the refundable balance it knows locally, and confirms the accounting against the daily VBVT file.
 
 ### Can I cancel a pending payment?
 

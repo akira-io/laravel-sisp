@@ -328,10 +328,10 @@ Fired when transaction is cancelled via `POST /sisp/cancel`:
 TransactionCancelled::dispatch($transaction, $reason);
 ```
 
-### TransactionRefunded
-Fired when transaction is refunded via `POST /sisp/refund/{transaction}`:
+### RefundRecorded
+Fired when a refund is recorded via `POST /sisp/refund/{transaction}`. The money is returned in the SISP back office, not by this package:
 ```php
-TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
+RefundRecorded::dispatch($transaction, $refundAmount, $reason);
 ```
 
 ## Transaction Statuses
@@ -340,7 +340,7 @@ TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 - **completed** - Payment successful
 - **failed** - Payment rejected
 - **cancelled** - Transaction cancelled by user or merchant
-- **refunded** - Payment refunded to customer
+- **refunded** - A refund covering the full amount is recorded locally
 
 ## Database Records Created
 
