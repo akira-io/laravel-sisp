@@ -50,8 +50,11 @@ abstract class TransactionIndexMigration extends Migration
         $indexName = $this->indexName($table);
 
         if ($this->isPostgres()) {
+            // No IF NOT EXISTS: hasIndex() already saw the transactions table
+            // has no such index, so a name held by another table must fail
+            // loudly rather than let the migration succeed without its index.
             DB::statement(sprintf(
-                'CREATE INDEX%s IF NOT EXISTS %s ON %s (%s)',
+                'CREATE INDEX%s %s ON %s (%s)',
                 $this->concurrently(),
                 $this->wrap($indexName),
                 $this->wrapTable($table),

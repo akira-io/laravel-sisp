@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -97,10 +98,13 @@ it('leaves an invalid index of the same name on another table alone', function (
     DB::statement(sprintf('CREATE INDEX %s ON sisp_other_rows (status, created_at)', DB::connection()->getSchemaGrammar()->wrap($indexName)));
     DB::statement('UPDATE pg_index SET indisvalid = false WHERE indexrelid = ?::regclass', [$indexName]);
 
-    statusCreatedAtMigration()->up();
+    // The name is taken, so the migration fails instead of succeeding
+    // without the transactions index, and the other table's index survives.
+    // A savepoint keeps the test transaction usable after the failed statement.
+    expect(fn () => DB::transaction(fn () => statusCreatedAtMigration()->up()))->toThrow(QueryException::class);
 
-    expect(DB::selectOne('SELECT 1 AS present FROM pg_index WHERE indexrelid = to_regclass(?)', [$indexName]))->not->toBeNull()
-        ->and(array_column(Schema::getIndexes('sisp_other_rows'), 'name'))->toContain($indexName);
+    expect(array_column(Schema::getIndexes('sisp_other_rows'), 'name'))->toContain($indexName)
+        ->and(statusCreatedAtIndexes())->toBeEmpty();
 
     DB::statement(sprintf('DROP INDEX %s', DB::connection()->getSchemaGrammar()->wrap($indexName)));
     Schema::drop('sisp_other_rows');
