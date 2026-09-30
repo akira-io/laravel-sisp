@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Akira\Sisp\Actions;
 
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Events\PaymentCompleted;
+use Akira\Sisp\Events\PaymentFailed;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\Support\TransactionRowLock;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -87,7 +90,54 @@ final readonly class ReconcileTransactionStatusAction
         // here, and that must not hold the row lock a callback may be waiting on.
         $this->updateInvoiceStatus->handle($transaction, $status);
 
-        return $transaction->refresh();
+        $transaction->refresh();
+
+        // The callback path announces a settled payment through these events, so
+        // the listeners that fulfil an order run for a reconciled one as well.
+        // Only a row this call settled gets here, so a second reconciliation
+        // of the same payment cannot emit twice.
+        $this->dispatchEvent($transaction, $response);
+
+        return $transaction;
+    }
+
+    private function dispatchEvent(Transaction $transaction, TransactionStatusResponse $response): void
+    {
+        $payload = $this->payloadFor($transaction, $response);
+
+        match ($transaction->status) {
+            TransactionStatus::completed => event(new PaymentCompleted($transaction, $payload)),
+            TransactionStatus::failed => event(new PaymentFailed($transaction, $payload)),
+            default => null,
+        };
+    }
+
+    /**
+     * The status API answers with a description and a message, not with the
+     * fields a callback carries; the payload names the transaction and carries
+     * the answer under raw so a listener can tell the two sources apart.
+     */
+    private function payloadFor(Transaction $transaction, TransactionStatusResponse $response): CallbackPayload
+    {
+        return new CallbackPayload(
+            merchantRef: (string) $transaction->getAttribute('merchant_ref'),
+            merchantSession: (string) ($transaction->getAttribute('merchant_session') ?? ''),
+            timeStamp: '',
+            amount: $transaction->amount,
+            currency: (string) ($transaction->getAttribute('currency') ?? ''),
+            transactionCode: (string) ($transaction->getAttribute('transaction_code') ?? ''),
+            transactionID: (string) ($transaction->getAttribute('transaction_id') ?? ''),
+            messageType: '',
+            merchantResponse: $response->transactionStatusDescription ?: $response->message,
+            responseCode: '',
+            fingerprint: '',
+            posID: $transaction->posId() ?? '',
+            currencyProvided: false,
+            transactionCodeProvided: false,
+            posIDProvided: false,
+            amountProvided: false,
+            raw: $response->raw,
+        );
     }
 
     /**
