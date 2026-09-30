@@ -83,7 +83,6 @@ it('accepts the submitted amount by default', function (): void {
 });
 
 it('refuses an amount too large to express instead of failing the request', function (): void {
-    expectAmountForOrder(250.0);
 
     $this->postJson(route('sisp.payment'), checkoutPayload(1.0e17))
         ->assertUnprocessable()

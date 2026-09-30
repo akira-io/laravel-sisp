@@ -12,6 +12,12 @@ use InvalidArgumentException;
 
 final class StorePaymentRequest extends FormRequest
 {
+    /**
+     * The largest amount SISP thousandths can carry; anything above it cannot
+     * be expressed and is refused before the arithmetic below runs on it.
+     */
+    private const string MAX_AMOUNT = '9000000000000000';
+
     public function authorize(): bool
     {
         return true;
@@ -20,13 +26,13 @@ final class StorePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.self::MAX_AMOUNT],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['sometimes', 'string', 'max:255'],
             'items.*.product_name' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'items.*.total_price' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0', 'max:'.self::MAX_AMOUNT],
+            'items.*.total_price' => ['required', 'numeric', 'min:0', 'max:'.self::MAX_AMOUNT],
             'items.*.description' => ['sometimes', 'string'],
             'items.*.metadata' => ['sometimes', 'array'],
             'customer_name' => ['sometimes', 'string', 'max:255'],
