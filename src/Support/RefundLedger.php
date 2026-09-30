@@ -46,13 +46,8 @@ final readonly class RefundLedger
      */
     public function payloadRefunds(Transaction $transaction): array
     {
-        $payload = $transaction->getAttribute('payload');
-        $payload = is_array($payload) ? $payload : [];
-        $refunds = $payload['refunds'] ?? [];
-
-        if (! is_array($refunds)) {
-            return [];
-        }
+        $payload = LegacyPayload::decode($transaction->getAttribute('payload')) ?? [];
+        $refunds = LegacyPayload::refunds($payload) ?? [];
 
         return array_values(array_filter($refunds, is_array(...)));
     }

@@ -8,6 +8,7 @@ use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Events\TransactionRefunded;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\RefundLedger;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Support\TransactionLogContext;
@@ -142,10 +143,8 @@ final readonly class RefundTransactionAction
      */
     private function appendRefundPayload(Transaction $transaction, array $request, string $reason): array
     {
-        $payload = $transaction->getAttribute('payload');
-        $payload = is_array($payload) ? $payload : [];
-        $refunds = $payload['refunds'] ?? [];
-        $refunds = is_array($refunds) ? $refunds : [];
+        $payload = LegacyPayload::decode($transaction->getAttribute('payload')) ?? [];
+        $refunds = LegacyPayload::refunds($payload) ?? [];
         $refunds[] = [
             'amount' => $request['amount'],
             'reason' => $reason,
