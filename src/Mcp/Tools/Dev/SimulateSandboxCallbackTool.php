@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Akira\Sisp\Mcp\Tools\Dev;
 
 use Akira\Sisp\Builders\PaymentBuilder;
+use Akira\Sisp\Configuration\CredentialScope;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Mcp\Concerns\ResolvesTransaction;
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\CallbackPayload;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -21,6 +24,8 @@ final class SimulateSandboxCallbackTool extends Tool
 {
     use ResolvesTransaction;
 
+    public function __construct(private readonly CredentialScope $credentialScope) {}
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -29,13 +34,17 @@ final class SimulateSandboxCallbackTool extends Tool
             'status' => ['nullable', 'in:success,failed'],
         ]);
 
-        $builder = $request->get('transaction') === null
-            ? resolve(PaymentBuilder::class)->amount((float) $request->get('amount'))
-            : $this->builderForStoredTransaction((string) $request->get('transaction'));
+        $transaction = $request->get('transaction') === null
+            ? null
+            : $this->resolveTransaction((string) $request->get('transaction'));
 
-        if ($builder instanceof Response) {
-            return $builder;
+        if ($transaction instanceof Response) {
+            return $transaction;
         }
+
+        $builder = $transaction instanceof Transaction
+            ? $this->builderForStoredTransaction($transaction)
+            : resolve(PaymentBuilder::class)->amount((float) $request->get('amount'));
 
         foreach (['currency', 'locale', 'customerEmail'] as $field) {
             $value = $request->get($field);
@@ -45,8 +54,12 @@ final class SimulateSandboxCallbackTool extends Tool
             }
         }
 
+        $generate = fn (): CallbackPayload => Sisp::generateSandboxPayload($builder->toData(), (string) ($request->get('status') ?? 'success'));
+
         try {
-            $payload = Sisp::generateSandboxPayload($builder->toData(), (string) ($request->get('status') ?? 'success'));
+            $payload = $transaction instanceof Transaction
+                ? $this->credentialScope->forTransaction($transaction, $generate)
+                : $generate();
         } catch (LogicException $e) {
             return Response::error('Could not build sandbox payload: '.$e->getMessage());
         }
@@ -81,21 +94,21 @@ final class SimulateSandboxCallbackTool extends Tool
         ];
     }
 
-    private function builderForStoredTransaction(string $identifier): PaymentBuilder|Response
+    private function builderForStoredTransaction(Transaction $transaction): PaymentBuilder
     {
-        $transaction = $this->resolveTransaction($identifier);
-
-        if ($transaction instanceof Response) {
-            return $transaction;
-        }
-
         $builder = resolve(PaymentBuilder::class)
             ->amount((float) $transaction->amount)
             ->merchantRef($transaction->merchant_ref)
             ->merchantSession($transaction->currentAttempt->merchant_session ?? $transaction->merchant_session);
 
-        $currency = (string) $transaction->getAttribute('currency');
+        foreach (['currency' => 'currency', 'transactionCode' => 'transaction_code'] as $method => $column) {
+            $value = (string) $transaction->getAttribute($column);
 
-        return $currency === '' ? $builder : $builder->currency($currency);
+            if ($value !== '') {
+                $builder->{$method}($value);
+            }
+        }
+
+        return $builder;
     }
 }

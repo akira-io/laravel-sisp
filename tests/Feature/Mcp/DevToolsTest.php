@@ -245,3 +245,16 @@ function toolJson(TestResponse $response): array
 
     return is_array($decoded) ? $decoded : [];
 }
+
+it('answers a stored transaction with its own transaction code', function (): void {
+    config()->set('sisp.sandbox', true);
+    Transaction::factory()->pending()->create([
+        'merchant_ref' => 'REF-CODE',
+        'amount' => 300.0,
+        'transaction_code' => '3',
+    ]);
+
+    $response = SispDevServer::tool(SimulateSandboxCallbackTool::class, ['transaction' => 'REF-CODE'])->assertOk();
+
+    expect(toolJson($response)['callback']['transactionCode'])->toBe('3');
+});

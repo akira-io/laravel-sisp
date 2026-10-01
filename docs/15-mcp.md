@@ -132,7 +132,7 @@ checked against the Gate.
 | `env-scaffold-tool` | Produce the `.env` variables to set, per environment. |
 | `enum-reference-tool` | List cases and labels for a SISP enum. |
 | `country-reference-tool` | Resolve or list supported countries. |
-| `simulate-sandbox-callback-tool` | Build a signed sandbox callback for a stored transaction, or for a payment shape. With a transaction, the callback carries its reference, session and amount, so posting it to `/sisp/callback` completes or fails that transaction. Refuses outside sandbox mode; failures are signed with the error fingerprint formula. |
+| `simulate-sandbox-callback-tool` | Build a signed sandbox callback for a stored transaction, or for a payment shape. With a transaction, the callback carries its reference, session, amount and transaction code and is signed with that transaction's own credentials, so posting it to `/sisp/callback` completes or fails that transaction. Refuses outside sandbox mode; failures are signed with the error fingerprint formula. |
 | `doctor-tool` | Invoice storage and configuration diagnostics. Never writes to the disk. |
 
 ### Operations (sisp-ops)
