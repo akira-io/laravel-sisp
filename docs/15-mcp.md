@@ -27,6 +27,10 @@ SISP_MCP_WEB_DESTRUCTIVE=false
 # SISP status API calls from query and reconcile, per minute
 SISP_MCP_GATEWAY_LIMIT_PER_CALLER=10
 SISP_MCP_GATEWAY_LIMIT_GLOBAL=60
+
+# Refund records and cancellations, per minute
+SISP_MCP_DESTRUCTIVE_LIMIT_PER_CALLER=5
+SISP_MCP_DESTRUCTIVE_LIMIT_GLOBAL=20
 ```
 
 The matching config lives in `config/sisp.php` under the `mcp` key:
@@ -42,9 +46,15 @@ The matching config lives in `config/sisp.php` under the `mcp` key:
         'ability'    => env('SISP_MCP_WEB_ABILITY', 'sisp-mcp'),
         'expose_destructive' => env('SISP_MCP_WEB_DESTRUCTIVE', false),
     ],
-    'gateway_rate_limit' => [
-        'per_caller' => env('SISP_MCP_GATEWAY_LIMIT_PER_CALLER', 10),
-        'global'     => env('SISP_MCP_GATEWAY_LIMIT_GLOBAL', 60),
+    'rate_limits' => [
+        'gateway' => [
+            'per_caller' => env('SISP_MCP_GATEWAY_LIMIT_PER_CALLER', 10),
+            'global'     => env('SISP_MCP_GATEWAY_LIMIT_GLOBAL', 60),
+        ],
+        'destructive' => [
+            'per_caller' => env('SISP_MCP_DESTRUCTIVE_LIMIT_PER_CALLER', 5),
+            'global'     => env('SISP_MCP_DESTRUCTIVE_LIMIT_GLOBAL', 20),
+        ],
     ],
 ],
 ```
@@ -144,13 +154,14 @@ They never return the merchant session, the request or callback payloads, the ca
 data.
 
 Refund takes the same payload as the HTTP refund route: `amount` is required and must be greater than
-zero, `reason` is optional and at most 255 characters, and `idempotency_key` is optional. The package
+zero and `reason` is optional and at most 255 characters. Unlike the HTTP route, `idempotency_key` is
+required here: an MCP client retries a timed-out call on its own, and the key is what keeps that from
+recording a second refund. The package
 records refunds and never sends them to SISP, so issue the refund in the back office first (see
 [Transaction management](05-transaction-management.md)). It runs through
 `RecordRefundAction`, which locks the transaction row, refuses anything but a completed transaction
-and never refunds more than the remaining balance. Pass an `idempotency_key` and reuse it when retrying
-after a timeout: the same key and amount refund once, and the same key with another amount is refused.
-Without a key, a repeated partial refund is a second refund. Cancel runs through `CancelTransactionAction` and reports why a completed, failed, refunded or
+and never refunds more than the remaining balance. Reuse the same key when retrying after a timeout: the same key
+and amount record one refund, and the same key with another amount is refused. Cancel runs through `CancelTransactionAction` and reports why a completed, failed, refunded or
 already cancelled transaction cannot be cancelled.
 
 ## Resources and prompts
@@ -181,10 +192,15 @@ text capped at 255 characters. The server instructions tell the agent to report 
 it. This narrows prompt injection; it cannot rule it out, so an agent with refund or cancel exposed should
 still confirm every destructive call with a human.
 
-Status queries and reconciliation each call the SISP status API with the portal credentials. On top of
-the route throttle they share a per-minute limit per caller (`gateway_rate_limit.per_caller`, default 10,
-keyed by user or `local`) and across all callers (`gateway_rate_limit.global`, default 60). Lower them if
-the POS has a smaller quota.
+Status queries and reconciliation each call the SISP status API with the portal credentials. On top of the
+route throttle they share a per-minute limit per caller (`rate_limits.gateway.per_caller`, default 10,
+keyed by user id or `local`) and across all callers (`rate_limits.gateway.global`, default 60). Recording a
+refund and cancelling share a tighter pair of their own (`rate_limits.destructive`, 5 and 20), so an agent
+in a loop cannot walk a list of pending payments and cancel every one. A limit of `0` means unlimited.
+
+The local transport is not behind the Gate, and neither is any other context without an HTTP route, such as
+a queued job or a console command. Keep `sisp.mcp.enabled` off where that matters, and run `route:clear`
+after turning it off, since a cached route table keeps the web endpoint until the cache is rebuilt.
 
 The local `sisp-dev` and `sisp-ops` servers carry the same trust as a shell on the machine: anyone who can
 start them can already read `.env`.

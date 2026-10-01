@@ -7,6 +7,7 @@ namespace Akira\Sisp\Mcp\Tools\Ops;
 use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Http\Requests\RefundTransactionRequest;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
+use Akira\Sisp\Mcp\Concerns\ThrottlesToolCalls;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -20,18 +21,26 @@ use LogicException;
 final class RefundTransactionTool extends Tool
 {
     use AuthorizesTransactionOps;
+    use ThrottlesToolCalls;
 
     public function handle(Request $request, RecordRefundAction $refund): Response
     {
         $validated = $request->validate([
             'transaction' => ['required', 'string'],
             ...new RefundTransactionRequest()->rules(),
+            'idempotency_key' => ['required', 'string', 'max:255'],
         ]);
 
         $transaction = $this->authorizedTransaction($request, 'refund');
 
         if ($transaction instanceof Response) {
             return $transaction;
+        }
+
+        $throttled = $this->throttleToolCall($request, 'destructive', 'refund records');
+
+        if ($throttled instanceof Response) {
+            return $throttled;
         }
 
         try {
@@ -63,7 +72,8 @@ final class RefundTransactionTool extends Tool
             'reason' => $schema->string()
                 ->description('Reason recorded with the refund.'),
             'idempotency_key' => $schema->string()
-                ->description('Key that makes a retried refund safe: repeating the call with the same key and amount refunds once. Reuse it when retrying after a timeout.'),
+                ->description('Key that makes a retried record safe: repeating the call with the same key and amount records one refund. Reuse the same key when retrying after a timeout, and never reuse it for a different amount.')
+                ->required(),
         ];
     }
 }

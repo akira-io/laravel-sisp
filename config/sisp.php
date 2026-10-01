@@ -536,7 +536,8 @@ return [
     | transport serves remote clients behind authentication. Destructive
     | payment tools and reconciliation stay off the web transport unless
     | expose_destructive is on. Status queries and reconciliation share a
-    | per-minute limit per caller and across all callers.
+    | per-minute limit per caller and across all callers, and recording a
+    | refund or cancelling has a tighter one of its own.
     | Every web tool call must pass the Gate ability, which denies all users
     | until the host application defines it.
     |
@@ -551,9 +552,15 @@ return [
             'ability' => env('SISP_MCP_WEB_ABILITY', 'sisp-mcp'),
             'expose_destructive' => env('SISP_MCP_WEB_DESTRUCTIVE', false),
         ],
-        'gateway_rate_limit' => [
-            'per_caller' => env('SISP_MCP_GATEWAY_LIMIT_PER_CALLER', 10),
-            'global' => env('SISP_MCP_GATEWAY_LIMIT_GLOBAL', 60),
+        'rate_limits' => [
+            'gateway' => [
+                'per_caller' => env('SISP_MCP_GATEWAY_LIMIT_PER_CALLER', 10),
+                'global' => env('SISP_MCP_GATEWAY_LIMIT_GLOBAL', 60),
+            ],
+            'destructive' => [
+                'per_caller' => env('SISP_MCP_DESTRUCTIVE_LIMIT_PER_CALLER', 5),
+                'global' => env('SISP_MCP_DESTRUCTIVE_LIMIT_GLOBAL', 20),
+            ],
         ],
     ],
 

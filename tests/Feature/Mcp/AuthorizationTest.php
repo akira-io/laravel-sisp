@@ -45,7 +45,7 @@ it('denies every web tool when the host has not defined the ability', function (
     'query' => [QueryTransactionStatusTool::class, ['transaction' => 'REF-DENY']],
     'reconcile' => [ReconcileTransactionTool::class, ['transaction' => 'REF-DENY']],
     'build' => [BuildPaymentRequestTool::class, ['amount' => 100]],
-    'refund' => [RefundTransactionTool::class, ['transaction' => 'REF-DENY', 'amount' => 100]],
+    'refund' => [RefundTransactionTool::class, ['transaction' => 'REF-DENY', 'amount' => 100, 'idempotency_key' => 'deny']],
     'cancel' => [CancelTransactionTool::class, ['transaction' => 'REF-DENY']],
 ]);
 
@@ -102,7 +102,7 @@ it('requires the refund policy on top of the mcp ability, like the http refund r
     ]);
 
     SispWebOpsServer::actingAs(mcpOperator())
-        ->tool(RefundTransactionTool::class, ['transaction' => 'REF-POLICY', 'amount' => 100])
+        ->tool(RefundTransactionTool::class, ['transaction' => 'REF-POLICY', 'amount' => 100, 'idempotency_key' => 'policy'])
         ->assertHasErrors(['Not authorized to refund this transaction']);
 
     expect($transaction->fresh()->status)->toBe(TransactionStatus::completed);
@@ -110,7 +110,7 @@ it('requires the refund policy on top of the mcp ability, like the http refund r
     Gate::define('refund', fn (GenericUser $user, Transaction $subject): bool => true);
 
     SispWebOpsServer::actingAs(mcpOperator())
-        ->tool(RefundTransactionTool::class, ['transaction' => 'REF-POLICY', 'amount' => 100])
+        ->tool(RefundTransactionTool::class, ['transaction' => 'REF-POLICY', 'amount' => 100, 'idempotency_key' => 'policy'])
         ->assertOk();
 
     expect($transaction->fresh()->status)->toBe(TransactionStatus::refunded);
@@ -165,7 +165,7 @@ it('asks the gate for the operation each tool performs', function (string $tool,
     'query' => [QueryTransactionStatusTool::class, 'query', ['transaction' => 'REF-OP']],
     'reconcile' => [ReconcileTransactionTool::class, 'reconcile', ['transaction' => 'REF-OP']],
     'build' => [BuildPaymentRequestTool::class, 'build', ['amount' => 100]],
-    'refund' => [RefundTransactionTool::class, 'refund', ['transaction' => 'REF-OP', 'amount' => 10]],
+    'refund' => [RefundTransactionTool::class, 'refund', ['transaction' => 'REF-OP', 'amount' => 10, 'idempotency_key' => 'op']],
 ]);
 
 it('asks the ability the host configured', function (): void {
@@ -215,7 +215,7 @@ it('refuses destructive tools on the web server unless they are exposed', functi
 
     SispWebOpsServer::actingAs(mcpOperator())
         ->tool($tool, ['transaction' => 'REF-HIDDEN', 'amount' => 10])
-        ->assertHasErrors();
+        ->assertHasErrors(['not found']);
 
     expect($transaction->fresh()->status)->toBe(TransactionStatus::pending);
 })->with([ReconcileTransactionTool::class, RefundTransactionTool::class, CancelTransactionTool::class]);

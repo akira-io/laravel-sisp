@@ -26,7 +26,7 @@ beforeEach(function (): void {
 });
 
 it('limits status queries and reconciliation per caller', function (): void {
-    config()->set('sisp.mcp.gateway_rate_limit.per_caller', 2);
+    config()->set('sisp.mcp.rate_limits.gateway.per_caller', 2);
 
     SispOpsServer::tool(QueryTransactionStatusTool::class, ['transaction' => 'REF-GW'])->assertOk();
     SispOpsServer::tool(ReconcileTransactionTool::class, ['transaction' => 'REF-GW'])->assertOk();
@@ -38,7 +38,7 @@ it('limits status queries and reconciliation per caller', function (): void {
 });
 
 it('limits status queries across every caller', function (): void {
-    config()->set('sisp.mcp.gateway_rate_limit.global', 1);
+    config()->set('sisp.mcp.rate_limits.gateway.global', 1);
     Gate::define('sisp-mcp', fn (GenericUser $user, string $operation, ?Transaction $transaction = null): bool => true);
 
     SispWebOpsServer::actingAs(new GenericUser(['id' => 1]))
@@ -77,11 +77,22 @@ it('cleans gateway text to plain bounded prose', function (?string $raw, ?string
 ]);
 
 it('does not reconcile once the gateway limit is reached', function (): void {
-    config()->set('sisp.mcp.gateway_rate_limit.per_caller', 1);
+    config()->set('sisp.mcp.rate_limits.gateway.per_caller', 1);
     SispOpsServer::tool(QueryTransactionStatusTool::class, ['transaction' => 'REF-GW'])->assertOk();
 
     SispOpsServer::tool(ReconcileTransactionTool::class, ['transaction' => 'REF-GW'])
         ->assertHasErrors(['Too many SISP status requests']);
 
     Http::assertSentCount(1);
+});
+
+it('treats a limit of zero as unlimited', function (): void {
+    config()->set('sisp.mcp.rate_limits.gateway.per_caller', 0);
+    config()->set('sisp.mcp.rate_limits.gateway.global', 0);
+
+    foreach (range(1, 3) as $ignored) {
+        SispOpsServer::tool(QueryTransactionStatusTool::class, ['transaction' => 'REF-GW'])->assertOk();
+    }
+
+    Http::assertSentCount(3);
 });

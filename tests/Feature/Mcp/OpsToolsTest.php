@@ -259,7 +259,7 @@ it('reports a missing transaction on every transaction tool', function (string $
     'get' => [GetTransactionTool::class, []],
     'query' => [QueryTransactionStatusTool::class, []],
     'reconcile' => [ReconcileTransactionTool::class, []],
-    'refund' => [RefundTransactionTool::class, ['amount' => 10]],
+    'refund' => [RefundTransactionTool::class, ['amount' => 10, 'idempotency_key' => 'missing']],
     'cancel' => [CancelTransactionTool::class, []],
 ]);
 

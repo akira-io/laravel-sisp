@@ -6,7 +6,7 @@ namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
-use Akira\Sisp\Mcp\Concerns\ThrottlesGatewayCalls;
+use Akira\Sisp\Mcp\Concerns\ThrottlesToolCalls;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -19,7 +19,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 final class ReconcileTransactionTool extends Tool
 {
     use AuthorizesTransactionOps;
-    use ThrottlesGatewayCalls;
+    use ThrottlesToolCalls;
 
     public function handle(Request $request): Response
     {
@@ -31,7 +31,7 @@ final class ReconcileTransactionTool extends Tool
             return $transaction;
         }
 
-        $throttled = $this->throttleGatewayCall($request);
+        $throttled = $this->throttleToolCall($request, 'gateway', 'SISP status requests');
 
         if ($throttled instanceof Response) {
             return $throttled;

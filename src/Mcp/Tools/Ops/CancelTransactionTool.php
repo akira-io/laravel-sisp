@@ -6,6 +6,7 @@ namespace Akira\Sisp\Mcp\Tools\Ops;
 
 use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
+use Akira\Sisp\Mcp\Concerns\ThrottlesToolCalls;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -19,6 +20,7 @@ use LogicException;
 final class CancelTransactionTool extends Tool
 {
     use AuthorizesTransactionOps;
+    use ThrottlesToolCalls;
 
     public function handle(Request $request, CancelTransactionAction $cancel): Response
     {
@@ -31,6 +33,12 @@ final class CancelTransactionTool extends Tool
 
         if ($transaction instanceof Response) {
             return $transaction;
+        }
+
+        $throttled = $this->throttleToolCall($request, 'destructive', 'cancellations');
+
+        if ($throttled instanceof Response) {
+            return $throttled;
         }
 
         try {
