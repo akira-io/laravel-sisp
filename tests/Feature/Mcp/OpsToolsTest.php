@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Mcp\Servers\SispOpsServer;
+use Akira\Sisp\Mcp\Servers\SispWebOpsServer;
 use Akira\Sisp\Mcp\Tools\Ops\BuildPaymentRequestTool;
 use Akira\Sisp\Mcp\Tools\Ops\CancelTransactionTool;
 use Akira\Sisp\Mcp\Tools\Ops\GetTransactionTool;
@@ -12,7 +13,9 @@ use Akira\Sisp\Mcp\Tools\Ops\QueryTransactionStatusTool;
 use Akira\Sisp\Mcp\Tools\Ops\ReconcileTransactionTool;
 use Akira\Sisp\Mcp\Tools\Ops\RefundTransactionTool;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 
 it('builds a payment request without persisting a transaction', function (): void {
@@ -267,4 +270,26 @@ it('fully masks a customer email it cannot parse', function (): void {
         ->assertOk()
         ->assertSee('"customer_email":"***"')
         ->assertDontSee('not-an-email');
+});
+
+it('does not read a zero-padded number as a transaction id', function (): void {
+    $transaction = Transaction::factory()->create(['merchant_ref' => 'REF-PADDED']);
+
+    SispOpsServer::tool(GetTransactionTool::class, ['transaction' => '0'.$transaction->id])
+        ->assertHasErrors(['No transaction found'])
+        ->assertDontSee('REF-PADDED');
+});
+
+it('fills the limit with rows the operator may view', function (): void {
+    $oldest = Transaction::factory()->create(['merchant_ref' => 'REF-OLDEST', 'created_at' => now()->subDays(3)]);
+    Transaction::factory()->create(['merchant_ref' => 'REF-HIDDEN-1', 'created_at' => now()->subDays(2)]);
+    Transaction::factory()->create(['merchant_ref' => 'REF-HIDDEN-2', 'created_at' => now()->subDay()]);
+
+    Gate::define('sisp-mcp', fn (GenericUser $user, string $operation, ?Transaction $transaction = null): bool => $operation === 'list' || $transaction?->is($oldest) === true);
+
+    SispWebOpsServer::actingAs(new GenericUser(['id' => 3]))
+        ->tool(ListTransactionsTool::class, ['limit' => 1])
+        ->assertOk()
+        ->assertSee(['REF-OLDEST', '"count":1'])
+        ->assertDontSee('REF-HIDDEN');
 });

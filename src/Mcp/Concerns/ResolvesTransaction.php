@@ -39,7 +39,12 @@ trait ResolvesTransaction
 
         return Transaction::query()
             ->where('merchant_ref', $identifier)
-            ->when(ctype_digit($identifier), fn (Builder $query) => $query->orWhere('id', (int) $identifier));
+            ->when($this->isCanonicalId($identifier), fn (Builder $query) => $query->orWhere('id', (int) $identifier));
+    }
+
+    private function isCanonicalId(string $identifier): bool
+    {
+        return ctype_digit($identifier) && $identifier === (string) (int) $identifier;
     }
 
     /**

@@ -50,10 +50,9 @@ final class ListTransactionsTool extends Tool
             ->when($request->get('from') !== null, fn (Builder $query) => $query->where('created_at', '>=', $this->boundary((string) $request->get('from'), endOfDay: false)))
             ->when($request->get('to') !== null, fn (Builder $query) => $query->where('created_at', '<=', $this->boundary((string) $request->get('to'), endOfDay: true)))
             ->latest()
-            ->limit($limit)
-            ->get()
+            ->lazy()
             ->filter(fn (Transaction $transaction): bool => $this->isAuthorized($request, 'view', $transaction))
-            ->values()
+            ->take($limit)
             ->map(fn (Transaction $transaction): array => $this->transactionSummary($transaction))
             ->all();
 
