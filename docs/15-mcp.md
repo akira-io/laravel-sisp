@@ -134,7 +134,7 @@ checked against the Gate.
 | `get-transaction-tool` | read-only | Fetch one stored transaction. |
 | `list-transactions-tool` | read-only | List stored transactions by status and creation time. `from` and `to` take ISO 8601 and are converted to the application timezone; a bare date as `to` includes that whole day. |
 | `reconcile-transaction-tool` | idempotent, writes | Re-sync and persist a transaction's status. Web only with `expose_destructive`. |
-| `refund-transaction-tool` | destructive | Refund a completed transaction by an explicit amount. |
+| `refund-transaction-tool` | destructive | Record a refund against a completed transaction by an explicit amount. Nothing is sent to SISP. |
 | `cancel-transaction-tool` | destructive | Cancel a pending transaction. |
 
 Transaction tools accept a transaction id or a merchant reference. A number that is both the id of one
@@ -144,8 +144,10 @@ They never return the merchant session, the request or callback payloads, the ca
 data.
 
 Refund takes the same payload as the HTTP refund route: `amount` is required and must be greater than
-zero, `reason` is optional and at most 255 characters, and `idempotency_key` is optional. It runs through
-`RefundTransactionAction`, which locks the transaction row, refuses anything but a completed transaction
+zero, `reason` is optional and at most 255 characters, and `idempotency_key` is optional. The package
+records refunds and never sends them to SISP, so issue the refund in the back office first (see
+[Transaction management](05-transaction-management.md)). It runs through
+`RecordRefundAction`, which locks the transaction row, refuses anything but a completed transaction
 and never refunds more than the remaining balance. Pass an `idempotency_key` and reuse it when retrying
 after a timeout: the same key and amount refund once, and the same key with another amount is refused.
 Without a key, a repeated partial refund is a second refund. Cancel runs through `CancelTransactionAction` and reports why a completed, failed, refunded or
@@ -163,7 +165,8 @@ refusal reason SISP sent for the customer, stored only when the callback fingerp
 
 ## Security
 
-Refund and cancel move money and reconcile writes status. They are hidden from the web transport unless
+Refund records money already returned in the back office, cancel closes a pending payment and reconcile
+writes status. They are hidden from the web transport unless
 `expose_destructive` is enabled, and on the web transport pass the Gate ability like every other tool.
 Prefer keeping the web transport read-only and running destructive operations through the local
 transport or your own audited application code.

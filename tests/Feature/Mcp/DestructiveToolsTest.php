@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Akira\Sisp\Mcp\Servers\SispOpsServer;
 use Akira\Sisp\Mcp\Tools\Ops\CancelTransactionTool;
 use Akira\Sisp\Mcp\Tools\Ops\RefundTransactionTool;
@@ -106,7 +106,7 @@ it('reports why a failed or refunded transaction cannot be cancelled', function 
 })->with(['failed', 'refunded']);
 
 it('refunds once when a retried call repeats the idempotency key', function (): void {
-    Event::fake([TransactionRefunded::class]);
+    Event::fake([RefundRecorded::class]);
     $transaction = Transaction::factory()->completed()->create([
         'amount' => 100.0,
         'merchant_ref' => 'REF-RETRY',
@@ -121,7 +121,7 @@ it('refunds once when a retried call repeats the idempotency key', function (): 
     expect($transaction->refunds()->count())->toBe(1)
         ->and($transaction->refunds()->sum('amount_thousandths'))->toBe(40000);
 
-    Event::assertDispatchedTimes(TransactionRefunded::class, 1);
+    Event::assertDispatchedTimes(RefundRecorded::class, 1);
 });
 
 it('refuses to reuse an idempotency key for another amount', function (): void {

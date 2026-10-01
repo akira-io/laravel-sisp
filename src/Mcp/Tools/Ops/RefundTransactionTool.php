@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Mcp\Tools\Ops;
 
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Http\Requests\RefundTransactionRequest;
 use Akira\Sisp\Mcp\Concerns\AuthorizesTransactionOps;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -16,12 +16,12 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use LogicException;
 
 #[IsDestructive]
-#[Description('Refund a completed SISP transaction, fully or partially, by an explicit amount. This moves money and cannot be undone.')]
+#[Description('Record a refund against a completed SISP transaction, fully or partially, by an explicit amount. The package never sends refunds to SISP: issue the refund in the SISP back office first, then record it here. Recording changes the stored balance and status and cannot be undone.')]
 final class RefundTransactionTool extends Tool
 {
     use AuthorizesTransactionOps;
 
-    public function handle(Request $request, RefundTransactionAction $refund): Response
+    public function handle(Request $request, RecordRefundAction $refund): Response
     {
         $validated = $request->validate([
             'transaction' => ['required', 'string'],
