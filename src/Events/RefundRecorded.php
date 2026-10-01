@@ -8,7 +8,7 @@ use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
 use Illuminate\Foundation\Events\Dispatchable;
 
-final class TransactionRefunded
+final class RefundRecorded
 {
     use Dispatchable;
 

@@ -5,6 +5,112 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0](https://github.com/akira-io/laravel-sisp/compare/v2.1.0...v3.0.0) (2026-10-01)
+
+### Breaking Changes
+
+- **payments:** Make the default merchant reference unpredictable ([51a5cc2](https://github.com/akira-io/laravel-sisp/commit/51a5cc233b531b121eb6d5b28495cc7a4d623f5b))
+- **transaction:** Refuse to cancel failed and refunded transactions, and lock the row ([6708554](https://github.com/akira-io/laravel-sisp/commit/6708554e20e97540846fc597680d599456d36384))
+- **invoice:** Refund the invoice when the transaction is refunded ([47c5b01](https://github.com/akira-io/laravel-sisp/commit/47c5b01fbbff6c4486937c9b6c4b564988eef772))
+- **refund:** Validate the refund request payload ([df12147](https://github.com/akira-io/laravel-sisp/commit/df121477e59e06bc91ff7b1d1d1255da28c3b021))
+- **callback:** Reject a callback with an invalid fingerprint without writing ([b14cdc5](https://github.com/akira-io/laravel-sisp/commit/b14cdc5226d0bebfaf6db8c4cc277a232eccdd9e))
+- **callback:** Sign the payment result page link ([f6aca44](https://github.com/akira-io/laravel-sisp/commit/f6aca44d9b60119eaa086d6241fccdc25dffb715))
+- **refund:** Name the refund operation after what it does ([5df6ea0](https://github.com/akira-io/laravel-sisp/commit/5df6ea00f85caf53b1ad76f55108457493be5dc9))
+
+
+### Bug Fixes
+
+- **static-analysis:** Type the package view names as view-string ([0adfb6e](https://github.com/akira-io/laravel-sisp/commit/0adfb6e7079fa28c5954fe486bdfdb7b556d1288))
+- **callback:** Cancel the transaction on the user cancelled callback ([cc80a5f](https://github.com/akira-io/laravel-sisp/commit/cc80a5fc86020c96e4673126a066f10e62448188))
+- **callback:** Rate limit the callback route ([e5fdce7](https://github.com/akira-io/laravel-sisp/commit/e5fdce7c885c2d2b3f9af313bd83f23d2df7decd))
+- **invoice:** Cancel the invoice when the transaction is cancelled ([379ab02](https://github.com/akira-io/laravel-sisp/commit/379ab0289f94b7fc7a891d96d5698d927c918bef))
+- **transaction:** Cancel the invoice for every caller and write through the locked row ([38b3d25](https://github.com/akira-io/laravel-sisp/commit/38b3d25690c6675feee42cfd8e539be004d0cf03))
+- **callback:** Limit only the cancellation branch and require the merchant session ([38edcf2](https://github.com/akira-io/laravel-sisp/commit/38edcf2159a13577a415e6e01d45737905d19fb2))
+- **callback:** Validate refused responses with the error fingerprint formula ([647bdbb](https://github.com/akira-io/laravel-sisp/commit/647bdbbdb1455711f36692c838fead9c7544349f))
+- **callback:** Sign sandbox error payloads with the error fingerprint formula ([0eac79b](https://github.com/akira-io/laravel-sisp/commit/0eac79b8120e251c066b5da4db663b95c2d239e8))
+- **transactions:** Redact encrypted attributes in transaction change logs ([7c246c6](https://github.com/akira-io/laravel-sisp/commit/7c246c6006132d6ba20ea896f884e75bab0fae54))
+- **transactions:** Map status from the documented message type table ([ac073bb](https://github.com/akira-io/laravel-sisp/commit/ac073bb7bc1364a98548ed5dd895e8749a2ab478))
+- **callback:** Record the transaction when the customer cancels ([8731819](https://github.com/akira-io/laravel-sisp/commit/87318190db96935ce0ad154e65f14a55436ebd0f))
+- **callback:** Reject empty merchant ref/session before cancelling ([3e2f17b](https://github.com/akira-io/laravel-sisp/commit/3e2f17bd63430eddd825b29d485604a6239b499c))
+- **response:** Show the refusal message SISP sends for the customer ([ee36efc](https://github.com/akira-io/laravel-sisp/commit/ee36efcdfe5762918990f564ac4f57a6bac0507e))
+- **refunds:** Make the refund ledger exact, atomic and encrypted ([b4398e8](https://github.com/akira-io/laravel-sisp/commit/b4398e8c1d0b3a527b44b7a1b82127b8fb4b9ecb))
+- **commands:** Validate --older-than and survive undecryptable payloads ([6df4a8b](https://github.com/akira-io/laravel-sisp/commit/6df4a8b0e5b5319cea101be38547c345d7105c00))
+- **commands:** Reject an expire window below 1 day ([b7896f8](https://github.com/akira-io/laravel-sisp/commit/b7896f857a6b469d2f0fea40cd1945a1779dfbbf))
+- **callback:** Stop refused callbacks from being classified as tampering ([446ae59](https://github.com/akira-io/laravel-sisp/commit/446ae59313435cbfbc54165c2ff20884f2c3f8ae))
+- **callback:** Stop error fields leaking noise on success and attacker text on invalid fingerprint ([2dc8d19](https://github.com/akira-io/laravel-sisp/commit/2dc8d19fea57bcaaf536b1816f6d0ed808e36cc8))
+- **callback:** Fail closed on PAN masking and use the named error message type ([98b1106](https://github.com/akira-io/laravel-sisp/commit/98b110694ae7d140ee642a32d20346a62569df14))
+- **commands:** Expire-pending sees empty message_type and survives a bad row ([39396d8](https://github.com/akira-io/laravel-sisp/commit/39396d84ebe8f1fc5f65590f327be2809094da36))
+- **commands:** Give prune-request-payloads a cursor so it keeps making progress ([6980afc](https://github.com/akira-io/laravel-sisp/commit/6980afcce678c678b9250585957bf4a279027564))
+- **migrations:** Make the refunds copy resumable and idempotent ([12eab4c](https://github.com/akira-io/laravel-sisp/commit/12eab4cd80e4895e63487ad0ee54a03448d34e64))
+- **commands:** Replace prune's cache cursor with a durable pruned_at column ([0d8685f](https://github.com/akira-io/laravel-sisp/commit/0d8685fd0795476bea834d3443b19fc63b65123b))
+- **callback:** Stop persisting an unauthenticated payload into the attempt row ([9d98580](https://github.com/akira-io/laravel-sisp/commit/9d98580a512ce97e8f756e1dab1ddf3ea55fc74f))
+- **static-analysis:** Type the encrypted-attribute overrides and widen the bool filter ([0d85143](https://github.com/akira-io/laravel-sisp/commit/0d85143e8f5cd556a691adc1af9a6255dce27316))
+- **callback:** Throttle cancellation callbacks in both spellings and per IP ([6ca20be](https://github.com/akira-io/laravel-sisp/commit/6ca20be63d48daf2a8ee2d9f486e201dbeb75259))
+- **transaction:** Fit SISP error fields into their columns ([82243a9](https://github.com/akira-io/laravel-sisp/commit/82243a9bdc39acefd1e5820827129971f4e03443))
+- **refund:** Never count less than the payload history ([a971624](https://github.com/akira-io/laravel-sisp/commit/a971624e1d490b3dd946e80ff8549b526b8c36e5))
+- **commands:** Reject numeric options that are not whole numbers ([56c5db7](https://github.com/akira-io/laravel-sisp/commit/56c5db7d8cc102ee36b20329feb4e8407a28e04c))
+- **commands:** Prune under a row lock without stalling on unreadable rows ([809519e](https://github.com/akira-io/laravel-sisp/commit/809519e7aa66c0d05926d38df56e1d4d33f401ff))
+- **commands:** Ask SISP before expiring a pending transaction ([d628431](https://github.com/akira-io/laravel-sisp/commit/d628431a4d2a7cef304c0c0697427b3494114e76))
+- **refund:** Reject amounts too large to express in thousandths ([cb13c61](https://github.com/akira-io/laravel-sisp/commit/cb13c611f65a1db8c4e854e93f1d1dd58626e104))
+- **commands:** Keep a transaction pending when SISP cannot answer ([0d3fb84](https://github.com/akira-io/laravel-sisp/commit/0d3fb849a8cc9cd6ebb49e9b38ab312951f77b05))
+- **commands:** Mark undecryptable payloads so pruning cannot stall ([c58f8b2](https://github.com/akira-io/laravel-sisp/commit/c58f8b292028c920ec18b8d4d243f4f1411a3b69))
+- **callback:** Sign the result link on its path and refuse unsignable amounts ([5caa6eb](https://github.com/akira-io/laravel-sisp/commit/5caa6eb9a22a603b9de3be93dd104231f8a71311))
+- **callback:** Ignore a cancellation whose reference is not a string ([f896493](https://github.com/akira-io/laravel-sisp/commit/f896493cb36ab6f39aafb49a3ab3f5525d68e255))
+- **refund:** Refund a retried request with the same idempotency key once ([8c84289](https://github.com/akira-io/laravel-sisp/commit/8c8428902256ac0a7a6f9bd7098d4161c354663a))
+- **migrations:** Keep the refund foreign key indexed on rollback ([e45a534](https://github.com/akira-io/laravel-sisp/commit/e45a534f805e7c162339c947d4a42f7ebbe38923))
+- **refund:** Refuse a blank or oversized idempotency key ([f0c2dfa](https://github.com/akira-io/laravel-sisp/commit/f0c2dfadd050bdadafa2206daf4c2df279081ecd))
+- **refund:** Mirror the idempotency key into the payload history ([7109b50](https://github.com/akira-io/laravel-sisp/commit/7109b5034dd0d8b61b10d9b1d7fd84b55df9ea4b))
+- **callback:** Mask the card number in stored request metadata ([deeee30](https://github.com/akira-io/laravel-sisp/commit/deeee308f7fd9c20df73f9108cf657c55e3066ed))
+- **payments:** Stop a checkout key from sticking in processing ([f14a42a](https://github.com/akira-io/laravel-sisp/commit/f14a42a256bd367123f5ecfc4777c550336de68f))
+- **callback:** Apply each callback once under a row lock ([75396ce](https://github.com/akira-io/laravel-sisp/commit/75396ce68e7004f8d52aed06bac49fcea2260ee3))
+- **callback:** Record late callbacks on their attempt and treat refunded as settled ([e7db448](https://github.com/akira-io/laravel-sisp/commit/e7db4485c03b7f6533bc617106fd2b5e23233b9c))
+- **refunds:** Offer no refundable balance where a refund is refused ([224ef4e](https://github.com/akira-io/laravel-sisp/commit/224ef4ec0c5a5204a30bdc4280adc9b562b581ea))
+- **refunds:** Settle a refund that leaves less than a centavo ([5ee7899](https://github.com/akira-io/laravel-sisp/commit/5ee78997e70a28315f28f948c33358d2016d455b))
+- **migrations:** Narrow the transactions lookup index to merchant_session ([0310240](https://github.com/akira-io/laravel-sisp/commit/031024075880e8c746d13946db22d6988acb9729))
+- **migrations:** Keep the refund and attempt rollbacks working on MySQL ([07d4982](https://github.com/akira-io/laravel-sisp/commit/07d498237c7f6e72075a1782ea1e066a57b688ab))
+- **migrations:** Bound the lookup index swap to the installs that need it ([ce4e1a2](https://github.com/akira-io/laravel-sisp/commit/ce4e1a2ce1534a2b8863ea9cf45b38e352d0fec7))
+- **migrations:** Copy the refund history out of payloads stored as strings ([e84558c](https://github.com/akira-io/laravel-sisp/commit/e84558c04c1dcbf737db594704f8c05bd543bd4a))
+- **refund:** Read the legacy history out of a payload stored as a string ([ab8f2e1](https://github.com/akira-io/laravel-sisp/commit/ab8f2e16ec41fc68ee537a975933a3c1b92c5285))
+- **transaction:** Keep a payload stored as a string intact ([91da286](https://github.com/akira-io/laravel-sisp/commit/91da2866a6351de448b2dc5b351995f270987c19))
+- **refund:** Refuse payloads that cannot be decoded instead of treating them as empty ([6b4ce3f](https://github.com/akira-io/laravel-sisp/commit/6b4ce3f89325a85a3d1914e043fb235e8d9162ee))
+- **http:** Read the retry and cancel targets from the signed query only ([2a652ef](https://github.com/akira-io/laravel-sisp/commit/2a652ef8001d645b0e5b766cec34db87bad700a7))
+- **reconciliation:** Lock the row and re-check its status before writing ([7b68158](https://github.com/akira-io/laravel-sisp/commit/7b6815890bf510548311e99e4f3cf00b8feb82f1))
+- **reconciliation:** Update the invoice after the row lock is released ([e1b2b6c](https://github.com/akira-io/laravel-sisp/commit/e1b2b6c3fa32c175ece0641403cdd9795f6dc09f))
+- **refund:** Answer the refund route with a summary instead of the whole model ([0aed576](https://github.com/akira-io/laravel-sisp/commit/0aed5766d5f086ce98ae1f235ff8d62a0b025b25))
+- **credentials:** Run callbacks, status queries and refunds under the transaction's merchant ([be70517](https://github.com/akira-io/laravel-sisp/commit/be70517507562600188bfdaf1fae9e082d973684))
+- **credentials:** Scope retries and reference status queries to the payment's merchant ([23ecb80](https://github.com/akira-io/laravel-sisp/commit/23ecb80985fbbeec339105ca409a52a237958974))
+- **http:** Answer rate-limited and blacklisted payments with 429 and 403 ([659e4bd](https://github.com/akira-io/laravel-sisp/commit/659e4bdc1613bb13e72ce18593fea165f976d835))
+- **http:** Make the throttle exceptions HTTP exceptions with a matching Retry-After ([63f9123](https://github.com/akira-io/laravel-sisp/commit/63f9123269629752fbf3cc19e50bec6064618819))
+- **http:** Pass the built exception to throw_if ([fdf98b2](https://github.com/akira-io/laravel-sisp/commit/fdf98b20838699f8069ca96c0561fb918c3db5f3))
+- **http:** Throw the rate limit exception outside throw_if ([b2bb64b](https://github.com/akira-io/laravel-sisp/commit/b2bb64b2e43ca219bcc28945f748b3a79540f160))
+- **payment:** Refuse an amount too large to express and document refusing unknown checkouts ([01f54dd](https://github.com/akira-io/laravel-sisp/commit/01f54dde343f5cf1d899eaf49c6bc60a9bb523f1))
+- **payment:** Bound the amount rules to what SISP thousandths can carry ([270db2d](https://github.com/akira-io/laravel-sisp/commit/270db2de5fca796bfba7f8587f50fa1b5dee4a87))
+- **reconciliation:** Dispatch PaymentCompleted and PaymentFailed when a payment is settled ([56893df](https://github.com/akira-io/laravel-sisp/commit/56893df81409f451ef1589880e78452dd80d6974))
+- **reconciliation:** Announce the status written, even when the invoice update fails ([11ab75a](https://github.com/akira-io/laravel-sisp/commit/11ab75aae287cc2dbc660ea917b1d075bf58db2e))
+- **migrations:** Build the transactions indexes concurrently on PostgreSQL ([01a46a7](https://github.com/akira-io/laravel-sisp/commit/01a46a79b6be28c06f62f504c9a8e468a724fe5a))
+- **migrations:** Use CONCURRENTLY only outside a transaction ([f07b396](https://github.com/akira-io/laravel-sisp/commit/f07b396c37afe9ecd5d5b6e135885ceb4c6d5cdd))
+- **migrations:** Name the index in its table's schema and scope the invalid-index lookup ([516fcd9](https://github.com/akira-io/laravel-sisp/commit/516fcd93e22de1318e97559e0c343522e666c3c8))
+- **migrations:** Fail when the index name is taken instead of skipping the index ([9a187cb](https://github.com/akira-io/laravel-sisp/commit/9a187cbf969c32212bd3e4005b3ef227a3b6ba9f))
+
+
+### Code Refactoring
+
+- **metadata:** Drop the unreachable Chrome check from browser detection ([403af7e](https://github.com/akira-io/laravel-sisp/commit/403af7e741f51531973a51b1eea905a9f29752d1))
+
+
+### Features
+
+- **callback:** Capture SISP error fields and the raw post ([3adc2e1](https://github.com/akira-io/laravel-sisp/commit/3adc2e171e48d306b3e50a8824431c3961b9ff9f))
+- **transactions:** Persist the SISP error message and the raw callback ([8ad6f4f](https://github.com/akira-io/laravel-sisp/commit/8ad6f4fae81f6f7b57abbfd88738967f1a99dcae))
+- **refunds:** Record refund history in a dedicated table ([df9b600](https://github.com/akira-io/laravel-sisp/commit/df9b600cfe1e7f54ff7097f1bbfd57e04c2685d8))
+- **commands:** Add sisp:expire-pending for stale pending transactions ([ceeee16](https://github.com/akira-io/laravel-sisp/commit/ceeee163bdf27567b1403248e207ce4176310609))
+- **commands:** Add sisp:prune-request-payloads for 3DS personal data ([19105c0](https://github.com/akira-io/laravel-sisp/commit/19105c0dd0428120bb688f075a0a1593f472dde7))
+- **transaction:** Log warning for success callback with unexpected merchant response ([2aa8722](https://github.com/akira-io/laravel-sisp/commit/2aa8722c799e53e3e55ead63b7053388651364e6))
+- **refund:** Store an idempotency key on each refund ([7f30d99](https://github.com/akira-io/laravel-sisp/commit/7f30d995c3dbc50a277a8496407feebfce8c81c6))
+- **refund:** Accept an idempotency key on the refund route ([6928a37](https://github.com/akira-io/laravel-sisp/commit/6928a375659a2f5cee611e9adcba74ff81ce324f))
+- **refunds:** Expose refund history on the transaction ([42d1358](https://github.com/akira-io/laravel-sisp/commit/42d13584b418b3f5ac77c08dccbeaeae669ead4a))
+- **payment:** Let the application state the amount it expects for a checkout ([73648d9](https://github.com/akira-io/laravel-sisp/commit/73648d93e6633ca0e6c4cc62106ba0e22efab029))
+
 ## [2.1.0](https://github.com/akira-io/laravel-sisp/compare/v2.0.0...v2.1.0) (2026-08-31)
 
 ### Bug Fixes
@@ -23,6 +129,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **invoice:** Carry the buyer tax id onto the invoice pdf ([a5802e1](https://github.com/akira-io/laravel-sisp/commit/a5802e17efdbc47973b4c23dd5e0870b7b922520))
 
 ## [2.0.0](https://github.com/akira-io/laravel-sisp/compare/v0.7.2...v2.0.0) (2026-07-14)
+
+### Breaking Changes
+
+- Require PHP 8.5 and Laravel 13, refresh tooling and static analysis ([6a78afb](https://github.com/akira-io/laravel-sisp/commit/6a78afb856dcc1ef253e2f3a5a62641f09ce5588))
+
 
 ### Bug Fixes
 

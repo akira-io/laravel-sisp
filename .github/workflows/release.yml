@@ -72,9 +72,10 @@ jobs:
           DEFAULT_BRANCH="$(git remote show origin | sed -n 's/.*HEAD branch: //p')"
           MAJOR="${TAG#v}"
           MAJOR="${MAJOR%%.*}"
+          STABLE="${TAG%%-*}"
 
           BRANCH=""
-          for CANDIDATE in "${MAJOR}.x" "${DEFAULT_BRANCH}"; do
+          for CANDIDATE in "release/${STABLE}" "release/${STABLE#v}" "${MAJOR}.x" "${DEFAULT_BRANCH}"; do
             if git rev-parse --verify --quiet "refs/remotes/origin/${CANDIDATE}" >/dev/null \
               && git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${CANDIDATE}"; then
               BRANCH="${CANDIDATE}"
@@ -83,7 +84,7 @@ jobs:
           done
 
           if [ -z "${BRANCH}" ]; then
-            echo "::error::${TAG} is not contained in ${MAJOR}.x or ${DEFAULT_BRANCH}; refusing to publish it."
+            echo "::error::${TAG} is not contained in release/${STABLE}, ${MAJOR}.x or ${DEFAULT_BRANCH}; refusing to publish it."
             exit 1
           fi
 
@@ -98,12 +99,26 @@ jobs:
             NEWEST=true
           fi
 
+          is_highest_stable_tag() {
+            local HIGHEST_TAG
+            HIGHEST_TAG="$( { git tag --list 'v[0-9]*' | grep -v -- '-' || true; echo "${TAG}"; } | sort -V | tail -n1)"
+            [ "${HIGHEST_TAG}" = "${TAG}" ]
+          }
+
+          heads_for_default_branch() {
+            case "${BRANCH}" in
+              release/*) return 0 ;;
+            esac
+
+            git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${DEFAULT_BRANCH}"
+          }
+
           PRERELEASE=false
           LATEST=false
           case "${TAG}" in
             *-*) PRERELEASE=true ;;
             *)
-              if git merge-base --is-ancestor "${GITHUB_SHA}" "origin/${DEFAULT_BRANCH}" && is_newest_on "${DEFAULT_BRANCH}"; then
+              if is_highest_stable_tag && heads_for_default_branch; then
                 LATEST=true
               fi
               ;;

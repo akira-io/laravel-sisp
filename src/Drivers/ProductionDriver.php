@@ -8,11 +8,12 @@ use Akira\Sisp\Contracts\SispCredentialsResolver;
 use Akira\Sisp\Contracts\SispDriver;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\ValueObjects\TransactionStatusResponse;
+use Illuminate\Contracts\Container\Container;
 
 final readonly class ProductionDriver implements SispDriver
 {
     public function __construct(
-        private SispCredentialsResolver $credentialsResolver,
+        private Container $container,
         private TransactionStatusClient $statusClient,
     ) {}
 
@@ -23,7 +24,9 @@ final readonly class ProductionDriver implements SispDriver
 
     public function paymentEndpoint(): string
     {
-        return $this->credentialsResolver->resolve()->url;
+        // Resolved per call: the manager caches this driver, and the active
+        // credentials change under Sisp::forCredentials().
+        return $this->container->make(SispCredentialsResolver::class)->resolve()->url;
     }
 
     public function queryTransactionStatus(Transaction|string $transaction): TransactionStatusResponse

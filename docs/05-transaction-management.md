@@ -162,10 +162,12 @@ GET `/sisp/cancel` only accepts a signed URL. Generate one in your application a
 use Illuminate\Support\Facades\URL;
 
 $url = URL::temporarySignedRoute('sisp.cancel', now()->addMinutes(30), [
-    'transaction_id' => $transaction->id,
+    'merchantRef' => $transaction->merchant_ref,
     'reason' => 'user_cancelled',
 ]);
 ```
+
+The route looks the transaction up by `merchantRef`, or by `transaction_id` (the identifier SISP assigned, `$transaction->transaction_id`, not the primary key). Only the signed query string is read: a value sent in the request body is ignored, so a link can only cancel the transaction it was signed for.
 
 An unsigned or expired URL is rejected with 403. A successful cancellation dispatches the `TransactionCancelled` event.
 
@@ -202,6 +204,8 @@ The update rules are:
 - `result=true` and `transactionSuccess=true`: status becomes `completed`
 - `result=true` and `transactionSuccess=false`: status becomes `failed`
 
+Each update dispatches `PaymentCompleted` or `PaymentFailed`, so the listeners that act on a paid order run for a reconciled payment as well.
+
 ### Public Status API
 
 Use the `Sisp` facade to query or reconcile a specific transaction from application code:
@@ -215,7 +219,7 @@ $response = Sisp::queryTransactionStatus($transaction->merchant_ref);
 $updatedTransaction = Sisp::reconcileTransactionStatus($transaction);
 ```
 
-`queryTransactionStatus()` returns `TransactionStatusResponse` and never writes to the database. `reconcileTransactionStatus()` returns a `Transaction` and only updates pending transactions when the SISP status API returns `result=true`.
+`queryTransactionStatus()` returns `TransactionStatusResponse` and never writes to the database. `reconcileTransactionStatus()` returns a `Transaction` and only updates pending transactions when the SISP status API returns `result=true`. When it settles the payment it dispatches `PaymentCompleted` or `PaymentFailed`, exactly as the callback does, with the status API answer under `$event->payload->raw`.
 
 Since v2 the status query is routed through the active gateway driver. You can also call it on a specific driver directly:
 
@@ -258,7 +262,16 @@ The command reconciles only old indeterminate transactions:
 
 ## Refund Transaction
 
-Refund a completed transaction with the fluent builder (v2):
+The package records refunds. It does not send them to SISP.
+
+`RecordRefundAction` builds the signed refund request, stores it on the refund
+row, updates the local balance and status, and dispatches `RefundRecorded`. No
+outbound request is made: the only HTTP client in the package is the transaction
+status client. Issue the refund in the SISP back office, then record it here so
+the local ledger and the daily VBVT reconciliation file agree. Recording a refund
+the back office never issued leaves the two apart.
+
+Record a refund against a completed transaction with the fluent builder:
 
 ```php
 use Akira\Sisp\Facades\Sisp;
@@ -268,15 +281,15 @@ try {
     $transaction = Sisp::refund($transaction)
         ->full()
         ->reason('customer_request')
-        ->process();
+        ->record();
 
     // Partial refund
     $transaction = Sisp::refund($transaction)
         ->amount(500.00)
         ->reason('partial_return')
-        ->process();
+        ->record();
 
-    echo "Refunded " . $transaction->formatted_amount;
+    echo "Recorded a refund of " . $transaction->formatted_amount;
 } catch (LogicException $e) {
     echo "Cannot refund: " . $e->getMessage();
 }
@@ -285,9 +298,9 @@ try {
 The underlying action remains available when you prefer direct invocation:
 
 ```php
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 
-$transaction = app(RefundTransactionAction::class)->handle(
+$transaction = app(RecordRefundAction::class)->handle(
     transaction: $transaction,
     refundAmount: 500.00,
     reason: 'customer_request'
@@ -296,15 +309,15 @@ $transaction = app(RefundTransactionAction::class)->handle(
 
 ### Idempotent Refunds
 
-A refund that times out on the client can be retried safely by sending the same idempotency key with each attempt. The first call refunds; a later call with the same key and the same amount returns the transaction as it stands, without a second refund and without a second `TransactionRefunded` event:
+A refund that times out on the client can be retried safely by sending the same idempotency key with each attempt. The first call refunds; a later call with the same key and the same amount returns the transaction as it stands, without a second refund and without a second `RefundRecorded` event:
 
 ```php
 $transaction = Sisp::refund($transaction)
     ->amount(40.00)
     ->idempotencyKey($orderReturn->uuid)
-    ->process();
+    ->record();
 
-$transaction = app(RefundTransactionAction::class)->handle(
+$transaction = app(RecordRefundAction::class)->handle(
     transaction: $transaction,
     refundAmount: 40.00,
     reason: 'partial_return',
@@ -337,7 +350,7 @@ payload.
 ```php
 $transaction->refunds;               // Refund models, oldest first
 $transaction->refundedAmount();      // 55.5
-$transaction->refundableAmount();    // 44.5, the balance RefundTransactionAction still accepts; 0 unless completed
+$transaction->refundableAmount();    // 44.5, the balance RecordRefundAction still accepts; 0 unless completed
 $transaction->isPartiallyRefunded(); // true while refunds exist and the status is not refunded
 ```
 
@@ -348,7 +361,7 @@ table existed, are counted too. A balance below one centavo counts as settled.
 Each helper runs one query; load the relation first
 (`Transaction::with('refunds')`) to compute them in memory over a list.
 
-`TransactionRefunded` carries the recorded `Refund` and the balance left after
+`RefundRecorded` carries the recorded `Refund` and the balance left after
 it in `$event->refund` and `$event->remainingAmount`.
 
 ### Refund Amount Rules
@@ -377,7 +390,7 @@ $request = app(BuildRefundRequestAction::class)->history($transaction);
 $payload = $request->toArray();
 ```
 
-Sandbox certification should validate SISP test cases 29-31 for total reversal, 32-34 for partial refund, and 35 for refund history. Confirm final accounting in the daily VBVT reconciliation file.
+SISP test cases 29-31 for total reversal, 32-34 for partial refund and 35 for refund history are certified against the back office, not through this package, which never submits the request. What the package can be checked on is the request it stores: `BuildRefundRequestAction` produces the same signed payload those cases expect. Confirm final accounting in the daily VBVT reconciliation file.
 
 ### Refund via Route
 
@@ -396,12 +409,12 @@ POST /sisp/refund/{transaction}
 
 Responses:
 
-- `200` the refund succeeded, with the updated transaction in the body
+- `200` the refund was recorded. The body carries a summary of the transaction under `transaction`: `id`, `merchant_ref`, `transaction_id`, `status`, `merchant_response`, `amount`, `refunded_amount`, `refundable_amount` and `refunded_at`. Customer details and the stored payload are not included. The money is not returned by this call
 - `400` the transaction cannot be refunded, the amount exceeds the refundable balance, or the idempotency key was already used with a different amount
-- `403` the authenticated user is not allowed to refund this transaction
+- `403` the authenticated user is not allowed to refund this transaction, or no `refund` ability has been defined yet (see [Who May Act on a Transaction](07-security.md#who-may-act-on-a-transaction))
 - `422` the payload failed validation, with the messages under `errors`
 
-Dispatches `TransactionRefunded` event.
+Dispatches the `RefundRecorded` event. Nothing is sent to SISP.
 
 The refund route middleware is configurable via `config/sisp.php`:
 
@@ -480,7 +493,7 @@ Listen to transaction events:
 
 ```php
 use Akira\Sisp\Events\TransactionCancelled;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Illuminate\Support\Facades\Event;
 
 Event::listen(TransactionCancelled::class, function (TransactionCancelled $event) {
@@ -489,7 +502,7 @@ Event::listen(TransactionCancelled::class, function (TransactionCancelled $event
     $reason = $event->reason;
 });
 
-Event::listen(TransactionRefunded::class, function (TransactionRefunded $event) {
+Event::listen(RefundRecorded::class, function (RefundRecorded $event) {
     // Handle refund
     $transaction = $event->transaction;
     $refundAmount = $event->refundAmount;

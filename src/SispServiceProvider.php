@@ -43,6 +43,8 @@ final class SispServiceProvider extends PackageServiceProvider
                 'update_laravel_sisp_transactions_add_status_created_at_index',
                 'update_laravel_sisp_transactions_add_request_payload_pruned_at',
                 'update_sisp_refunds_add_idempotency_key',
+                'update_laravel_sisp_transactions_narrow_lookup_index',
+                'update_laravel_sisp_transactions_add_pos_id',
             ])
             ->hasTranslations()
             ->hasRoutes('web')

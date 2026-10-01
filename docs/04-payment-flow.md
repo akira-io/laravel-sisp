@@ -96,6 +96,41 @@ User submits payment form with:
 - `amount` must be numeric, minimum 0.01
 - `items` must be array with at least 1 item
 - Each item must have: `product_name`, `quantity`, `unit_price`, `total_price`
+- The item totals must add up to `amount`
+
+### The expected amount
+
+Everything above comes from the browser, so a buyer can submit `amount=1` for a checkout worth more, pay 1 CVE, and still trigger `PaymentCompleted` for that checkout. The package cannot tell: it has no order or cart. Bind `Akira\Sisp\Contracts\PaymentAmountResolver` to give it one:
+
+```php
+use Akira\Sisp\Contracts\PaymentAmountResolver;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+final class OrderAmountResolver implements PaymentAmountResolver
+{
+    public function expectedAmount(Request $request): ?float
+    {
+        $order = Order::query()->find($request->input('checkout_intent_id'));
+
+        if ($order === null) {
+            throw ValidationException::withMessages([
+                'checkout_intent_id' => 'This checkout is unknown.',
+            ]);
+        }
+
+        return $order->total;
+    }
+}
+```
+
+```php
+// AppServiceProvider::register()
+$this->app->bind(PaymentAmountResolver::class, OrderAmountResolver::class);
+```
+
+When the resolver returns an amount, the request is refused with a validation error on `amount` unless the submitted amount matches it to the thousandth. Returning `null` accepts the submitted amount, which is also what the default binding does, so reserve it for checkouts that genuinely have no fixed amount (a donation, a top-up): `checkout_intent_id` is optional and comes from the browser, so a resolver that answers `null` for a missing or unknown checkout lets a buyer skip the check by naming one. Refuse those instead, as the example does. Whichever you choose, compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before you fulfil: the listener is the last place that can stop an underpaid order.
 
 ## Step 3: Security Checks
 
@@ -302,16 +337,18 @@ $schedule->command('sisp:reconcile-pending')->everyFiveMinutes();
 
 The scheduled command uses SISP's POS transaction-status API. It does not mark a transaction failed when the API request itself fails. It only updates the local status when SISP returns `result=true`.
 
+A reconciliation that settles a payment dispatches the same `PaymentCompleted` or `PaymentFailed` event the callback would have, so the listeners that fulfil an order run for it too. The event's `payload` names the transaction (`merchantRef`, `merchantSession`, `amount`, `posID`) and carries the status API answer under `raw`; the callback-only fields (`fingerprint`, `messageType`, `responseCode`, `timeStamp`) are empty, and so is `transactionID` when no callback ever reached the package, since SISP assigns that identifier in the callback. Identify the payment by `$event->transaction` or by `merchantRef`, never by `transactionID` alone. The event fires even when the invoice update fails (that failure is logged), because the status is already committed and no later reconciliation revisits the row. A payment reconciled twice, or one the callback settled while the gateway was being queried, dispatches nothing.
+
 ## Events Dispatched
 
 ### PaymentCompleted
-Fired when transaction status becomes `completed`:
+Fired when transaction status becomes `completed`, by the callback or by reconciliation:
 ```php
 PaymentCompleted::dispatch($transaction, $payload);
 ```
 
 ### PaymentFailed
-Fired when transaction status becomes `failed`:
+Fired when transaction status becomes `failed`, by the callback or by reconciliation:
 ```php
 PaymentFailed::dispatch($transaction, $payload);
 ```
@@ -328,10 +365,10 @@ Fired when transaction is cancelled via `POST /sisp/cancel`:
 TransactionCancelled::dispatch($transaction, $reason);
 ```
 
-### TransactionRefunded
-Fired when transaction is refunded via `POST /sisp/refund/{transaction}`:
+### RefundRecorded
+Fired when a refund is recorded via `POST /sisp/refund/{transaction}`. The money is returned in the SISP back office, not by this package:
 ```php
-TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
+RefundRecorded::dispatch($transaction, $refundAmount, $reason);
 ```
 
 ## Transaction Statuses
@@ -340,7 +377,7 @@ TransactionRefunded::dispatch($transaction, $refundAmount, $reason);
 - **completed** - Payment successful
 - **failed** - Payment rejected
 - **cancelled** - Transaction cancelled by user or merchant
-- **refunded** - Payment refunded to customer
+- **refunded** - A refund covering the full amount is recorded locally
 
 ## Database Records Created
 

@@ -4,23 +4,27 @@ declare(strict_types=1);
 
 namespace Akira\Sisp\Actions;
 
+use Akira\Sisp\Configuration\CredentialScope;
 use Akira\Sisp\Enums\TransactionStatus;
-use Akira\Sisp\Events\TransactionRefunded;
+use Akira\Sisp\Events\RefundRecorded;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\RefundLedger;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Support\TransactionLogContext;
 use Akira\Sisp\ValueObjects\RefundRequest;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
-final readonly class RefundTransactionAction
+final readonly class RecordRefundAction
 {
     public function __construct(
-        private BuildRefundRequestAction $buildRefundRequest,
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private RefundLedger $ledger,
+        private CredentialScope $credentialScope,
+        private Container $container,
     ) {}
 
     public function handle(
@@ -61,7 +65,12 @@ final readonly class RefundTransactionAction
                 "Refund amount ({$refundAmount}) exceeds refundable balance."
             );
 
-            $request = $this->buildRefundRequest($locked, $refundAmount);
+            // The injected builder hashed the posAutCode of the credentials active when
+            // it was built, so the request is built by a fresh one inside the scope.
+            $request = $this->credentialScope->forTransaction(
+                $locked,
+                fn (): RefundRequest => $this->buildRefundRequest($this->container->make(BuildRefundRequestAction::class), $locked, $refundAmount),
+            );
             $payload = $this->appendRefundPayload($locked, $request->toArray(), $reason, $idempotencyKey);
             $refund = $this->recordRefund($locked, $request->toArray(), $reason, $idempotencyKey);
             $remainingThousandths = $refundableThousandths - $refundThousandths;
@@ -87,7 +96,7 @@ final readonly class RefundTransactionAction
         });
 
         if ($refund instanceof Refund && $remainingThousandths !== null) {
-            event(new TransactionRefunded(
+            event(new RefundRecorded(
                 $refunded,
                 $refundAmount,
                 $reason,
@@ -135,17 +144,17 @@ final readonly class RefundTransactionAction
         return $transaction->status->value === 'completed';
     }
 
-    private function buildRefundRequest(Transaction $transaction, float $refundAmount): RefundRequest
+    private function buildRefundRequest(BuildRefundRequestAction $builder, Transaction $transaction, float $refundAmount): RefundRequest
     {
         $transactionAmount = SispAmount::toThousandths($transaction->amount);
         $alreadyRefunded = $this->ledger->refundedThousandths($transaction);
         $refundAmount = SispAmount::toThousandths($refundAmount);
 
         if ($alreadyRefunded === 0 && $refundAmount === $transactionAmount) {
-            return $this->buildRefundRequest->total($transaction);
+            return $builder->total($transaction);
         }
 
-        return $this->buildRefundRequest->partial($transaction, SispAmount::fromThousandths($refundAmount));
+        return $builder->partial($transaction, SispAmount::fromThousandths($refundAmount));
     }
 
     private function backfillLegacyRefunds(Transaction $transaction): void
@@ -172,10 +181,8 @@ final readonly class RefundTransactionAction
      */
     private function appendRefundPayload(Transaction $transaction, array $request, string $reason, ?string $idempotencyKey): array
     {
-        $payload = $transaction->getAttribute('payload');
-        $payload = is_array($payload) ? $payload : [];
-        $refunds = $payload['refunds'] ?? [];
-        $refunds = is_array($refunds) ? $refunds : [];
+        $payload = LegacyPayload::decodeStored($transaction->getAttribute('payload'));
+        $refunds = LegacyPayload::refundHistory($payload);
         $refunds[] = array_filter([
             'amount' => $request['amount'],
             'reason' => $reason,

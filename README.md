@@ -27,7 +27,7 @@ php artisan laravel-sisp:install
 
 | Area | Included |
 | --- | --- |
-| Payments | Payment request building, SISP form rendering, callbacks, cancellation, retry, and refunds |
+| Payments | Payment request building, SISP form rendering, callbacks, cancellation, retry, and refund bookkeeping |
 | Transactions | Eloquent models, audit logs, reconciliation, and status queries |
 | Invoices | PDF invoice generation after approved payments |
 | Security | Fingerprint validation, signed retry and cancellation requests, rate limits, metadata collection, and blacklist support |
@@ -100,7 +100,7 @@ $paymentRequest = Sisp::payment()
 $transaction = Sisp::refund($transaction)
     ->amount(500.0)
     ->reason('partial_return')
-    ->process();
+    ->record();
 ```
 
 ### Drivers
@@ -173,7 +173,9 @@ composer test:lint
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for release history. Releases are generated with `git-cliff`.
+See [CHANGELOG.md](CHANGELOG.md) for release history. Releases are generated with `git-cliff` and driven by the tag.
+
+A release is cut on its own branch. `release/vX.Y.Z` forks from the line it belongs to and takes only the fixes for that version, while that line keeps receiving work for the next one. The tag goes on the release branch, which publishes the GitHub Release and commits the changelog back to it, and the branch is then merged into its line, carrying both.
 
 ## Contributing
 

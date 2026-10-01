@@ -7,6 +7,7 @@ namespace Akira\Sisp\Models;
 use Akira\Sisp\Actions\LogTransactionChangesAction;
 use Akira\Sisp\Database\Factories\TransactionFactory;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Support\LegacyPayload;
 use Akira\Sisp\Support\RefundLedger;
 use Akira\Sisp\Support\SispAmount;
 use Akira\Sisp\Traits\EncryptsAttributes;
@@ -23,10 +24,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read  TransactionStatus $status
  * @property-read  array $payload
  * @property-read  \Illuminate\Support\Carbon|null $request_payload_pruned_at
+ * @property-read  \Illuminate\Support\Carbon|null $refunded_at
+ * @property-read  \Illuminate\Support\Carbon|null $cancelled_at
  * @property-read  string|null $customer_email
  * @property-read  string $merchant_ref
  * @property-read  string $merchant_session
  * @property-read  string|null $transaction_id
+ * @property-read  string|null $pos_id
  * @property-read  string|null $message_type
  * @property-read  string|null $response_code
  * @property-read  string|null $merchant_response
@@ -62,6 +66,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'amount',
     'amount_cents',
     'currency',
+    'pos_id',
     'status',
     'transaction_code',
     'transaction_id',
@@ -137,6 +142,27 @@ final class Transaction extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class, 'transaction_id');
+    }
+
+    /**
+     * The SISP posID the payment was built for: the column when present, else
+     * the posID inside the stored request payload of transactions created
+     * before the column existed.
+     */
+    public function posId(): ?string
+    {
+        $posId = $this->getAttribute('pos_id');
+
+        if (is_string($posId) && $posId !== '') {
+            return $posId;
+        }
+
+        // Read from the stored value rather than the accessor, which caches what it
+        // could not decrypt and would hand a JSON string back to later readers.
+        $payload = LegacyPayload::decode($this->getRawOriginal('payload'));
+        $posId = $payload['posID'] ?? null;
+
+        return is_string($posId) && $posId !== '' ? $posId : null;
     }
 
     public function refundedAmount(): float

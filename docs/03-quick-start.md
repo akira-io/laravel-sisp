@@ -8,7 +8,7 @@ The package registers these routes automatically:
 - `GET|POST /sisp/callback` - SISP callback handler
 - `POST /sisp/retry-payment` - Retry a failed payment
 - `GET /sisp/cancel` - Cancel transaction
-- `POST /sisp/refund/{transaction}` - Refund transaction
+- `POST /sisp/refund/{transaction}` - Record a refund issued in the SISP back office
 - `GET|POST /sisp/sandbox` - Sandbox testing
 - `GET /sisp/countries` - List countries (ISO codes + flags)
 
@@ -34,6 +34,8 @@ Create a form that POSTs to `POST /sisp/payment`:
 ```
 
 ## Required Fields
+
+> **The browser sets `amount` and `items`.** The package checks that the items add up to the amount, but it has no order or cart to check the amount against. Before exposing this form, bind `Akira\Sisp\Contracts\PaymentAmountResolver` so the request is refused when the amount differs from what your application expects for the checkout (see [Payment Flow](./04-payment-flow.md#step-2-request-validation)), or verify `$transaction->amount` against your own total in your `PaymentCompleted` listener before fulfilling anything. The [builder](#programmatic-payments-builder) takes the amount from your code and needs neither.
 
 - `amount` - Total amount (numeric, min 1)
 - `items` - Array of items (at least 1)

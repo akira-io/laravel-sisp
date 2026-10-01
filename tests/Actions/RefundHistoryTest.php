@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use Akira\Sisp\Actions\RefundTransactionAction;
+use Akira\Sisp\Actions\RecordRefundAction;
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Refund;
 use Akira\Sisp\Models\Transaction;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -34,7 +35,7 @@ it('falls back to the legacy payload when the table has no rows', function (): v
         ],
     ]);
 
-    $refundable = resolve(RefundTransactionAction::class)->refundableAmount($transaction);
+    $refundable = resolve(RecordRefundAction::class)->refundableAmount($transaction);
 
     expect($refundable)->toBe(600.0);
 });
@@ -70,7 +71,7 @@ it('prefers the table over the legacy payload once a row exists', function (): v
         'request' => [],
     ]);
 
-    expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))
+    expect(resolve(RecordRefundAction::class)->refundableAmount($transaction->refresh()))
         ->toBe(600.0);
 });
 
@@ -87,7 +88,7 @@ it('rejects a refund that would exceed the balance after the legacy history is b
         ],
     ]);
 
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     expect($action->refundableAmount($transaction))->toBe(25.0);
 
@@ -120,7 +121,7 @@ it('does not double count a transaction whose history was already migrated', fun
         'request' => [],
     ]);
 
-    $action = resolve(RefundTransactionAction::class);
+    $action = resolve(RecordRefundAction::class);
 
     $action->handle($transaction->refresh(), 5.0);
 
@@ -136,12 +137,12 @@ it('round trips an amount with three decimal places through the table', function
         'response_code' => '5',
     ]);
 
-    resolve(RefundTransactionAction::class)->handle($transaction, 8.035);
+    resolve(RecordRefundAction::class)->handle($transaction, 8.035);
 
     $refund = Refund::query()->where('transaction_id', $transaction->id)->sole();
 
     expect($refund->amount_thousandths)->toBe(8035)
-        ->and(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))
+        ->and(resolve(RecordRefundAction::class)->refundableAmount($transaction->refresh()))
         ->toBe(91.965);
 });
 
@@ -154,7 +155,7 @@ it('keeps the refund request out of plaintext in the database', function (): voi
         'merchant_ref' => 'MREF-PLAINTEXT-PROBE',
     ]);
 
-    resolve(RefundTransactionAction::class)->handle($transaction, 10.0);
+    resolve(RecordRefundAction::class)->handle($transaction, 10.0);
 
     $raw = DB::table(config('sisp.tables.refunds'))
         ->where('transaction_id', $transaction->id)
@@ -200,7 +201,7 @@ it('copies the legacy history into encrypted rows when the migration runs', func
 
     expect($raw)->toBeString()->and($raw)->not->toContain('MREF-LEGACY-9');
 
-    expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))
+    expect(resolve(RecordRefundAction::class)->refundableAmount($transaction->refresh()))
         ->toBe(91.965);
 });
 
@@ -225,16 +226,66 @@ it('does not duplicate rows when the migration copy step runs twice', function (
 
     expect(Refund::query()->where('transaction_id', $transaction->id)->count())->toBe(1);
 
-    expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction->refresh()))
+    expect(resolve(RecordRefundAction::class)->refundableAmount($transaction->refresh()))
         ->toBe(91.965);
 });
 
-it('ignores a legacy refunds key that is not a list', function (): void {
+it('refuses to compute a refundable balance from a legacy refunds key it cannot read', function (): void {
     $transaction = Transaction::factory()->create([
         'amount' => 100.0,
         'status' => TransactionStatus::completed->value,
         'payload' => ['refunds' => 'corrupted'],
     ]);
 
-    expect(resolve(RefundTransactionAction::class)->refundableAmount($transaction))->toBe(100.0);
+    expect(fn (): float => resolve(RecordRefundAction::class)->refundableAmount($transaction))
+        ->toThrow(LogicException::class, 'The stored refund history could not be decoded.');
+});
+
+it('refuses to refund a transaction whose payload cannot be decoded and leaves the payload untouched', function (): void {
+    $transaction = Transaction::factory()->create([
+        'amount' => 100.0,
+        'status' => TransactionStatus::completed->value,
+    ]);
+    $sealed = new Encrypter(Encrypter::generateKey(config('app.cipher')), config('app.cipher'))
+        ->encryptString(json_encode(['refunds' => [['amount' => 75.0, 'reason' => 'legacy', 'request' => []]]]));
+
+    DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update(['payload' => $sealed]);
+
+    expect(fn (): Transaction => resolve(RecordRefundAction::class)->handle($transaction->refresh(), 50.0))
+        ->toThrow(LogicException::class, 'The stored transaction payload could not be decoded.')
+        ->and(DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->value('payload'))->toBe($sealed)
+        ->and($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+});
+
+it('counts the legacy history of a payload stored as a plain JSON string', function (): void {
+    $transaction = Transaction::factory()->create([
+        'amount' => 100.0,
+        'status' => TransactionStatus::completed->value,
+    ]);
+
+    DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update([
+        'payload' => json_encode(['refunds' => [['amount' => 75.0, 'reason' => 'legacy', 'request' => []]]]),
+    ]);
+
+    expect(resolve(RecordRefundAction::class)->refundableAmount($transaction->refresh()))->toBe(25.0);
+});
+
+it('keeps the rest of a JSON string payload when a refund is appended to it', function (): void {
+    $transaction = Transaction::factory()->create([
+        'amount' => 100.0,
+        'status' => TransactionStatus::completed->value,
+        'transaction_id' => '123',
+        'response_code' => '5',
+    ]);
+
+    DB::table(config('sisp.tables.transactions'))->where('id', $transaction->id)->update([
+        'payload' => json_encode(['posID' => '90001', 'refunds' => [['amount' => 10.0, 'reason' => 'legacy', 'request' => []]]]),
+    ]);
+
+    resolve(RecordRefundAction::class)->handle($transaction->refresh(), 5.0);
+
+    $payload = $transaction->refresh()->payload;
+
+    expect($payload['posID'])->toBe('90001')
+        ->and($payload['refunds'])->toHaveCount(2);
 });

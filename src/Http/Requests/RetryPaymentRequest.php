@@ -18,6 +18,17 @@ final class RetryPaymentRequest extends FormRequest
         return URL::hasValidSignature($this);
     }
 
+    /**
+     * The signature covers the query string only, so the transaction is read from
+     * there: a request body could otherwise name a transaction the link never signed.
+     *
+     * @return array<string, mixed>
+     */
+    public function validationData(): array
+    {
+        return $this->query->all();
+    }
+
     public function rules(): array
     {
         return [
@@ -32,7 +43,7 @@ final class RetryPaymentRequest extends FormRequest
                 return;
             }
 
-            $transaction = Transaction::query()->find($this->integer('transaction'));
+            $transaction = Transaction::query()->find($this->transactionId());
 
             if (! $transaction || ! resolve(CanRetryPaymentAction::class)->handle($transaction)) {
                 $validator->errors()->add(
@@ -41,5 +52,10 @@ final class RetryPaymentRequest extends FormRequest
                 );
             }
         });
+    }
+
+    public function transactionId(): int
+    {
+        return (int) $this->query('transaction');
     }
 }

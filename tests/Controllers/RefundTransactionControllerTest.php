@@ -4,53 +4,7 @@ declare(strict_types=1);
 
 use Akira\Sisp\Enums\TransactionStatus;
 use Akira\Sisp\Models\Transaction;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Facades\Gate;
-
-final class RefundRouteUser implements Authenticatable
-{
-    public function __construct(
-        public int $id = 1,
-        public string $email = 'buyer@example.com',
-    ) {}
-
-    public function getAuthIdentifierName(): string
-    {
-        return 'id';
-    }
-
-    public function getAuthIdentifier(): int
-    {
-        return $this->id;
-    }
-
-    public function getAuthPasswordName(): string
-    {
-        return 'password';
-    }
-
-    public function getAuthPassword(): string
-    {
-        return '';
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return null;
-    }
-
-    public function setRememberToken($value): void {}
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-
-    public function can(string $ability, mixed $arguments = []): bool
-    {
-        return Gate::forUser($this)->check($ability, $arguments);
-    }
-}
+use Akira\Sisp\Tests\Fixtures\RefundRouteUser;
 
 function refundableTransaction(float $amount = 100.0): Transaction
 {
@@ -63,11 +17,6 @@ function refundableTransaction(float $amount = 100.0): Transaction
     ]);
 }
 
-function allowRefunds(bool $allowed = true): void
-{
-    Gate::define('refund', fn (RefundRouteUser $user, Transaction $transaction): bool => $allowed);
-}
-
 it('refunds a completed transaction and returns json', function (): void {
     allowRefunds();
     $transaction = refundableTransaction();
@@ -75,7 +24,8 @@ it('refunds a completed transaction and returns json', function (): void {
     $this->actingAs(new RefundRouteUser())
         ->postJson(route('sisp.refund', $transaction), ['amount' => 100.0, 'reason' => 'test'])
         ->assertOk()
-        ->assertJsonPath('success', true);
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('message', 'Refund recorded. Issue it in the SISP back office if you have not already.');
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::refunded)
         ->and($transaction->merchant_response)->toBe('test::100');
@@ -112,6 +62,16 @@ it('returns 400 when refund amount exceeds transaction', function (): void {
         ->postJson(route('sisp.refund', $transaction), ['amount' => 150.0])
         ->assertStatus(400)
         ->assertJsonPath('success', false);
+
+    expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
+});
+
+it('denies the refund when the application has defined no refund ability', function (): void {
+    $transaction = refundableTransaction();
+
+    $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 10.0])
+        ->assertForbidden();
 
     expect($transaction->refresh()->status)->toBe(TransactionStatus::completed);
 });
@@ -289,3 +249,28 @@ it('treats a null or empty idempotency key as no key', function (mixed $key): vo
     'null' => [null],
     'empty' => [''],
 ]);
+
+it('answers with a summary of the transaction, not its customer details or payload', function (): void {
+    allowRefunds();
+    $transaction = refundableTransaction();
+    $transaction->update(['customer_phone' => '+2389912345', 'payload' => ['purchaseRequest' => 'secret']]);
+
+    $response = $this->actingAs(new RefundRouteUser())
+        ->postJson(route('sisp.refund', $transaction), ['amount' => 40.0])
+        ->assertOk()
+        ->assertJsonPath('transaction.id', $transaction->id)
+        ->assertJsonPath('transaction.status', TransactionStatus::completed->value)
+        ->assertJsonPath('transaction.refunded_amount', fn (int|float $amount): bool => (float) $amount === 40.0)
+        ->assertJsonPath('transaction.refundable_amount', fn (int|float $amount): bool => (float) $amount === 60.0)
+        ->assertJsonMissingPath('transaction.payload')
+        ->assertJsonMissingPath('transaction.customer_email')
+        ->assertJsonMissingPath('transaction.customer_phone');
+
+    expect(array_keys($response->json('transaction')))->toBe([
+        'id', 'merchant_ref', 'transaction_id', 'status', 'merchant_response',
+        'amount', 'refunded_amount', 'refundable_amount', 'refunded_at',
+    ])
+        ->and($response->getContent())->not->toContain('buyer@example.com')
+        ->not->toContain('+2389912345')
+        ->not->toContain('secret');
+});

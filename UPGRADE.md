@@ -1,6 +1,6 @@
 # Upgrading from 2.x to 3.0
 
-Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and five new migrations must be published and run.
+Version 3.0 keeps the platform requirements of 2.x (**PHP 8.5**, **Laravel 13**). It hardens the callback, cancellation and refund paths, moves refund history into its own table and adds two cleanup commands. Four changes can break an application, and seven new migrations must be published and run.
 
 **Estimated effort:**
 
@@ -79,6 +79,30 @@ If you call the action yourself, catch `LogicException` for these statuses or ch
 
 The `status` column is a plain string, so no data migration is required. Invoices refunded before the upgrade keep the status they had.
 
+### Refunds are bookkeeping, and now say so (action required if you refund)
+
+Nothing in this package has ever sent a refund to SISP. `RefundTransactionAction` built a signed `RefundRequest`, stored it, moved the transaction to `refunded` and dispatched `TransactionRefunded`, all without an outbound request. A listener on that event had every reason to tell the customer the money was on its way, and it was not.
+
+3.0 renames the operation to what it does. The behaviour is unchanged.
+
+| 2.x | 3.0 |
+| --- | --- |
+| `Akira\Sisp\Actions\RefundTransactionAction` | `Akira\Sisp\Actions\RecordRefundAction` |
+| `Akira\Sisp\Events\TransactionRefunded` | `Akira\Sisp\Events\RefundRecorded` |
+| `RefundBuilder::process()` | `RefundBuilder::record()` |
+| `Sisp::refund($transaction)->full()->process()` | `Sisp::refund($transaction)->full()->record()` |
+| `POST /sisp/refund/{transaction}` answered `Transaction refunded successfully.` | it answers `Refund recorded. Issue it in the SISP back office if you have not already.` |
+
+The route, its path, its status codes and the event's properties are unchanged, and `Sisp::refund()` keeps its name. `RefundTransactionController` and `RefundTransactionRequest` keep theirs too: they are named after the route, which does not move, so extending or referencing them keeps working.
+
+There is no `class_alias` and no deprecated stand-in. The old names are gone. Three things to do before the deploy, in this order:
+
+1. **Rename the dispatchers, not only the listeners.** Code that calls `event(new TransactionRefunded(...))` or `TransactionRefunded::dispatch(...)` fatals with `Class not found`. The constructor arguments are unchanged, so the call works once the class name is. A listener left on the old class is worse than a fatal: it stops firing silently, with no error and no log.
+2. **Drain the queue.** The event does not use `SerializesModels`, so a queued listener carries the whole event object in its payload. A job still on the queue when 3.0 goes out cannot deserialize an event class that no longer exists, and fails for good, `failed()` included. Stop the workers and let the queue empty (`php artisan queue:work --stop-when-empty`, or wait for `queue:size` to reach zero) before installing.
+3. **Fix the test doubles.** `Event::fake()` plus `assertDispatched(TransactionRefunded::class)` compiles against a missing class and fails at the assertion, not at the change you are making.
+
+Issue the refund in the SISP back office, then record it here, and confirm the accounting in the daily VBVT reconciliation file. See [docs/05-transaction-management.md](docs/05-transaction-management.md#refund-transaction).
+
 ### Refund endpoint validates its payload (action required if you call it)
 
 `RefundTransactionController::__invoke()` now receives `RefundTransactionRequest` instead of `Illuminate\Http\Request`. `POST /sisp/refund/{transaction}` validates:
@@ -109,7 +133,12 @@ Every `handle()` signature stays backward compatible: `MapTransactionStatusActio
 | `ValidatePaymentResponseFingerprintAction` | `PaymentResponseFingerPrintAction` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction` |
 | `BuildSandboxPayloadAction` | `PaymentResponseFingerPrintAction`, `SispCredentialsResolver` | `PaymentResponseFingerPrintAction`, `PaymentErrorResponseFingerPrintAction`, `SispCredentialsResolver` |
 | `CancelTransactionAction` | none | `UpdateInvoiceStatusAction` |
-| `RefundTransactionAction` | `BuildRefundRequestAction` | `BuildRefundRequestAction`, `UpdateInvoiceStatusAction`, `RefundLedger` |
+| `RecordRefundAction` | `BuildRefundRequestAction` | `UpdateInvoiceStatusAction`, `RefundLedger`, `CredentialScope`, `Container`; the refund request is built by a `BuildRefundRequestAction` made inside the transaction's credential scope |
+| `QueryTransactionStatusAction` | `SispManager` | `SispManager`, `CredentialScope` |
+| `RetryPaymentAction` | `BuildRequestPayloadAction` | `CredentialScope`, `Container`; the request is built by a `BuildRequestPayloadAction` made inside the transaction's credential scope |
+| `ProductionDriver` | `SispCredentialsResolver`, `TransactionStatusClient` | `Container`, `TransactionStatusClient`; credentials are resolved per call |
+| `TransactionStatusClient` | `LoadConfig`, `SispCredentialsResolver` | `LoadConfig`, `Container`; credentials are resolved per call |
+| `CallbackController` | ... `CallbackFingerprintValidator`, `BuildPaymentResultUrlAction` | ... `BuildPaymentResultUrlAction`, `CredentialScope`, `Container`; the fingerprint validator is made inside the transaction's credential scope |
 | `RenderPaymentResponseAction` | `GetPaymentErrorResponseAction`, `GetPaymentResponseTranslationsAction`, `CanRetryPaymentAction`, `InertiaAvailability` | `GetPaymentResponseTranslationsAction`, `CanRetryPaymentAction`, `InertiaAvailability` |
 | `Transaction\UpdateTransactionAction` | `MapTransactionStatusAction`, `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
 | `Transaction\FailTransactionAction` | `UpdateTransactionAttemptAction`, `ShouldPropagateAttemptCallbackAction` | the same, plus `ResolveCustomerErrorMessageAction`, `MaskCallbackRawPayloadAction` |
@@ -154,7 +183,7 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 
 ## Database migrations (action required)
 
-3.0 ships five new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
+3.0 ships seven new migrations. Like every migration in this package they are published, not loaded automatically, so they only run once you publish them:
 
 | Migration | What it does |
 | --- | --- |
@@ -163,6 +192,8 @@ Customers who bookmark the result page are redirected to `sisp.redirect_url` onc
 | `update_laravel_sisp_transactions_add_status_created_at_index` | Adds an index on `status` and `created_at`, used by `sisp:expire-pending` and `sisp:prune-request-payloads`. |
 | `update_laravel_sisp_transactions_add_request_payload_pruned_at` | Adds the `request_payload_pruned_at` column that `sisp:prune-request-payloads` uses to track its progress. |
 | `update_sisp_refunds_add_idempotency_key` | Adds a nullable `idempotency_key` column to the refunds table and a unique index on `transaction_id` and `idempotency_key`. It also gives `transaction_id` an index of its own, so the foreign key does not depend on the unique index. It must run after `create_sisp_refunds_table` and before 3.0 takes refunds: 3.0 writes the column on every refund, keyed or not. |
+| `update_laravel_sisp_transactions_add_pos_id` | Adds a nullable `pos_id` column to the transactions table, filled with the `posID` each new payment is built for. Rows created before the column keep working: the `posID` is read from their stored request. |
+| `update_laravel_sisp_transactions_narrow_lookup_index` | Replaces the index on `merchant_ref`, `merchant_session`, `status` and `message_type` with one on `merchant_session` alone. The four-column index needed 4080 bytes in utf8mb4, above the 3072-byte key limit InnoDB enforces, so a fresh install could never complete on MySQL or MariaDB. Lookups by `merchant_ref` are served by its unique index; the migration keeps the wide index if that unique index is gone. It does nothing on MySQL and MariaDB, where the wide index could never be created, and its rollback only puts the wide index back on an install it actually took it from. |
 
 ```bash
 php artisan vendor:publish --tag=sisp-migrations
@@ -174,7 +205,8 @@ Publishing keeps the migrations you already published under their original file 
 Plan the deploy around these points:
 
 - **Run `migrate` before 3.0 serves requests.** 3.0 writes the new columns on every callback and the refunds table on every refund, and fails until they exist. A refund that a still-running 2.x release records while the copy runs lands only in `payload['refunds']`; 3.0 counts the larger of the refunds table and the payload, so that refund is still counted and cannot be refunded twice.
-- **Large transactions tables take time and locks.** The refunds copy reads every transaction, payload included, and writes one row per refund; on PostgreSQL and SQLite the whole migration runs in one database transaction, so an interrupted run starts over. The index on `status` and `created_at` is created without `CONCURRENTLY`, which blocks writes to the transactions table on PostgreSQL while it builds, and on MySQL before 8.0.29 the new columns rebuild the table. Run it in a low-traffic window, or create the `status`/`created_at` index yourself beforehand: the migration skips an index that already exists.
+- **Large transactions tables take time and locks.** The refunds copy reads every transaction, payload included, and writes one row per refund; on PostgreSQL and SQLite the whole migration runs in one database transaction, so an interrupted run starts over. On PostgreSQL the `created_at` and `status`/`created_at` indexes are built with `CREATE INDEX CONCURRENTLY`, outside a transaction, so writes keep flowing while they build; a build that is interrupted leaves an invalid index behind, which the next run drops and rebuilds. On MySQL before 8.0.29 the new columns rebuild the table. Run it in a low-traffic window; the index migrations skip an index that already exists.
+- **The lookup index swap locks the transactions table on PostgreSQL.** `update_laravel_sisp_transactions_narrow_lookup_index` creates the new index and drops the old one in the same database transaction, without `CONCURRENTLY`, so writes block while the index builds and reads block while the old one is dropped. Create the `merchant_session` index yourself with `CREATE INDEX CONCURRENTLY` before the deploy if the table is large: the migration skips an index that already exists.
 - **Back up before rolling back.** Rolling back `update_laravel_sisp_transactions_add_callback_error_fields` drops `error_code`, `error_message` and `callback_raw_payload` for good. Rolling back the refunds table loses nothing, because every refund is still mirrored in `payload['refunds']`. Rolling back `update_sisp_refunds_add_idempotency_key` drops the stored keys, so a retry sent after the rollback with a key used before it is refunded again.
 
 The refund history is still appended to `payload['refunds']` as well, so code reading it keeps working. New code should read `$transaction->refunds()` (`Akira\Sisp\Models\Refund`).
@@ -230,11 +262,11 @@ See [docs/09-troubleshooting.md](docs/09-troubleshooting.md#cleanup-commands) fo
 - **The cancellation callback requires both identifiers.** It only cancels a `pending` transaction matching a non-empty `merchantRef` and `merchantSession`. The callback route now carries the `throttle:sisp-callback` middleware, which limits cancellation callbacks (`UserCancelled` or `userCancelled`) to 10 per minute per merchant reference and 30 per minute per IP address; override it with `sisp.middleware.callback`. Behind a load balancer, configure `TrustProxies` so customers do not share one address bucket. Do not rely on it to protect guessable references.
 - **Status comes from the documented message type table.** Only `messageType = 6` fails a transaction. A known success message type completes it only when `merchantResp` has the expected value; otherwise the transaction stays `pending` and a warning is logged.
 - **Refused callbacks keep their reason.** The error fingerprint formula validates SISP refusals, and the refusal code and message are stored in `error_code` and `error_message` and shown on the response screen. The raw callback is stored encrypted in `callback_raw_payload`, with the card number masked to its last four digits, and encrypted attributes are redacted in `sisp_transaction_logs`.
-- **Refunds accept an idempotency key.** `RefundTransactionAction::handle()` takes an optional fourth argument `?string $idempotencyKey`, `RefundBuilder` has `idempotencyKey()`, and `POST /sisp/refund/{transaction}` accepts `idempotency_key`. A retry with the same key and amount returns the transaction without refunding again or dispatching `TransactionRefunded`; the same key with another amount is refused with `LogicException` (400 on the route). Calls without a key behave as before, so a client that retries after a timeout without a key can still refund twice. See [docs/05-transaction-management.md](docs/05-transaction-management.md#idempotent-refunds).
+- **Refunds accept an idempotency key.** `RecordRefundAction::handle()` takes an optional fourth argument `?string $idempotencyKey`, `RefundBuilder` has `idempotencyKey()`, and `POST /sisp/refund/{transaction}` accepts `idempotency_key`. A retry with the same key and amount returns the transaction without refunding again or dispatching `RefundRecorded`; the same key with another amount is refused with `LogicException` (400 on the route). Calls without a key behave as before, so a client that retries after a timeout without a key can still refund twice. See [docs/05-transaction-management.md](docs/05-transaction-management.md#idempotent-refunds).
 - **Checkout keys no longer stick in `processing`.** A payment intent left in `processing` by a request that died mid-flight is reclaimed once it has not changed for `sisp.idempotency.processing_timeout_seconds` (600 by default; 0 never reclaims). A published 2.x config lacks the key and gets the default. When the pipeline fails after the transaction was stored, the failed intent keeps its `transaction_id`, and the next request with the key reuses that transaction.
 - **Card numbers in request metadata are masked.** `sisp_request_metadata.custom_metadata` keeps only the last four digits of `merchantRespPan`. Rows stored before the upgrade are not rewritten.
-- **Refunds settle below a centavo.** `refundableAmount()` (on the model and on `RefundTransactionAction`) returns 0 unless the transaction is `completed`, and a remaining balance below 0.01 counts as settled: the refund that reaches it moves the transaction and its invoice to `refunded`. A transaction left `completed` with such a residue by an earlier release offers nothing more to refund; close it by setting its status to `refunded`.
-- **Refund history on the model.** `Transaction` gains `refundedAmount()`, `refundableAmount()` and `isPartiallyRefunded()`, read from the same ledger as `RefundTransactionAction`. `TransactionRefunded` carries the recorded `Refund` and the remaining balance in `$refund` and `$remainingAmount`.
+- **Refunds settle below a centavo.** `refundableAmount()` (on the model and on `RecordRefundAction`) returns 0 unless the transaction is `completed`, and a remaining balance below 0.01 counts as settled: the refund that reaches it moves the transaction and its invoice to `refunded`. A transaction left `completed` with such a residue by an earlier release offers nothing more to refund; close it by setting its status to `refunded`.
+- **Refund history on the model.** `Transaction` gains `refundedAmount()`, `refundableAmount()` and `isPartiallyRefunded()`, read from the same ledger as `RecordRefundAction`. `RefundRecorded` carries the recorded `Refund` and the remaining balance in `$refund` and `$remainingAmount`.
 - **Callbacks apply once.** The callback actions lock the transaction and its attempt. A replayed callback, or one for a transaction already `completed` or `refunded`, changes nothing on the transaction and dispatches no event; a late callback is still recorded on its attempt.
 - **Deprecations.** `ErrorMessageType` and `GetPaymentErrorResponseAction` are deprecated and no longer used by the package. They remain for published views that read the old error array shape.
 

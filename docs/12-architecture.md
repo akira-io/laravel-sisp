@@ -30,7 +30,7 @@ Drivers (production / sandbox / custom) ── SispManager
 `Akira\Sisp\Builders` provides fluent composition of requests:
 
 - `PaymentBuilder` — `Sisp::payment()->amount(...)->customerEmail(...)->build()`
-- `RefundBuilder` — `Sisp::refund($transaction)->full()->process()`
+- `RefundBuilder` — `Sisp::refund($transaction)->full()->record()`
 
 Builders validate their inputs (`LogicException` on missing amount) and delegate to the same actions used by the HTTP flow, so behavior is identical regardless of entry point.
 

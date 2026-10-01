@@ -319,6 +319,8 @@ Customize middleware assigned to package routes in `config/sisp.php`:
 
 Use this to add CSRF, authentication, tenancy, or custom authorization checks to browser-originated routes. The payment route keeps duplicate-payment protection by default.
 
+The retry route has no middleware by default because its request already refuses anything but a valid, unexpired signed link for one transaction; the refund route requires an authenticated user and the `refund` ability, which your application defines. See [Who May Act on a Transaction](07-security.md#who-may-act-on-a-transaction).
+
 The callback route never receives the browser `web` group, because SISP must be able to post callbacks without CSRF middleware.
 
 It does carry the `sisp-callback` limiter, registered by the package. That limiter applies only to cancellation callbacks, meaning a truthy `UserCancelled` or `userCancelled`, the same test the controller uses to take the cancellation branch. SISP sends no fingerprint on the cancellation callback, so that branch is identified by nothing but the reference and the session. The limiter allows 10 attempts per minute for one merchant reference and 30 per minute from one IP address, so neither hammering one reference nor spreading attempts across many references gets far. Successful callbacks are exempt, because they carry a fingerprint and because throttling them would drop a payment the gateway has already taken.
@@ -482,6 +484,46 @@ public function register(): void
 ```
 
 With this approach, all Sisp operations automatically use the current user's merchant credentials.
+
+### Callbacks, status queries and refunds of a scoped payment
+
+A payment built with `Sisp::forCredentials()` posts back to the shared `/sisp/callback` route, and its status query and refund request run later, outside any `forCredentials()` call. Each transaction stores the `posID` it was built for (the `pos_id` column, or the `posID` in the stored request for rows created before the column), and the package resolves that transaction's credentials through `Akira\Sisp\Contracts\TransactionCredentialsResolver` before validating the callback fingerprint, querying the status or signing the refund request.
+
+The default implementation answers with the active credentials, so a single-merchant application needs nothing. It logs a warning when the transaction's `posID` differs from the active one, because the fingerprint check then fails and the callback is rejected. A multi-merchant application binds its own resolver:
+
+```php
+use Akira\Sisp\Contracts\TransactionCredentialsResolver;
+use Akira\Sisp\Exceptions\UnknownMerchantCredentialsException;
+use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\ValueObjects\SispCredentials;
+use App\Models\Merchant;
+
+class MerchantTransactionCredentials implements TransactionCredentialsResolver
+{
+    public function resolveFor(Transaction $transaction): SispCredentials
+    {
+        $merchant = Merchant::query()->where('sisp_pos_id', $transaction->posId())->first();
+
+        if ($merchant === null) {
+            throw new UnknownMerchantCredentialsException((string) $transaction->posId());
+        }
+
+        return SispCredentials::from([
+            'pos_id' => $merchant->sisp_pos_id,
+            'pos_aut_code' => decrypt($merchant->sisp_pos_aut_code),
+            'currency' => $merchant->currency,
+            'merchant_id' => $merchant->sisp_merchant_id,
+            'url' => $merchant->sisp_url,
+        ]);
+    }
+}
+```
+
+```php
+$this->app->bind(TransactionCredentialsResolver::class, MerchantTransactionCredentials::class);
+```
+
+Throwing `UnknownMerchantCredentialsException` rejects the callback with a log entry naming the `posID`, and makes a status query or a refund for that transaction fail.
 
 ## Environment Variables Reference
 

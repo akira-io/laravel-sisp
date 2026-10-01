@@ -151,16 +151,30 @@ Restrict CORS if using API endpoints:
 
 **Amount Validation**
 
-Validate amounts server-side before processing:
+`POST /sisp/payment` takes `amount` and `items` from the browser and only checks that they add up. Bind `Akira\Sisp\Contracts\PaymentAmountResolver` to the amount your application expects for the checkout, so a lowered amount is refused before a transaction exists:
 
 ```php
-public function rules(): array
+use Akira\Sisp\Contracts\PaymentAmountResolver;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+final class OrderAmountResolver implements PaymentAmountResolver
 {
-    return [
-        'amount' => ['required', 'numeric', 'min:1', 'max:1000000'],
-    ];
+    public function expectedAmount(Request $request): ?float
+    {
+        $order = Order::query()->find($request->input('checkout_intent_id'));
+
+        if ($order === null) {
+            throw ValidationException::withMessages(['checkout_intent_id' => 'This checkout is unknown.']);
+        }
+
+        return $order->total;
+    }
 }
 ```
+
+Refuse a missing or unknown checkout rather than answering `null`: `null` accepts whatever amount was submitted, and `checkout_intent_id` is the buyer's to choose. Then compare `$transaction->amount` with your own total in the `PaymentCompleted` listener before fulfilling. See [Payment Flow](docs/04-payment-flow.md#the-expected-amount).
 
 **Transaction Limits**
 
@@ -184,14 +198,19 @@ Route::post('sisp/payment', PaymentController::class)
     ->middleware(ProtectPaymentRoute::class);
 ```
 
-**Authentication**
+**Authentication and Authorization**
 
-Implement authentication for sensitive operations:
+The refund route runs behind `sisp.middleware.refund` (`web`, `auth` by default) and asks for the `refund` ability on the transaction. The package defines no such ability, and Laravel denies an undefined one, so nobody can refund until your application says who may:
 
 ```php
-Route::post('sisp/refund', RefundTransactionController::class)
-    ->middleware(['auth', 'can:refund-transactions']);
+use Akira\Sisp\Models\Transaction;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('refund', fn (User $user, Transaction $transaction): bool => $user->isFinanceStaff());
 ```
+
+Retry and cancel links are signed, time-limited URLs bound to one transaction; the link is the credential, so give it only to that payment's customer, over HTTPS. See [Who May Act on a Transaction](docs/07-security.md#who-may-act-on-a-transaction).
 
 ### Monitoring and Logging
 

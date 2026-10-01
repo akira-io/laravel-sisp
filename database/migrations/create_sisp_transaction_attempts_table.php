@@ -58,9 +58,30 @@ return new class extends Migration
 
         Schema::dropIfExists($attemptsTable);
 
-        Schema::table($transactionsTable, function (Blueprint $table): void {
-            $table->dropUnique($table->getTable().'_merchant_ref_unique');
+        if (! Schema::hasTable($transactionsTable)) {
+            return;
+        }
+
+        $uniqueIndex = $this->merchantReferenceUniqueIndex($transactionsTable);
+
+        if ($uniqueIndex === null) {
+            return;
+        }
+
+        Schema::table($transactionsTable, function (Blueprint $table) use ($uniqueIndex): void {
+            $table->dropUnique($uniqueIndex);
         });
+    }
+
+    private function merchantReferenceUniqueIndex(string $table): ?string
+    {
+        foreach (Schema::getIndexes($table) as $index) {
+            if ($index['columns'] === ['merchant_ref'] && $index['unique'] === true) {
+                return (string) $index['name'];
+            }
+        }
+
+        return null;
     }
 
     private function ensureNoDuplicateTransactionIdentifiers(string $transactionsTable): void

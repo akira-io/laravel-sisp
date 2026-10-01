@@ -9,14 +9,17 @@ use Akira\Sisp\Actions\CancelTransactionAction;
 use Akira\Sisp\Actions\RenderPaymentResponseBasedOnConfigAction;
 use Akira\Sisp\Actions\StoreRequestMetadataAction;
 use Akira\Sisp\Actions\UpdateInvoiceStatusAction;
+use Akira\Sisp\Configuration\CredentialScope;
 use Akira\Sisp\Configuration\LoadConfig;
 use Akira\Sisp\Contracts\CallbackFingerprintValidator;
 use Akira\Sisp\Enums\TransactionStatus;
+use Akira\Sisp\Exceptions\UnknownMerchantCredentialsException;
 use Akira\Sisp\Facades\Sisp;
 use Akira\Sisp\Models\Transaction;
 use Akira\Sisp\Models\TransactionAttempt;
 use Akira\Sisp\Pipelines\Callback\Pipes\ValidateFingerprint;
 use Akira\Sisp\ValueObjects\CallbackPayload;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,8 +35,9 @@ final readonly class CallbackController
         private UpdateInvoiceStatusAction $updateInvoiceStatus,
         private CancelTransactionAction $cancelTransaction,
         private LoadConfig $config,
-        private CallbackFingerprintValidator $validateFingerprint,
         private BuildPaymentResultUrlAction $paymentResultUrl,
+        private CredentialScope $credentialScope,
+        private Container $container,
     ) {}
 
     public function __invoke(Request $request): mixed
@@ -113,6 +117,35 @@ final readonly class CallbackController
             return redirect(config('sisp.redirect_url', '/'));
         }
 
+        // A payment built with Sisp::forCredentials() posts back to this same
+        // route, so the fingerprint and the pipeline run under the credentials
+        // of the transaction the callback names, not the default ones.
+        $transaction = Transaction::query()
+            ->where('merchant_ref', $payload->merchantRef)
+            ->where('merchant_session', $payload->merchantSession)
+            ->first();
+
+        if (! $transaction instanceof Transaction) {
+            return $this->processCallback($request, $payload);
+        }
+
+        try {
+            return $this->credentialScope->forTransaction(
+                $transaction,
+                fn (): RedirectResponse => $this->processCallback($request, $payload),
+            );
+        } catch (UnknownMerchantCredentialsException $exception) {
+            Log::warning('SISP callback rejected: no credentials are known for its merchant.', [
+                'merchant_ref' => $payload->merchantRef,
+                'pos_id' => $exception->posId,
+            ]);
+
+            return redirect(config('sisp.redirect_url', '/'));
+        }
+    }
+
+    private function processCallback(Request $request, CallbackPayload $payload): RedirectResponse
+    {
         if ($this->rejectsFingerprint($payload)) {
             Log::warning('SISP callback rejected: the fingerprint does not match.', [
                 'merchant_ref' => $payload->merchantRef,
@@ -147,7 +180,9 @@ final readonly class CallbackController
         }
 
         try {
-            return ! $this->validateFingerprint->handle($payload);
+            // Built here rather than injected, so it hashes the posAutCode of
+            // the credentials active for this callback.
+            return ! $this->container->make(CallbackFingerprintValidator::class)->handle($payload);
         } catch (InvalidArgumentException) {
             return true;
         }

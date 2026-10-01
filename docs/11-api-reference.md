@@ -398,7 +398,7 @@ $threeDS = ThreeDSecureData::fromCustomerData(
 
 ### PaymentCompleted
 
-Fired when payment succeeds.
+Fired when a payment succeeds, from the callback or from status reconciliation.
 
 ```php
 PaymentCompleted::class {
@@ -409,7 +409,7 @@ PaymentCompleted::class {
 
 ### PaymentFailed
 
-Fired when payment fails.
+Fired when a payment fails, from the callback or from status reconciliation.
 
 ```php
 PaymentFailed::class {
@@ -440,12 +440,12 @@ TransactionCancelled::class {
 }
 ```
 
-### TransactionRefunded
+### RefundRecorded
 
-Fired when transaction is refunded.
+Fired when a refund is recorded. The package sends nothing to SISP, so this event does not mean the money moved.
 
 ```php
-TransactionRefunded::class {
+RefundRecorded::class {
     public Transaction $transaction
     public float $refundAmount
     public string $reason
@@ -536,10 +536,10 @@ $transaction = Sisp::refund($transaction)
     ->amount(500.0)          // or ->full()
     ->reason('user_refund')  // optional, defaults to user_refund
     ->idempotencyKey($key)   // optional, makes a retry safe
-    ->process();             // returns the updated Transaction
+    ->record();             // returns the updated Transaction
 ```
 
-`process()` throws `LogicException` when no amount was set, when the transaction is not refundable, when the amount exceeds the refundable balance, when the idempotency key is blank or longer than 255 characters, or when the key was already used with a different amount.
+`record()` throws `LogicException` when no amount was set, when the transaction is not refundable, when the amount exceeds the refundable balance, when the idempotency key is blank or longer than 255 characters, or when the key was already used with a different amount.
 
 ## Drivers (v2)
 
@@ -604,8 +604,10 @@ Default pipes (configurable via `sisp.pipelines.callback`): `ResolveTransaction`
 | Contract | Default binding | Purpose |
 | --- | --- | --- |
 | `SispCredentialsResolver` | `EnvSispCredentialsResolver` (singleton) | Resolves the active merchant credentials |
+| `TransactionCredentialsResolver` | `PosIdTransactionCredentialsResolver` | Resolves the credentials a stored transaction was built with, for its callback, status query and refund request |
 | `SispDriver` | Active driver via `SispManager` | Gateway interactions |
 | `CallbackFingerprintValidator` | `ValidatePaymentResponseFingerprintAction` | Callback fingerprint verification |
+| `PaymentAmountResolver` | `TrustSubmittedPaymentAmount` | The amount the application expects for a `POST /sisp/payment` checkout; `null` accepts the submitted one |
 | `PaymentPipe` / `CallbackPipe` | — | Pipeline stage contracts |
 
 Bindings are declared with Laravel 13 container attributes (`#[Bind]` on the contracts, `#[Singleton]` on services), so swapping an implementation is a standard container binding in your application.
@@ -693,12 +695,12 @@ app(CancelTransactionAction::class)->handle(
 // Throws LogicException if cannot cancel
 ```
 
-### RefundTransactionAction
+### RecordRefundAction
 
-Refund a completed transaction. The action supports SISP total reversal and partial refund requests.
+Record a refund against a completed transaction. It builds the signed SISP total reversal or partial refund request and stores it, but sends nothing: issue the refund in the SISP back office.
 
 ```php
-app(RefundTransactionAction::class)->handle(
+app(RecordRefundAction::class)->handle(
     Transaction $transaction,
     float $refundAmount,
     string $reason = 'user_refund',
@@ -708,7 +710,7 @@ app(RefundTransactionAction::class)->handle(
 // Throws LogicException if cannot refund
 ```
 
-With an idempotency key, a refund already recorded under that key for the transaction is answered with the transaction as it stands, without a new refund or a new `TransactionRefunded` event. See [Idempotent Refunds](05-transaction-management.md#idempotent-refunds).
+With an idempotency key, a refund already recorded under that key for the transaction is answered with the transaction as it stands, without a new refund or a new `RefundRecorded` event. See [Idempotent Refunds](05-transaction-management.md#idempotent-refunds).
 
 ### BuildRefundRequestAction
 

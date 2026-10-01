@@ -25,6 +25,7 @@ final readonly class CreateTransactionAction
                     'merchant_session' => $data->merchantSession,
                     'amount' => $data->amount,
                     'currency' => $data->currency,
+                    'pos_id' => $this->posId($data),
                     'status' => 'pending',
                     'transaction_code' => $data->transactionCode,
                     'payload' => $data->payload,
@@ -44,5 +45,12 @@ final readonly class CreateTransactionAction
 
             throw $exception;
         }
+    }
+
+    private function posId(TransactionData $data): ?string
+    {
+        $posId = $data->payload['posID'] ?? null;
+
+        return is_string($posId) && $posId !== '' ? $posId : null;
     }
 }

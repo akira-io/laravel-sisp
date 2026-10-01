@@ -25,12 +25,6 @@ parameters:
 			path: src/Actions/StoreRequestMetadataAction.php
 
 		-
-			message: '#^Negated boolean expression is always true\.$#'
-			identifier: booleanNot.alwaysTrue
-			count: 1
-			path: src/Actions/StoreRequestMetadataAction.php
-
-		-
 			message: '#^Method Akira\\Sisp\\Commands\\LaravelSispInstallCommand\:\:publishAssets\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
