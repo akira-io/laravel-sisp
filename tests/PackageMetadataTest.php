@@ -11,3 +11,11 @@ it('marks the node manifest as private tooling metadata', function (): void {
         ->and($package['license'])->toBe($composer['license'])
         ->and($package['scripts'] ?? [])->not->toHaveKey('release');
 });
+
+it('keeps the mcp server an optional dependency', function (): void {
+    $manifest = json_decode((string) file_get_contents(__DIR__.'/../composer.json'), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($manifest['require'])->not->toHaveKey('laravel/mcp')
+        ->and($manifest['suggest'])->toHaveKey('laravel/mcp')
+        ->and($manifest['require-dev'])->toHaveKey('laravel/mcp');
+});

@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\Compilers\BladeCompiler;
+use Laravel\Mcp\Server;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -73,6 +74,7 @@ final class SispServiceProvider extends PackageServiceProvider
         $this->registerComponents();
         $this->registerFactories();
         $this->registerCallbackRateLimiter();
+        $this->registerMcp();
 
         return parent::boot();
     }
@@ -93,6 +95,15 @@ final class SispServiceProvider extends PackageServiceProvider
 
             return [Limit::perMinute(10)->by('ref:'.$merchantRef), $perAddress];
         });
+    }
+
+    private function registerMcp(): void
+    {
+        if (! config('sisp.mcp.enabled', false) || ! class_exists(Server::class)) {
+            return;
+        }
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
     }
 
     private function registerFactories(): void
