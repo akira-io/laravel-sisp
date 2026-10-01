@@ -19,15 +19,18 @@
     "php": "^8.5",
     "akira/laravel-pdf-invoices": "^1.8",
     "illuminate/contracts": "^13.0",
-    "laravel/mcp": "^0.8|^1.0",
     "pinkary-project/type-guard": "^0.1.0",
     "spatie/laravel-package-tools": "^1.16",
     "stevebauman/location": "^7.6"
+  },
+  "suggest": {
+    "laravel/mcp": "Serve the package to AI agents over the Model Context Protocol (sisp.mcp)."
   },
   "require-dev": {
     "driftingly/rector-laravel": "^2.3",
     "inertiajs/inertia-laravel": "^3.1",
     "larastan/larastan": "^3.10",
+    "laravel/mcp": "^0.8|^1.0",
     "laravel/pint": "^1.29",
     "nunomaduro/collision": "^8.1.1",
     "orchestra/testbench": "^11.0.0",

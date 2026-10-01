@@ -12,6 +12,15 @@ risk profile and is disabled by default.
 
 ## Enabling
 
+The MCP server is an optional dependency. Install it in the host application:
+
+```bash
+composer require laravel/mcp
+```
+
+Without it the package boots as before and `routes/ai.php` is never loaded, whatever `sisp.mcp.enabled`
+says.
+
 The server is opt-in. Set the environment variables in the host application:
 
 ```dotenv

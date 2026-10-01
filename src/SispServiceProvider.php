@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\Compilers\BladeCompiler;
+use Laravel\Mcp\Server;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -98,7 +99,7 @@ final class SispServiceProvider extends PackageServiceProvider
 
     private function registerMcp(): void
     {
-        if (! config('sisp.mcp.enabled', false)) {
+        if (! config('sisp.mcp.enabled', false) || ! class_exists(Server::class)) {
             return;
         }
 
