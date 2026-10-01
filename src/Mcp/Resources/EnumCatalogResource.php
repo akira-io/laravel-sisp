@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Uri;
 use Laravel\Mcp\Server\Resource;
 
 #[Uri('sisp://enums')]
-#[Description('Catalog of every laravel-sisp enum with its cases, values, and labels.')]
+#[Description('Catalog of the laravel-sisp enums an integration needs, with cases, values, and labels. The deprecated ErrorMessageType is left out: SISP error codes have no catalogue.')]
 final class EnumCatalogResource extends Resource
 {
     use DescribesEnums;

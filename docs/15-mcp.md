@@ -139,7 +139,7 @@ checked against the Gate.
 
 | Tool | Annotation | Purpose |
 | --- | --- | --- |
-| `build-payment-request-tool` | read-only | Preview the payment request fields. The fingerprint is left out and nothing is recorded, so the preview cannot start a payment; real payments go through the `sisp.payment` route. |
+| `build-payment-request-tool` | read-only | Preview the payment request fields from the inputs given to it. The fingerprint is left out and nothing is recorded, so the preview cannot start a payment; real payments go through the `sisp.payment` route. |
 | `query-transaction-status-tool` | read-only, idempotent | Query live status at SISP for a stored transaction. |
 | `get-transaction-tool` | read-only | Fetch one stored transaction. |
 | `list-transactions-tool` | read-only | List stored transactions by status and creation time. `from` and `to` take ISO 8601 and are converted to the application timezone; a bare date as `to` includes that whole day. |
@@ -149,9 +149,11 @@ checked against the Gate.
 
 Transaction tools accept a transaction id or a merchant reference. A number that is both the id of one
 transaction and the merchant reference of another is refused; prefix it with `id:` or `ref:` to choose. They return a summary with the status, amounts, gateway codes and a masked
-customer email, plus `error_code` and `gateway_error` for refused payments.
-They never return the merchant session, the request or callback payloads, the card number or 3-D Secure
-data.
+customer email, the refunded and still refundable amounts, plus `error_code` and `gateway_error` for refused
+payments.
+They never return the merchant session, the stored request or callback payloads, the card number or stored
+3-D Secure data. The payment preview echoes back the 3-D Secure `purchaseRequest` it built from the inputs
+of that same call.
 
 Refund takes the same payload as the HTTP refund route: `amount` is required and must be greater than
 zero and `reason` is optional and at most 255 characters. Unlike the HTTP route, `idempotency_key` is

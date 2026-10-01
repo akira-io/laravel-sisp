@@ -258,3 +258,12 @@ it('answers a stored transaction with its own transaction code', function (): vo
 
     expect(toolJson($response)['callback']['transactionCode'])->toBe('3');
 });
+
+it('explains every top-level config key the package ships', function (): void {
+    $config = (string) file_get_contents(dirname(__DIR__, 3).'/config/sisp.php');
+    preg_match_all('/^    \'([a-zA-Z_]+)\' =>/m', $config, $matches);
+
+    $response = SispDevServer::tool(ConfigReferenceTool::class, [])->assertOk();
+
+    expect(array_values(array_diff($matches[1], array_keys(toolJson($response)))))->toBe(['table_name']);
+})->note('table_name is the deprecated single-table key the reference leaves out on purpose.');

@@ -70,13 +70,14 @@ function webOpsTools(): array
     return $property->getValue($server);
 }
 
-it('only names tools that the servers register in prompts and guidance', function (): void {
+it('only names tools that the servers register in prompts, instructions and docs', function (): void {
     $registered = collect([SispDevServer::class, SispOpsServer::class])
         ->flatMap(fn (string $server): array => new ReflectionProperty($server, 'tools')->getValue(new $server(new FakeTransporter)))
         ->map(fn (string $tool): string => resolve($tool)->name())
         ->all();
 
-    $referenced = collect(glob(dirname(__DIR__, 3).'/src/Mcp/{Prompts,Tools/Dev}/*.php', GLOB_BRACE) ?: [])
+    $referenced = collect(glob(dirname(__DIR__, 3).'/src/Mcp/{Prompts,Servers,Tools/Dev,Tools/Ops}/*.php', GLOB_BRACE) ?: [])
+        ->merge([dirname(__DIR__, 3).'/docs/15-mcp.md'])
         ->flatMap(fn (string $file): array => preg_match_all('/[a-z]+(?:-[a-z]+)*-tool\b/', (string) file_get_contents($file), $matches) ? $matches[0] : [])
         ->unique()
         ->values()

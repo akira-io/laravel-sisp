@@ -6,6 +6,8 @@ namespace Akira\Sisp\Mcp\Concerns;
 
 use Akira\Sisp\Mcp\Support\GatewayText;
 use Akira\Sisp\Models\Transaction;
+use Akira\Sisp\Support\RefundLedger;
+use Akira\Sisp\Support\SispAmount;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -53,13 +55,15 @@ trait ResolvesTransaction
     private function transactionSummary(Transaction $transaction): array
     {
         $createdAt = $transaction->getAttributeValue('created_at');
+        $ledger = new RefundLedger();
 
         return [
             'id' => $transaction->id,
             'merchant_ref' => $transaction->merchant_ref,
             'status' => $transaction->status->value,
             'amount' => $transaction->amount,
-            'amount_cents' => $transaction->amount_cents,
+            'refunded_amount' => SispAmount::fromThousandths($ledger->refundedThousandths($transaction)),
+            'refundable_amount' => SispAmount::fromThousandths($ledger->refundableThousandths($transaction)),
             'transaction_id' => $transaction->transaction_id,
             'message_type' => $transaction->message_type,
             'response_code' => $transaction->response_code,
