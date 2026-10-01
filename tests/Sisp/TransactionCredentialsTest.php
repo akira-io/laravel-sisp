@@ -26,9 +26,6 @@ function tenantCredentials(): SispCredentials
     ]);
 }
 
-/**
- * The application's resolver: it knows the tenant's credentials by posID.
- */
 function bindTenantCredentialsResolver(): void
 {
     app()->instance(TransactionCredentialsResolver::class, new class implements TransactionCredentialsResolver
@@ -155,6 +152,7 @@ it('does not keep a scoped merchant on the cached driver for the next status que
 });
 
 it('signs the refund request with the credentials the transaction was built for', function (): void {
+    $this->freezeTime();
     bindTenantCredentialsResolver();
     $transaction = tenantTransaction('MR-TENANT-REFUND');
     $transaction->update(['status' => 'completed', 'transaction_id' => 'TID-1', 'response_code' => '5']);
