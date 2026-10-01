@@ -42,9 +42,14 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($transactionsTable, function (Blueprint $table) use ($narrowIndex): void {
+        $wideIndex = $this->findIndex($transactionsTable, self::WIDE_COLUMNS);
+
+        Schema::table($transactionsTable, function (Blueprint $table) use ($narrowIndex, $wideIndex): void {
             $table->dropIndex($narrowIndex);
-            $table->index(self::WIDE_COLUMNS);
+
+            if ($wideIndex === null) {
+                $table->index(self::WIDE_COLUMNS);
+            }
         });
     }
 

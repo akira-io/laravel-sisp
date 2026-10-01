@@ -53,9 +53,6 @@ final readonly class ReconcileTransactionStatusAction
 
         $status = $response->paymentStatus();
 
-        // The status query can take seconds, during which the real callback may have
-        // settled the row. Lock it and re-read the status before writing, so a stale
-        // answer from SISP never overwrites a completed payment.
         $applied = DB::transaction(function () use ($transaction, $response, $status): bool {
             $locked = TransactionRowLock::acquire($transaction);
 
@@ -86,12 +83,8 @@ final readonly class ReconcileTransactionStatusAction
             return $transaction;
         }
 
-        // Outside the transaction: a completed payment renders its invoice PDF
-        // here, and that must not hold the row lock a callback may be waiting on.
-        // The status is already committed and a later reconciliation will not
-        // revisit the row, so a failing invoice must not swallow the event.
         try {
-            $this->updateInvoiceStatus->handle($transaction, $status);
+            $this->updateInvoiceWhenStatusStillHolds($transaction, $status);
         } catch (Throwable $exception) {
             Log::error('SISP reconciliation settled a payment but could not update its invoice.', [
                 'transaction_id' => $transaction->getKey(),
@@ -100,14 +93,26 @@ final readonly class ReconcileTransactionStatusAction
             ]);
         }
 
-        // The callback path announces a settled payment through these events, so
-        // the listeners that fulfil an order run for a reconciled one as well.
-        // The event follows the status this call wrote, not a re-read of the
-        // row: only this call settled it, so it cannot emit twice, and a
-        // callback that lands after the lock is released announces its own.
         $this->dispatchEvent($transaction, $status, $response);
 
         return $transaction->refresh();
+    }
+
+    private function updateInvoiceWhenStatusStillHolds(Transaction $transaction, TransactionStatus $status): void
+    {
+        $current = $transaction->newQuery()->whereKey($transaction->getKey())->first();
+
+        if (! $current instanceof Transaction || $current->status !== $status) {
+            Log::info('SISP reconciliation left an invoice alone: the transaction moved on before the invoice was updated.', [
+                'transaction_id' => $transaction->getKey(),
+                'reconciled_status' => $status->value,
+                'current_status' => $current?->status->value,
+            ]);
+
+            return;
+        }
+
+        $this->updateInvoiceStatus->handle($transaction, $status);
     }
 
     private function dispatchEvent(Transaction $transaction, TransactionStatus $status, TransactionStatusResponse $response): void
@@ -121,11 +126,6 @@ final readonly class ReconcileTransactionStatusAction
         };
     }
 
-    /**
-     * The status API answers with a description and a message, not with the
-     * fields a callback carries; the payload names the transaction and carries
-     * the answer under raw so a listener can tell the two sources apart.
-     */
     private function payloadFor(Transaction $transaction, TransactionStatusResponse $response): CallbackPayload
     {
         return new CallbackPayload(

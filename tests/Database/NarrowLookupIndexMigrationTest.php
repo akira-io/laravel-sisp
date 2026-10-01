@@ -102,3 +102,23 @@ it('does nothing when the transactions table is missing', function (): void {
 
     expect(Schema::hasTable('sisp_absent_transactions'))->toBeFalse();
 });
+
+it('leaves the wide index single on rollback when it was never removed', function (): void {
+    $table = config('sisp.tables.transactions', 'sisp_transactions');
+
+    Schema::table($table, function (Blueprint $blueprint): void {
+        $blueprint->dropUnique(['merchant_ref']);
+        $blueprint->dropIndex(['merchant_session']);
+        $blueprint->index(['merchant_ref', 'merchant_session', 'status', 'message_type'], 'sisp_wide_lookup_idx');
+    });
+
+    narrowLookupMigration()->up();
+    narrowLookupMigration()->down();
+
+    $wide = array_filter(
+        transactionIndexColumns(),
+        fn (array $columns): bool => $columns === ['merchant_ref', 'merchant_session', 'status', 'message_type'],
+    );
+
+    expect($wide)->toHaveCount(1);
+})->skip(rejectsWideStringIndexes(...), 'MySQL and MariaDB reject the wide index, so no install can hold it.');

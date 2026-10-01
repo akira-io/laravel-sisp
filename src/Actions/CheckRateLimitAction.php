@@ -31,7 +31,14 @@ final readonly class CheckRateLimitAction
         $blockedKey = "rate_limit_blocked:{$limitType}:{$identifier}:{$context}";
         $lockKey = "rate_limit_lock:{$limitType}:{$identifier}:{$context}";
 
-        throw_if(Cache::has($blockedKey), RateLimitExceededException::class, "Rate limit exceeded for {$limitType}: {$identifier}");
+        $blockedUntil = Cache::get($blockedKey);
+
+        if ($blockedUntil !== null) {
+            throw new RateLimitExceededException(
+                "Rate limit exceeded for {$limitType}: {$identifier}",
+                retryAfterSeconds: $this->secondsUntil($blockedUntil),
+            );
+        }
 
         $retryAfter = null;
 
@@ -55,10 +62,6 @@ final readonly class CheckRateLimitAction
         );
     }
 
-    /**
-     * Records the hit and returns the seconds the identifier stays blocked when
-     * the limit is exceeded, null otherwise.
-     */
     private function recordHit(
         string $limitType,
         string $identifier,
@@ -94,13 +97,21 @@ final readonly class CheckRateLimitAction
 
         if ($rateLimit->isLimitExceeded()) {
             $rateLimit->block($windowSeconds);
-            Cache::put($blockedKey, true, $windowSeconds);
+            Cache::put($blockedKey, now()->addSeconds($windowSeconds)->getTimestamp(), $windowSeconds);
 
-            // The block and its cache entry last a full window from this hit.
             return $windowSeconds;
         }
 
         return null;
+    }
+
+    private function secondsUntil(mixed $blockedUntil): ?int
+    {
+        if (! is_int($blockedUntil)) {
+            return null;
+        }
+
+        return max(1, $blockedUntil - now()->getTimestamp());
     }
 
     private function getDefaultLimit(string $limitType): int
